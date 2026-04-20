@@ -1,5 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 import DashboardMockup from '../components/DashboardMockup'
+import StatsStrip from '../components/StatsStrip'
+import OpenSourceSection from '../components/OpenSourceSection'
 
 export const Route = createFileRoute('/')({ component: Home })
 
@@ -53,6 +55,8 @@ function Home() {
           <DashboardMockup />
         </div>
       </section>
+      <StatsStrip />
+      <OpenSourceSection />
     </>
   )
 }

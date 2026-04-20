@@ -273,3 +273,18 @@ nav.site.scrolled {
 .pb-chip::before {
   content: ""; width: 5px; height: 5px; border-radius: 50%; background: var(--accent);
 }
+
+/* ─── Terminal cursor blink ─── */
+@keyframes blink {
+  50% { opacity: 0; }
+}
+
+.terminal-cursor {
+  display: inline-block;
+  width: 7px;
+  height: 14px;
+  background: var(--accent);
+  vertical-align: middle;
+  margin-left: 2px;
+  animation: blink 1s step-end infinite;
+}
