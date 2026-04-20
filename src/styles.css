@@ -103,15 +103,17 @@ body {
   font-feature-settings: 'ss01', 'ss02', 'cv11';
 }
 
-a {
-  color: var(--accent);
-  text-decoration-color: rgba(239, 78, 26, 0.4);
-  text-decoration-thickness: 1px;
-  text-underline-offset: 2px;
-}
+@layer base {
+  a {
+    color: var(--accent);
+    text-decoration-color: rgba(239, 78, 26, 0.4);
+    text-decoration-thickness: 1px;
+    text-underline-offset: 2px;
+  }
 
-a:hover {
-  color: color-mix(in oklab, var(--accent) 80%, var(--ink) 20%);
+  a:hover {
+    color: color-mix(in oklab, var(--accent) 80%, var(--ink) 20%);
+  }
 }
 
 code {
