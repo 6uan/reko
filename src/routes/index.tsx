@@ -6,7 +6,7 @@ export const Route = createFileRoute('/')({ component: Home })
 function Home() {
   return (
     <>
-      <section className="pt-[72px] pb-10 max-sm:pt-10 relative">
+      <section className="pt-[72px] pb-10 max-sm:pt-10 relative overflow-x-hidden">
         <div className="wrap">
           <div className="inline-flex items-center gap-2.5 px-3 py-1.5 pl-2 bg-[var(--card)] border border-[var(--line)] rounded-full font-mono text-xs font-medium text-[var(--ink-2)] shadow-[var(--shadow-s)]">
             <span className="w-1.5 h-1.5 rounded-full bg-[var(--accent)] shadow-[0_0_0_3px_rgba(var(--accent-glow),0.18)]" />

@@ -301,8 +301,8 @@ export default function DashboardMockup() {
             </div>
 
             {/* Activity table */}
-            <div className="border border-[var(--line)] rounded-[var(--radius-m)] bg-[var(--card)] overflow-hidden">
-              <table className="w-full text-left border-collapse">
+            <div className="border border-[var(--line)] rounded-[var(--radius-m)] bg-[var(--card)] overflow-x-auto">
+              <table className="w-full text-left border-collapse min-w-[480px]">
                 <thead>
                   <tr className="bg-[var(--card-2)] font-mono text-[10px] uppercase tracking-[0.06em] text-[var(--ink-4)]">
                     <th className={`py-2.5 px-3.5 font-medium ${colHeaderClass}`} onClick={() => toggleSort('name')}>
