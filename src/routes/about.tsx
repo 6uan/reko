@@ -6,11 +6,11 @@ export const Route = createFileRoute('/about')({
 
 function About() {
   return (
-    <main className="wrap" style={{ paddingTop: '72px', paddingBottom: '72px' }}>
-      <h1 style={{ fontSize: '32px', fontWeight: 500, letterSpacing: '-0.025em' }}>
+    <main className="wrap pt-[72px] pb-[72px]">
+      <h1 className="text-[32px] font-medium tracking-tight">
         About
       </h1>
-      <p style={{ color: 'var(--ink-2)', marginTop: '12px', maxWidth: '52ch', lineHeight: 1.6 }}>
+      <p className="text-[var(--ink-2)] mt-3 max-w-[52ch] leading-relaxed">
         Reko is an open-source running analytics dashboard that connects to your
         Strava account to track personal records, rank your fastest efforts across
         distances, and visualize your progress over time.

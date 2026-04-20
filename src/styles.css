@@ -196,6 +196,7 @@ a {
 .btn-ghost:hover { background: rgba(20,20,20,.04); border-color: rgba(20,20,20,.2); }
 .btn-sm { padding: 8px 13px; font-size: 13px; border-radius: 10px; }
 
+/* ─── Pseudo-element components (can't be done with Tailwind) ─── */
 .strava-dot {
   width: 16px; height: 16px; border-radius: 50%;
   background: #fc4c02;
@@ -207,36 +208,6 @@ a {
   background: radial-gradient(circle at 30% 30%, rgba(255,255,255,.55), transparent 60%);
 }
 
-/* ─── Site Nav ─── */
-nav.site {
-  position: sticky; top: 0; z-index: 50;
-  padding: 0 28px;
-  transition: background 200ms ease, backdrop-filter 200ms ease, border-color 200ms ease;
-  border-bottom: 1px solid transparent;
-}
-nav.site.scrolled {
-  background: rgba(246, 243, 236, 0.72);
-  backdrop-filter: saturate(160%) blur(14px);
-  -webkit-backdrop-filter: saturate(160%) blur(14px);
-  border-bottom-color: var(--line);
-}
-
-/* Dark mode scrolled nav */
-:root.dark nav.site.scrolled {
-  background: rgba(15, 15, 14, 0.72);
-}
-
-.nav-inner {
-  display: flex; align-items: center; justify-content: space-between;
-  max-width: 1240px;
-  margin: 0 auto;
-  padding: 18px 0;
-}
-.brand {
-  display: inline-flex; align-items: center; gap: 10px;
-  font-weight: 600; font-size: 18px; letter-spacing: -0.02em;
-  color: var(--ink); text-decoration: none;
-}
 .brand-mark {
   width: 26px; height: 26px; border-radius: 8px;
   background: var(--ink); color: var(--bg);
@@ -253,137 +224,26 @@ nav.site.scrolled {
 }
 .brand-mark span { position: relative; z-index: 1; }
 
-.nav-links { display: flex; align-items: center; gap: 6px; }
-.site-nav-link {
-  display: inline-flex; align-items: center; gap: 7px;
-  color: var(--ink-2); text-decoration: none;
-  font-size: 14px; font-weight: 500;
-  padding: 9px 14px; border-radius: 10px;
-  transition: background 150ms ease, color 150ms ease;
+/* ─── Site Nav (JS-toggled class) ─── */
+nav.site.scrolled {
+  background: rgba(246, 243, 236, 0.72);
+  backdrop-filter: saturate(160%) blur(14px);
+  -webkit-backdrop-filter: saturate(160%) blur(14px);
+  border-bottom-color: var(--line);
 }
-.site-nav-link:hover { background: rgba(20,20,20,.05); color: var(--ink); }
-.site-nav-link svg { width: 15px; height: 15px; }
 
-/* Dark mode nav link hover */
+/* Dark mode scrolled nav */
+:root.dark nav.site.scrolled {
+  background: rgba(15, 15, 14, 0.72);
+}
+
+/* ─── Dark mode overrides (root class selector — can't do with Tailwind) ─── */
 :root.dark .site-nav-link:hover { background: rgba(255,255,255,.08); }
 :root.dark .btn-ghost { border-color: rgba(255,255,255,.15); color: var(--ink); }
 :root.dark .btn-ghost:hover { background: rgba(255,255,255,.06); border-color: rgba(255,255,255,.25); }
 
-/* ─── Hero ─── */
-.hero {
-  padding: 72px 0 40px;
-  position: relative;
-}
-.eyebrow {
-  display: inline-flex; align-items: center; gap: 10px;
-  padding: 6px 12px 6px 8px;
-  background: var(--card);
-  border: 1px solid var(--line);
-  border-radius: 100px;
-  font-family: var(--font-mono);
-  font-size: 12px; font-weight: 500;
-  color: var(--ink-2);
-  letter-spacing: 0;
-  box-shadow: var(--shadow-s);
-}
-.eyebrow .dot {
-  width: 6px; height: 6px; border-radius: 50%; background: var(--accent);
-  box-shadow: 0 0 0 3px rgba(var(--accent-glow), .18);
-}
-.eyebrow .sep { color: var(--ink-4); }
-
-h1.hero-title {
-  font-size: clamp(44px, 7.5vw, 92px);
-  line-height: 0.98;
-  letter-spacing: -0.035em;
-  font-weight: 500;
-  margin: 22px 0 0;
-  color: var(--ink);
-  max-width: 14ch;
-}
-h1.hero-title em {
-  font-style: normal;
-  color: var(--accent);
-  font-weight: 500;
-}
-.hero-sub {
-  font-size: 19px;
-  line-height: 1.5;
-  color: var(--ink-2);
-  margin: 24px 0 0;
-  max-width: 52ch;
-  letter-spacing: -0.005em;
-}
-.hero-sub strong { color: var(--ink); font-weight: 500; }
-
-.hero-ctas { display: flex; gap: 10px; margin-top: 32px; flex-wrap: wrap; }
-
-.hero-meta {
-  margin-top: 22px;
-  display: flex; align-items: center; gap: 14px;
-  font-family: var(--font-mono);
-  font-size: 12px; color: var(--ink-3);
-}
-.hero-meta .pill {
-  padding: 4px 8px; border-radius: 6px; background: var(--card-2);
-  border: 1px solid var(--line-2);
-}
-
-/* ─── Footer ─── */
-footer.site {
-  border-top: 1px solid var(--line);
-  padding: 48px 0 40px;
-  background: var(--bg-elev);
-}
-.foot-grid {
-  display: flex; align-items: center; justify-content: space-between;
-  gap: 24px; flex-wrap: wrap;
-}
-.foot-left { display: flex; align-items: center; gap: 20px; flex-wrap: wrap; }
-.foot-brand { display: flex; align-items: center; gap: 10px; font-weight: 500; color: var(--ink); font-size: 15px; }
-.foot-copy { font-family: var(--font-mono); font-size: 11px; color: var(--ink-4); }
-.foot-links { display: flex; gap: 18px; font-size: 13px; }
-.foot-links a { color: var(--ink-3); text-decoration: none; transition: color 150ms ease; }
-.foot-links a:hover { color: var(--ink); }
-
-.powered-strava {
-  display: inline-flex; align-items: center; gap: 10px;
-  padding: 9px 14px;
-  background: var(--card);
-  border: 1px solid var(--line);
-  border-radius: 10px;
-  font-size: 12px;
-  color: var(--ink-2);
-}
-.powered-strava .strava-dot { width: 14px; height: 14px; }
-.powered-strava strong { color: var(--ink); font-weight: 500; }
-
 /* ─── Responsive ─── */
-
-/* Mobile */
 @media (max-width: 640px) {
-  .hero { padding-top: 40px; }
-  .hero-ctas .btn { flex: 1; }
   .site-nav-link.hide-m { display: none; }
   .wrap { padding: 0 18px; }
-
-  /* Nav */
-  nav.site { padding: 0 18px; }
-  .nav-inner { padding: 14px 0; }
-  .nav-links { gap: 4px; }
-
-  /* Footer: stack centered */
-  footer.site { padding: 32px 0 28px; }
-  .foot-grid {
-    flex-direction: column;
-    align-items: center;
-    gap: 16px;
-    text-align: center;
-  }
-  .foot-left {
-    flex-direction: column;
-    align-items: center;
-    gap: 8px;
-  }
-  .foot-links { gap: 14px; }
 }

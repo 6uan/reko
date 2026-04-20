@@ -50,28 +50,7 @@ export default function ThemeToggle() {
       onClick={toggle}
       aria-label={label}
       title={label}
-      style={{
-        display: 'inline-flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        width: 36,
-        height: 36,
-        borderRadius: 'var(--radius-s)',
-        border: '1px solid var(--line)',
-        background: 'var(--card)',
-        color: 'var(--ink-2)',
-        cursor: 'pointer',
-        transition:
-          'background 180ms ease, border-color 180ms ease, color 180ms ease',
-      }}
-      onMouseEnter={(e) => {
-        e.currentTarget.style.borderColor = 'var(--ink-4)'
-        e.currentTarget.style.color = 'var(--ink)'
-      }}
-      onMouseLeave={(e) => {
-        e.currentTarget.style.borderColor = 'var(--line)'
-        e.currentTarget.style.color = 'var(--ink-2)'
-      }}
+      className="inline-flex items-center justify-center w-9 h-9 rounded-[var(--radius-s)] border border-[var(--line)] bg-[var(--card)] text-[var(--ink-2)] cursor-pointer transition-[background,border-color,color] duration-[180ms] ease-in-out hover:border-[var(--ink-4)] hover:text-[var(--ink)]"
     >
       <Icon size={18} strokeWidth={1.8} />
     </button>
