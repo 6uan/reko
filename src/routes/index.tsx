@@ -1,4 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router'
+import DashboardMockup from '../components/DashboardMockup'
 
 export const Route = createFileRoute('/')({ component: Home })
 
@@ -48,6 +49,8 @@ function Home() {
             <span className="px-2 py-1 rounded-md bg-[var(--card-2)] border border-[var(--line-2)]">MIT</span>
             <span>self-hosted &middot; Docker or Coolify</span>
           </div>
+
+          <DashboardMockup />
         </div>
       </section>
     </>

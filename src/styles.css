@@ -249,3 +249,27 @@ nav.site.scrolled {
   .site-nav-link.hide-m { display: none; }
   .wrap { padding: 0 18px; }
 }
+
+/* ─── Dashboard Mockup (pseudo-elements & complex effects) ─── */
+.mockup-glow {
+  position: absolute;
+  inset: -40px -200px auto;
+  top: -40px; height: 640px;
+  background:
+    radial-gradient(ellipse at 50% 0%, rgba(var(--accent-glow), .12), transparent 55%),
+    radial-gradient(ellipse at 50% 20%, rgba(20,20,20,.04), transparent 65%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.pb-float-glow::before {
+  content: "";
+  position: absolute; inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(180deg, rgba(var(--accent-glow), .08), transparent 30%);
+  pointer-events: none;
+}
+
+.pb-chip::before {
+  content: ""; width: 5px; height: 5px; border-radius: 50%; background: var(--accent);
+}
