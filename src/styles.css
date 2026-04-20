@@ -210,6 +210,7 @@ a {
 /* ─── Site Nav ─── */
 nav.site {
   position: sticky; top: 0; z-index: 50;
+  padding: 0 28px;
   transition: background 200ms ease, backdrop-filter 200ms ease, border-color 200ms ease;
   border-bottom: 1px solid transparent;
 }
@@ -227,6 +228,8 @@ nav.site.scrolled {
 
 .nav-inner {
   display: flex; align-items: center; justify-content: space-between;
+  max-width: 1240px;
+  margin: 0 auto;
   padding: 18px 0;
 }
 .brand {
@@ -356,9 +359,31 @@ footer.site {
 .powered-strava strong { color: var(--ink); font-weight: 500; }
 
 /* ─── Responsive ─── */
+
+/* Mobile */
 @media (max-width: 640px) {
   .hero { padding-top: 40px; }
   .hero-ctas .btn { flex: 1; }
   .site-nav-link.hide-m { display: none; }
   .wrap { padding: 0 18px; }
+
+  /* Nav */
+  nav.site { padding: 0 18px; }
+  .nav-inner { padding: 14px 0; }
+  .nav-links { gap: 4px; }
+
+  /* Footer: stack centered */
+  footer.site { padding: 32px 0 28px; }
+  .foot-grid {
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+    text-align: center;
+  }
+  .foot-left {
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+  }
+  .foot-links { gap: 14px; }
 }

@@ -16,7 +16,7 @@ export default function Header() {
 
   return (
     <nav className="site" ref={navRef}>
-      <div className="wrap nav-inner">
+      <div className="nav-inner">
         <Link to="/" className="brand">
           <span className="brand-mark"><span>R</span></span>
           <span>Reko</span>
