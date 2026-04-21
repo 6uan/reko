@@ -30,7 +30,7 @@ function Home() {
           </p>
 
           <div className="flex gap-2.5 mt-8 flex-wrap max-sm:[&_.btn]:flex-1">
-            <a href="#" className="btn btn-primary">
+            <a href="/auth/strava" className="btn btn-primary">
               <span className="strava-dot" />
               Connect with Strava
             </a>

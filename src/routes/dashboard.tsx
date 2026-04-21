@@ -1,0 +1,273 @@
+import { useState } from 'react'
+import { createFileRoute, redirect, Link } from '@tanstack/react-router'
+import { createServerFn } from '@tanstack/react-start'
+import {
+  getSession as frameworkGetSession,
+  updateSession as frameworkUpdateSession,
+} from '@tanstack/react-start/server'
+import { sessionConfig, type SessionData } from '../lib/session'
+import {
+  fetchAthleteActivities,
+  refreshAccessToken,
+} from '../lib/strava'
+import {
+  LayoutDashboard,
+  List,
+  Gauge,
+  Heart,
+  Footprints,
+  Trophy,
+} from 'lucide-react'
+
+import Overview from '../components/dashboard/Overview'
+import Activities from '../components/dashboard/Activities'
+import Pace from '../components/dashboard/Pace'
+import HeartRate from '../components/dashboard/HeartRate'
+import Cadence from '../components/dashboard/Cadence'
+import Records from '../components/dashboard/Records'
+
+// ── Types ──────────────────────────────────────────────────────────
+
+export type DashboardRun = {
+  id: number
+  name: string
+  date: string
+  distanceMeters: number
+  movingTime: number
+  avgSpeed: number
+  avgHr: number | null
+  maxHr: number | null
+  cadence: number | null
+  elevation: number
+  prCount: number
+}
+
+// ── Data loading ───────────────────────────────────────────────────
+
+const loadDashboardData = createServerFn({ method: 'GET' }).handler(
+  async () => {
+    // 1. Read session
+    const session = await frameworkGetSession<SessionData>(sessionConfig)
+    const d = session.data
+    if (!d.accessToken || !d.athleteId) throw redirect({ to: '/' })
+
+    // 2. Refresh token if expired (5 min buffer)
+    let accessToken = d.accessToken
+    const now = Math.floor(Date.now() / 1000)
+    if (d.expiresAt && d.expiresAt < now + 300) {
+      const refreshed = await refreshAccessToken(d.refreshToken!)
+      await frameworkUpdateSession<SessionData>(sessionConfig, {
+        ...d,
+        accessToken: refreshed.access_token,
+        refreshToken: refreshed.refresh_token,
+        expiresAt: refreshed.expires_at,
+      } as SessionData)
+      accessToken = refreshed.access_token
+    }
+
+    // 3. Fetch activities (last 200)
+    const allActivities = await fetchAthleteActivities(accessToken, {
+      per_page: 200,
+    })
+
+    // 4. Filter to runs, shape for dashboard
+    const runs: DashboardRun[] = allActivities
+      .filter((a) => a.type === 'Run' || a.sport_type === 'Run')
+      .map((a) => ({
+        id: a.id,
+        name: a.name,
+        date: a.start_date_local,
+        distanceMeters: a.distance,
+        movingTime: a.moving_time,
+        avgSpeed: a.average_speed,
+        avgHr: a.average_heartrate ?? null,
+        maxHr: a.max_heartrate ?? null,
+        cadence: a.average_cadence ? Math.round(a.average_cadence * 2) : null,
+        elevation: a.total_elevation_gain,
+        prCount: a.pr_count,
+      }))
+
+    return {
+      runs,
+      athlete: {
+        firstname: d.firstname!,
+        lastname: d.lastname!,
+        profile: d.profile!,
+      },
+    }
+  },
+)
+
+// ── Route ──────────────────────────────────────────────────────────
+
+export const Route = createFileRoute('/dashboard')({
+  beforeLoad: async ({ context }) => {
+    if (!context.session) throw redirect({ to: '/' })
+  },
+  loader: () => loadDashboardData(),
+  component: Dashboard,
+})
+
+// ── Tab definitions ────────────────────────────────────────────────
+
+type TabId = 'overview' | 'activities' | 'pace' | 'heart' | 'cadence' | 'records'
+
+const TABS: { id: TabId; icon: typeof LayoutDashboard; label: string }[] = [
+  { id: 'overview', icon: LayoutDashboard, label: 'Overview' },
+  { id: 'activities', icon: List, label: 'Activities' },
+  { id: 'pace', icon: Gauge, label: 'Pace' },
+  { id: 'heart', icon: Heart, label: 'Heart rate' },
+  { id: 'cadence', icon: Footprints, label: 'Cadence' },
+  { id: 'records', icon: Trophy, label: 'Personal records' },
+]
+
+// ── Dashboard component ────────────────────────────────────────────
+
+function Dashboard() {
+  const { runs, athlete } = Route.useLoaderData()
+  const [tab, setTab] = useState<TabId>('overview')
+  const [unit, setUnit] = useState<'km' | 'mi'>(() => {
+    if (typeof window !== 'undefined') {
+      return (localStorage.getItem('reko-unit') as 'km' | 'mi') || 'km'
+    }
+    return 'km'
+  })
+
+  const toggleUnit = (u: 'km' | 'mi') => {
+    setUnit(u)
+    if (typeof window !== 'undefined') localStorage.setItem('reko-unit', u)
+  }
+
+  const activeTab = TABS.find((t) => t.id === tab)!
+
+  return (
+    <div className="min-h-screen bg-[var(--bg)]">
+      {/* Sidebar */}
+      <aside className="fixed left-0 top-0 bottom-0 w-[240px] bg-[var(--bg-2)] border-r border-[var(--line)] flex flex-col z-40 max-lg:hidden">
+        {/* Brand */}
+        <div className="px-5 py-5">
+          <Link
+            to="/"
+            className="inline-flex items-center gap-2.5 no-underline"
+          >
+            <span className="brand-mark">
+              <span>R</span>
+            </span>
+            <span className="font-semibold text-xl tracking-tight text-[var(--ink)]">
+              Reko
+            </span>
+          </Link>
+        </div>
+
+        {/* Nav */}
+        <nav className="flex-1 px-3.5 mt-1">
+          <p className="px-2.5 mb-2 font-mono text-[10px] uppercase tracking-[0.1em] text-[var(--ink-4)]">
+            Training
+          </p>
+          <div className="flex flex-col gap-0.5">
+            {TABS.map(({ id, icon: Icon, label }) => (
+              <button
+                key={id}
+                onClick={() => setTab(id)}
+                className={`w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-[13px] transition-colors cursor-pointer ${
+                  tab === id
+                    ? 'bg-[var(--card)] text-[var(--ink)] font-medium shadow-[0_1px_2px_rgba(0,0,0,0.04)] border border-[var(--line)]'
+                    : 'text-[var(--ink-2)] hover:bg-[rgba(0,0,0,0.04)] hover:text-[var(--ink)] border border-transparent'
+                }`}
+              >
+                <Icon
+                  size={14}
+                  className={
+                    tab === id ? 'text-[var(--accent)]' : 'opacity-80'
+                  }
+                />
+                {label}
+              </button>
+            ))}
+          </div>
+        </nav>
+
+        {/* Profile */}
+        <Link
+          to="/profile"
+          className="flex items-center gap-2.5 mx-3.5 mb-3.5 px-3 py-2.5 border border-[var(--line)] rounded-[10px] bg-[var(--card)] no-underline hover:bg-[var(--card-2)] transition-colors"
+        >
+          <img
+            src={athlete.profile}
+            alt={athlete.firstname}
+            className="w-8 h-8 rounded-full"
+          />
+          <div>
+            <div className="text-[13px] font-medium text-[var(--ink)]">
+              {athlete.firstname} {athlete.lastname}
+            </div>
+            <div className="font-mono text-[10px] text-[var(--ink-4)]">
+              {runs.length} runs loaded
+            </div>
+          </div>
+        </Link>
+      </aside>
+
+      {/* Main content */}
+      <main className="lg:ml-[240px]">
+        {/* Topbar */}
+        <div className="sticky top-0 z-30 bg-[var(--bg)]/80 backdrop-blur-xl border-b border-[var(--line)] px-7 py-3.5 flex items-center justify-between">
+          <div className="font-mono text-[12px] text-[var(--ink-3)]">
+            <strong className="text-[var(--ink)] font-medium">
+              {activeTab.label}
+            </strong>
+          </div>
+          <div className="flex items-center gap-2.5">
+            <div className="flex items-center gap-1.5 px-2.5 py-1.5 bg-[var(--card)] border border-[var(--line)] rounded-lg font-mono text-[12px] text-[var(--ink-3)]">
+              <svg
+                width="11"
+                height="11"
+                viewBox="0 0 16 16"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.5"
+              >
+                <circle cx="7" cy="7" r="4.5" />
+                <path d="M10.5 10.5L14 14" />
+              </svg>
+              Search runs
+              <span className="text-[var(--ink-4)] ml-1.5">⌘K</span>
+            </div>
+            <div className="inline-flex p-[3px] bg-[var(--card-2)] border border-[var(--line)] rounded-[9px] font-mono text-[11px] font-medium">
+              <button
+                onClick={() => toggleUnit('km')}
+                className={`px-2.5 py-[5px] rounded-[6px] cursor-pointer transition-colors ${
+                  unit === 'km'
+                    ? 'bg-[var(--ink)] text-[var(--bg)]'
+                    : 'text-[var(--ink-3)] bg-transparent'
+                }`}
+              >
+                km
+              </button>
+              <button
+                onClick={() => toggleUnit('mi')}
+                className={`px-2.5 py-[5px] rounded-[6px] cursor-pointer transition-colors ${
+                  unit === 'mi'
+                    ? 'bg-[var(--ink)] text-[var(--bg)]'
+                    : 'text-[var(--ink-3)] bg-transparent'
+                }`}
+              >
+                mi
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Tab content */}
+        <div className="p-7 flex flex-col gap-6 min-w-0">
+          {tab === 'overview' && <Overview runs={runs} unit={unit} />}
+          {tab === 'activities' && <Activities runs={runs} unit={unit} />}
+          {tab === 'pace' && <Pace runs={runs} unit={unit} />}
+          {tab === 'heart' && <HeartRate runs={runs} unit={unit} />}
+          {tab === 'cadence' && <Cadence runs={runs} unit={unit} />}
+          {tab === 'records' && <Records runs={runs} unit={unit} />}
+        </div>
+      </main>
+    </div>
+  )
+}

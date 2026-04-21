@@ -1,0 +1,444 @@
+import { useMemo } from 'react'
+import {
+  formatPace,
+  getMonday,
+} from '../../lib/strava'
+
+// ── Types ─────────────────────────────────────────────────────────
+
+export type DashboardRun = {
+  id: number
+  name: string
+  date: string
+  distanceMeters: number
+  movingTime: number
+  avgSpeed: number
+  avgHr: number | null
+  maxHr: number | null
+  cadence: number | null
+  elevation: number
+  prCount: number
+}
+
+type Props = { runs: DashboardRun[]; unit: 'km' | 'mi' }
+
+// ── Helpers ───────────────────────────────────────────────────────
+
+function distInUnit(meters: number, unit: 'km' | 'mi') {
+  return unit === 'mi' ? meters / 1609.34 : meters / 1000
+}
+
+function paceForRun(run: DashboardRun, unit: 'km' | 'mi') {
+  const d = distInUnit(run.distanceMeters, unit)
+  return d > 0 ? run.movingTime / d : 0
+}
+
+function avg(nums: number[]) {
+  return nums.length ? nums.reduce((a, b) => a + b, 0) / nums.length : 0
+}
+
+// ── Mock PR data ──────────────────────────────────────────────────
+
+const MOCK_PRS = [
+  {
+    distance: '1K',
+    bestTime: '3:42',
+    pace: '3:42',
+    setOn: '2025-11-14',
+    activity: 'Morning interval session',
+    previous: '3:48',
+    delta: '-6s',
+  },
+  {
+    distance: '5K',
+    bestTime: '21:05',
+    pace: '4:13',
+    setOn: '2025-10-22',
+    activity: 'Parkrun PB attempt',
+    previous: '21:32',
+    delta: '-27s',
+  },
+  {
+    distance: '10K',
+    bestTime: '44:18',
+    pace: '4:26',
+    setOn: '2025-09-08',
+    activity: 'Sunday long run',
+    previous: '45:01',
+    delta: '-43s',
+  },
+  {
+    distance: 'Half marathon',
+    bestTime: '1:38:22',
+    pace: '4:40',
+    setOn: '2025-06-15',
+    activity: 'City half marathon',
+    previous: '1:41:05',
+    delta: '-2:43',
+  },
+  {
+    distance: 'Marathon',
+    bestTime: '3:32:11',
+    pace: '5:02',
+    setOn: '2025-03-02',
+    activity: 'Spring marathon',
+    previous: '3:38:44',
+    delta: '-6:33',
+  },
+]
+
+// ── Component ─────────────────────────────────────────────────────
+
+export default function Pace({ runs, unit }: Props) {
+  const unitLabel = unit === 'mi' ? '/mi' : '/km'
+
+  // ── KPI calculations ────────────────────────────────────────────
+
+  const paces = useMemo(() => runs.map((r) => paceForRun(r, unit)), [runs, unit])
+
+  const now = new Date()
+  const thisMonthRuns = useMemo(
+    () =>
+      runs.filter((r) => {
+        const d = new Date(r.date)
+        return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear()
+      }),
+    [runs],
+  )
+
+  const currentAvgPace = useMemo(() => {
+    const mp = thisMonthRuns.map((r) => paceForRun(r, unit)).filter((p) => p > 0)
+    return avg(mp)
+  }, [thisMonthRuns, unit])
+
+  const fastestPace = useMemo(() => {
+    const valid = paces.filter((p) => p > 0)
+    return valid.length ? Math.min(...valid) : 0
+  }, [paces])
+
+  const easyAvg = useMemo(() => {
+    const easy = runs
+      .filter((r) => r.avgHr !== null && r.avgHr < 150)
+      .map((r) => paceForRun(r, unit))
+      .filter((p) => p > 0)
+    return avg(easy)
+  }, [runs, unit])
+
+  const tempoAvg = useMemo(() => {
+    const tempo = runs
+      .filter((r) => r.avgHr !== null && r.avgHr >= 155)
+      .map((r) => paceForRun(r, unit))
+      .filter((p) => p > 0)
+    return avg(tempo)
+  }, [runs, unit])
+
+  // ── Histogram bins ──────────────────────────────────────────────
+
+  const histogram = useMemo(() => {
+    const valid = paces.filter((p) => p > 0)
+    if (!valid.length) return { bins: [] as number[], min: 0, max: 0, maxCount: 0 }
+    const min = Math.min(...valid)
+    const max = Math.max(...valid)
+    const binCount = 10
+    const binSize = (max - min) / binCount || 1
+    const bins = Array(binCount).fill(0) as number[]
+    valid.forEach((p) => {
+      const idx = Math.min(Math.floor((p - min) / binSize), binCount - 1)
+      bins[idx]++
+    })
+    return { bins, min, max, maxCount: Math.max(...bins) }
+  }, [paces])
+
+  // ── 90-day trend (weekly buckets) ───────────────────────────────
+
+  const trendData = useMemo(() => {
+    const cutoff = new Date()
+    cutoff.setDate(cutoff.getDate() - 90)
+    const recent = runs.filter((r) => new Date(r.date) >= cutoff)
+
+    const buckets = new Map<string, number[]>()
+    recent.forEach((r) => {
+      const mon = getMonday(new Date(r.date))
+      const key = mon.toISOString().slice(0, 10)
+      const p = paceForRun(r, unit)
+      if (p > 0) {
+        if (!buckets.has(key)) buckets.set(key, [])
+        buckets.get(key)!.push(p)
+      }
+    })
+
+    const sorted = [...buckets.entries()]
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([week, vals]) => ({ week, avg: avg(vals) }))
+
+    return sorted
+  }, [runs, unit])
+
+  // ── Render ──────────────────────────────────────────────────────
+
+  return (
+    <div className="space-y-4">
+      {/* KPI row */}
+      <div className="grid grid-cols-4 gap-4">
+        <KpiCard
+          label="Current avg"
+          value={formatPace(currentAvgPace)}
+          unit={unitLabel}
+          detail={`${thisMonthRuns.length} runs this month`}
+        />
+        <KpiCard
+          label="Fastest ever"
+          value={formatPace(fastestPace)}
+          unit={unitLabel}
+          detail="All-time best"
+        />
+        <KpiCard
+          label="Easy avg"
+          value={formatPace(easyAvg)}
+          unit={unitLabel}
+          detail="Avg HR < 150 bpm"
+        />
+        <KpiCard
+          label="Tempo avg"
+          value={formatPace(tempoAvg)}
+          unit={unitLabel}
+          detail="Avg HR ≥ 155 bpm"
+        />
+      </div>
+
+      {/* Charts */}
+      <div className="grid grid-cols-2 gap-4">
+        {/* Histogram */}
+        <div className="bg-[var(--card)] border border-[var(--line)] rounded-[14px] p-[18px]">
+          <div className="flex justify-between items-baseline mb-3">
+            <h3 className="text-[15px] font-medium">Pace distribution · all runs</h3>
+            <span className="font-mono text-[11px] text-[var(--ink-3)]">
+              {runs.length} runs
+            </span>
+          </div>
+          <HistogramChart
+            bins={histogram.bins}
+            minPace={histogram.min}
+            maxPace={histogram.max}
+            maxCount={histogram.maxCount}
+          />
+        </div>
+
+        {/* Trend line */}
+        <div className="bg-[var(--card)] border border-[var(--line)] rounded-[14px] p-[18px]">
+          <div className="flex justify-between items-baseline mb-3">
+            <h3 className="text-[15px] font-medium">Avg pace · 90d trend</h3>
+            <span className="font-mono text-[11px] text-[var(--ink-3)]">
+              {trendData.length} weeks
+            </span>
+          </div>
+          <TrendChart data={trendData} />
+        </div>
+      </div>
+
+      {/* PR Table */}
+      <div className="bg-[var(--card)] border border-[var(--line)] rounded-[14px] overflow-hidden p-0">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="bg-[var(--card-2)]">
+              {['Distance', 'Best time', 'Pace', 'Set on', 'Activity', 'Previous', 'Δ'].map(
+                (h) => (
+                  <th
+                    key={h}
+                    className="font-mono text-[10px] uppercase tracking-widest text-[var(--ink-4)] px-3 py-2.5 text-left font-medium"
+                  >
+                    {h}
+                  </th>
+                ),
+              )}
+            </tr>
+          </thead>
+          <tbody>
+            {MOCK_PRS.map((pr) => (
+              <tr key={pr.distance}>
+                <td className="px-3 py-3 border-b border-[var(--line-2)] font-medium text-[var(--ink)]">
+                  {pr.distance}
+                </td>
+                <td className="px-3 py-3 border-b border-[var(--line-2)] font-mono tabular-nums">
+                  {pr.bestTime}
+                </td>
+                <td className="px-3 py-3 border-b border-[var(--line-2)] font-mono tabular-nums">
+                  {pr.pace}
+                  <span className="text-[var(--ink-3)] text-xs ml-0.5">{unitLabel}</span>
+                </td>
+                <td className="px-3 py-3 border-b border-[var(--line-2)] font-mono tabular-nums text-[var(--ink-3)]">
+                  {pr.setOn}
+                </td>
+                <td className="px-3 py-3 border-b border-[var(--line-2)] text-[var(--ink-3)]">
+                  {pr.activity}
+                </td>
+                <td className="px-3 py-3 border-b border-[var(--line-2)] font-mono tabular-nums text-[var(--ink-3)]">
+                  {pr.previous}
+                </td>
+                <td className="px-3 py-3 border-b border-[var(--line-2)] font-mono tabular-nums text-[var(--ok)]">
+                  {pr.delta}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        <p className="px-3 py-2 text-[11px] text-[var(--ink-4)] font-mono">
+          Note: placeholder values — real PR data requires the detailed activity endpoint.
+        </p>
+      </div>
+    </div>
+  )
+}
+
+// ── Sub-components ────────────────────────────────────────────────
+
+function KpiCard({
+  label,
+  value,
+  unit,
+  detail,
+}: {
+  label: string
+  value: string
+  unit: string
+  detail: string
+}) {
+  return (
+    <div className="bg-[var(--card)] border border-[var(--line)] rounded-[14px] p-4">
+      <div className="font-mono text-[10px] uppercase tracking-widest text-[var(--ink-4)]">
+        {label}
+      </div>
+      <div className="font-mono text-[26px] font-medium tracking-tight tabular-nums mt-1.5">
+        {value}
+        <span className="text-[13px] text-[var(--ink-3)] ml-0.5 font-normal">{unit}</span>
+      </div>
+      <div className="font-mono text-[11px] mt-1.5 text-[var(--ink-3)]">{detail}</div>
+    </div>
+  )
+}
+
+function HistogramChart({
+  bins,
+  minPace,
+  maxPace,
+  maxCount,
+}: {
+  bins: number[]
+  minPace: number
+  maxPace: number
+  maxCount: number
+}) {
+  if (!bins.length) {
+    return (
+      <svg viewBox="0 0 560 180" className="w-full">
+        <text x="280" y="100" textAnchor="middle" fill="var(--ink-4)" fontSize="12">
+          No data
+        </text>
+      </svg>
+    )
+  }
+
+  const barW = 46
+  const gap = 8
+  const totalW = bins.length * barW + (bins.length - 1) * gap
+  const offsetX = (560 - totalW) / 2
+  const chartH = 130
+  const topPad = 20
+
+  return (
+    <svg viewBox="0 0 560 180" className="w-full">
+      {bins.map((count, i) => {
+        const x = offsetX + i * (barW + gap)
+        const barH = maxCount > 0 ? (count / maxCount) * chartH : 0
+        const y = topPad + chartH - barH
+        const isTallest = count === maxCount && count > 0
+        return (
+          <g key={i}>
+            <rect
+              x={x}
+              y={y}
+              width={barW}
+              height={barH}
+              rx={4}
+              fill={isTallest ? 'var(--accent)' : '#d6cfbc'}
+            />
+            {count > 0 && (
+              <text
+                x={x + barW / 2}
+                y={y - 5}
+                textAnchor="middle"
+                fontSize="10"
+                fontFamily="var(--font-mono)"
+                fill="var(--ink-3)"
+              >
+                {count}
+              </text>
+            )}
+          </g>
+        )
+      })}
+      {/* Min / max pace labels */}
+      <text
+        x={offsetX}
+        y={topPad + chartH + 18}
+        fontSize="10"
+        fontFamily="var(--font-mono)"
+        fill="var(--ink-4)"
+      >
+        {formatPace(minPace)}
+      </text>
+      <text
+        x={offsetX + totalW}
+        y={topPad + chartH + 18}
+        textAnchor="end"
+        fontSize="10"
+        fontFamily="var(--font-mono)"
+        fill="var(--ink-4)"
+      >
+        {formatPace(maxPace)}
+      </text>
+    </svg>
+  )
+}
+
+function TrendChart({ data }: { data: { week: string; avg: number }[] }) {
+  if (!data.length) {
+    return (
+      <svg viewBox="0 0 560 180" className="w-full">
+        <text x="280" y="100" textAnchor="middle" fill="var(--ink-4)" fontSize="12">
+          No data
+        </text>
+      </svg>
+    )
+  }
+
+  const padL = 10
+  const padR = 10
+  const padT = 10
+  const padB = 10
+  const chartW = 560 - padL - padR
+  const chartH = 180 - padT - padB
+
+  const values = data.map((d) => d.avg)
+  const minV = Math.min(...values) * 0.97
+  const maxV = Math.max(...values) * 1.03
+
+  const points = data.map((d, i) => {
+    const x = padL + (data.length === 1 ? chartW / 2 : (i / (data.length - 1)) * chartW)
+    const y = padT + chartH - ((d.avg - minV) / (maxV - minV)) * chartH
+    return { x, y }
+  })
+
+  const lineD = points.map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x},${p.y}`).join(' ')
+  const areaD = `${lineD} L${points[points.length - 1].x},${padT + chartH} L${points[0].x},${padT + chartH} Z`
+
+  return (
+    <svg viewBox="0 0 560 180" className="w-full">
+      <path d={areaD} fill="var(--accent)" opacity={0.12} />
+      <path d={lineD} fill="none" stroke="var(--accent)" strokeWidth={2} strokeLinejoin="round" />
+      {points.map((p, i) => (
+        <circle key={i} cx={p.x} cy={p.y} r={3} fill="var(--accent)" />
+      ))}
+    </svg>
+  )
+}

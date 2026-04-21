@@ -3,13 +3,17 @@
 @plugin "@tailwindcss/typography";
 
 @theme {
-  --font-sans: 'Geist', ui-sans-serif, system-ui, -apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
-  --font-mono: 'Geist Mono', ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --font-sans:
+    "Geist", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Helvetica,
+    Arial, sans-serif;
+  --font-mono:
+    "Geist Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
 }
 
 /* ─── Light mode (default) ─── */
 :root {
   --bg: #f6f3ec;
+  --bg-2: #fbf9f4;
   --bg-elev: #fbf9f4;
   --ink: #141414;
   --ink-2: #3a3a38;
@@ -23,23 +27,39 @@
   --accent-ink: #ffffff;
   --accent-soft: #fde8dc;
   --accent-glow: 239 78 26;
+  --ok: #3f8a3a;
+  --hr-1: #6ac6dc;
+  --hr-2: #7dce72;
+  --hr-3: #f3c64a;
+  --hr-4: #ef8944;
+  --hr-5: #d94b3b;
   --gold: #c99a3a;
   --gold-soft: #f4e7c9;
   --radius-s: 8px;
   --radius-m: 14px;
   --radius-l: 20px;
   --radius-xl: 28px;
-  --shadow-s: 0 1px 0 rgba(20,20,20,.04), 0 1px 2px rgba(20,20,20,.04);
-  --shadow-m: 0 1px 0 rgba(20,20,20,.03), 0 2px 6px rgba(20,20,20,.05), 0 12px 28px -12px rgba(20,20,20,.12);
-  --shadow-l: 0 2px 4px rgba(20,20,20,.04), 0 12px 32px -8px rgba(20,20,20,.12), 0 32px 64px -24px rgba(20,20,20,.18);
-  --shadow-xl: 0 4px 8px rgba(20,20,20,.05), 0 24px 60px -16px rgba(20,20,20,.16), 0 60px 120px -40px rgba(20,20,20,.22);
-  --font-sans: 'Geist', ui-sans-serif, system-ui, -apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
-  --font-mono: 'Geist Mono', ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --shadow-s: 0 1px 0 rgba(20, 20, 20, 0.04), 0 1px 2px rgba(20, 20, 20, 0.04);
+  --shadow-m:
+    0 1px 0 rgba(20, 20, 20, 0.03), 0 2px 6px rgba(20, 20, 20, 0.05),
+    0 12px 28px -12px rgba(20, 20, 20, 0.12);
+  --shadow-l:
+    0 2px 4px rgba(20, 20, 20, 0.04), 0 12px 32px -8px rgba(20, 20, 20, 0.12),
+    0 32px 64px -24px rgba(20, 20, 20, 0.18);
+  --shadow-xl:
+    0 4px 8px rgba(20, 20, 20, 0.05), 0 24px 60px -16px rgba(20, 20, 20, 0.16),
+    0 60px 120px -40px rgba(20, 20, 20, 0.22);
+  --font-sans:
+    "Geist", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Helvetica,
+    Arial, sans-serif;
+  --font-mono:
+    "Geist Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
 }
 
 /* ─── Dark mode: explicit class ─── */
 :root.dark {
   --bg: #0f0f0e;
+  --bg-2: #1a1917;
   --bg-elev: #1a1917;
   --ink: #e8e5dc;
   --ink-2: #c5c2b8;
@@ -53,12 +73,19 @@
   --accent-ink: #ffffff;
   --accent-soft: #3d1f10;
   --accent-glow: 255 107 61;
+  --ok: #5aad55;
+  --hr-1: #6ac6dc;
+  --hr-2: #7dce72;
+  --hr-3: #f3c64a;
+  --hr-4: #ef8944;
+  --hr-5: #d94b3b;
 }
 
 /* ─── Dark mode: system preference (when no explicit class) ─── */
 @media (prefers-color-scheme: dark) {
   :root:not(.light) {
     --bg: #0f0f0e;
+    --bg-2: #1a1917;
     --bg-elev: #1a1917;
     --ink: #e8e5dc;
     --ink-2: #c5c2b8;
@@ -72,6 +99,12 @@
     --accent-ink: #ffffff;
     --accent-soft: #3d1f10;
     --accent-glow: 255 107 61;
+    --ok: #5aad55;
+    --hr-1: #6ac6dc;
+    --hr-2: #7dce72;
+    --hr-3: #f3c64a;
+    --hr-4: #ef8944;
+    --hr-5: #d94b3b;
   }
 }
 
@@ -100,7 +133,7 @@ body {
   letter-spacing: -0.005em;
   line-height: 1.5;
   overflow-x: hidden;
-  font-feature-settings: 'ss01', 'ss02', 'cv11';
+  font-feature-settings: "ss01", "ss02", "cv11";
 }
 
 @layer base {
@@ -114,6 +147,10 @@ body {
   a:hover {
     color: color-mix(in oklab, var(--accent) 80%, var(--ink) 20%);
   }
+}
+
+@utility boop {
+  @apply border-2 border-red-500;
 }
 
 code {
@@ -147,7 +184,9 @@ pre code {
 .fade-in {
   opacity: 0;
   transform: translateY(12px);
-  transition: opacity 600ms ease, transform 600ms ease;
+  transition:
+    opacity 600ms ease,
+    transform 600ms ease;
 }
 
 .fade-in.in {
@@ -157,74 +196,119 @@ pre code {
 
 button,
 a {
-  transition: background-color 180ms ease, color 180ms ease, border-color 180ms ease,
+  transition:
+    background-color 180ms ease,
+    color 180ms ease,
+    border-color 180ms ease,
     transform 180ms ease;
 }
 
 /* ─── Buttons ─── */
 .btn {
-  display: inline-flex; align-items: center; justify-content: center; gap: 9px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
   padding: 11px 18px;
   font-family: var(--font-sans);
-  font-size: 14px; font-weight: 500;
+  font-size: 14px;
+  font-weight: 500;
   letter-spacing: -0.005em;
   border-radius: 12px;
   text-decoration: none;
   cursor: pointer;
   border: 1px solid transparent;
-  transition: transform 150ms ease, background 150ms ease, box-shadow 200ms ease, border-color 150ms ease, color 150ms ease;
+  transition:
+    transform 150ms ease,
+    background 150ms ease,
+    box-shadow 200ms ease,
+    border-color 150ms ease,
+    color 150ms ease;
   white-space: nowrap;
 }
 .btn-primary {
-  background: var(--accent); color: var(--accent-ink);
+  background: var(--accent);
+  color: var(--accent-ink);
   box-shadow:
-    0 1px 0 rgba(255,255,255,.2) inset,
-    0 -1px 0 rgba(0,0,0,.1) inset,
-    0 6px 14px -4px rgba(var(--accent-glow), .4),
-    0 2px 4px rgba(20,20,20,.08);
+    0 1px 0 rgba(255, 255, 255, 0.2) inset,
+    0 -1px 0 rgba(0, 0, 0, 0.1) inset,
+    0 6px 14px -4px rgba(var(--accent-glow), 0.4),
+    0 2px 4px rgba(20, 20, 20, 0.08);
 }
 .btn-primary:hover {
   transform: translateY(-1px);
   box-shadow:
-    0 1px 0 rgba(255,255,255,.2) inset,
-    0 -1px 0 rgba(0,0,0,.1) inset,
-    0 12px 22px -6px rgba(var(--accent-glow), .45),
-    0 4px 8px rgba(20,20,20,.1);
+    0 1px 0 rgba(255, 255, 255, 0.2) inset,
+    0 -1px 0 rgba(0, 0, 0, 0.1) inset,
+    0 12px 22px -6px rgba(var(--accent-glow), 0.45),
+    0 4px 8px rgba(20, 20, 20, 0.1);
 }
 .btn-ghost {
-  background: transparent; color: var(--ink);
-  border-color: rgba(20,20,20,.12);
+  background: transparent;
+  color: var(--ink);
+  border-color: rgba(20, 20, 20, 0.12);
 }
-.btn-ghost:hover { background: rgba(20,20,20,.04); border-color: rgba(20,20,20,.2); }
-.btn-sm { padding: 8px 13px; font-size: 13px; border-radius: 10px; }
+.btn-ghost:hover {
+  background: rgba(20, 20, 20, 0.04);
+  border-color: rgba(20, 20, 20, 0.2);
+}
+.btn-sm {
+  padding: 8px 13px;
+  font-size: 13px;
+  border-radius: 10px;
+}
 
 /* ─── Pseudo-element components (can't be done with Tailwind) ─── */
 .strava-dot {
-  width: 16px; height: 16px; border-radius: 50%;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
   background: #fc4c02;
-  display: inline-block; position: relative; flex-shrink: 0;
+  display: inline-block;
+  position: relative;
+  flex-shrink: 0;
 }
 .strava-dot::after {
-  content: ""; position: absolute; inset: 3px;
+  content: "";
+  position: absolute;
+  inset: 3px;
   border-radius: 50%;
-  background: radial-gradient(circle at 30% 30%, rgba(255,255,255,.55), transparent 60%);
+  background: radial-gradient(
+    circle at 30% 30%,
+    rgba(255, 255, 255, 0.55),
+    transparent 60%
+  );
 }
 
 .brand-mark {
-  width: 26px; height: 26px; border-radius: 8px;
-  background: var(--ink); color: var(--bg);
-  display: grid; place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 8px;
+  background: var(--ink);
+  color: var(--bg);
+  display: grid;
+  place-items: center;
   font-family: var(--font-mono);
-  font-size: 13px; font-weight: 600;
+  font-size: 13px;
+  font-weight: 600;
   position: relative;
   overflow: hidden;
 }
 .brand-mark::after {
-  content: ""; position: absolute; inset: 0;
-  background: radial-gradient(circle at 30% 20%, rgba(var(--accent-glow), .85), transparent 55%);
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    circle at 30% 20%,
+    rgba(var(--accent-glow), 0.85),
+    transparent 55%
+  );
   mix-blend-mode: screen;
 }
-.brand-mark span { position: relative; z-index: 1; }
+.brand-mark span {
+  position: relative;
+  z-index: 1;
+}
 
 /* ─── Site Nav (JS-toggled class) ─── */
 nav.site.scrolled {
@@ -240,43 +324,71 @@ nav.site.scrolled {
 }
 
 /* ─── Dark mode overrides (root class selector — can't do with Tailwind) ─── */
-:root.dark .site-nav-link:hover { background: rgba(255,255,255,.08); }
-:root.dark .btn-ghost { border-color: rgba(255,255,255,.15); color: var(--ink); }
-:root.dark .btn-ghost:hover { background: rgba(255,255,255,.06); border-color: rgba(255,255,255,.25); }
+:root.dark .site-nav-link:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+:root.dark .btn-ghost {
+  border-color: rgba(255, 255, 255, 0.15);
+  color: var(--ink);
+}
+:root.dark .btn-ghost:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.25);
+}
 
 /* ─── Responsive ─── */
 @media (max-width: 640px) {
-  .site-nav-link.hide-m { display: none; }
-  .wrap { padding: 0 18px; }
+  .site-nav-link.hide-m {
+    display: none;
+  }
+  .wrap {
+    padding: 0 18px;
+  }
 }
 
 /* ─── Dashboard Mockup (pseudo-elements & complex effects) ─── */
 .mockup-glow {
   position: absolute;
   inset: -40px -200px auto;
-  top: -40px; height: 640px;
+  top: -40px;
+  height: 640px;
   background:
-    radial-gradient(ellipse at 50% 0%, rgba(var(--accent-glow), .12), transparent 55%),
-    radial-gradient(ellipse at 50% 20%, rgba(20,20,20,.04), transparent 65%);
+    radial-gradient(
+      ellipse at 50% 0%,
+      rgba(var(--accent-glow), 0.12),
+      transparent 55%
+    ),
+    radial-gradient(ellipse at 50% 20%, rgba(20, 20, 20, 0.04), transparent 65%);
   pointer-events: none;
   z-index: 0;
 }
 
 .pb-float-glow::before {
   content: "";
-  position: absolute; inset: 0;
+  position: absolute;
+  inset: 0;
   border-radius: inherit;
-  background: linear-gradient(180deg, rgba(var(--accent-glow), .08), transparent 30%);
+  background: linear-gradient(
+    180deg,
+    rgba(var(--accent-glow), 0.08),
+    transparent 30%
+  );
   pointer-events: none;
 }
 
 .pb-chip::before {
-  content: ""; width: 5px; height: 5px; border-radius: 50%; background: var(--accent);
+  content: "";
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--accent);
 }
 
 /* ─── Terminal cursor blink ─── */
 @keyframes blink {
-  50% { opacity: 0; }
+  50% {
+    opacity: 0;
+  }
 }
 
 .terminal-cursor {
