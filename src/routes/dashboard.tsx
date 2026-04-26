@@ -1,15 +1,13 @@
 import { useState } from 'react'
 import { createFileRoute, redirect, Link } from '@tanstack/react-router'
 import { createServerFn } from '@tanstack/react-start'
-import {
-  getSession as frameworkGetSession,
-  updateSession as frameworkUpdateSession,
-} from '@tanstack/react-start/server'
+import { getSession as frameworkGetSession } from '@tanstack/react-start/server'
+import { and, desc, eq, or } from 'drizzle-orm'
+import { getDb } from '../db/client'
+import { activities, syncLog } from '../db/schema'
 import { sessionConfig, type SessionData } from '../features/auth/session'
-import {
-  fetchAthleteActivities,
-  refreshAccessToken,
-} from '../lib/strava'
+import { backfillActivities } from '../features/sync/backfillActivities'
+import SyncBanner from '../features/sync/SyncBanner'
 import {
   LayoutDashboard,
   List,
@@ -46,53 +44,73 @@ export type DashboardRun = {
 
 const loadDashboardData = createServerFn({ method: 'GET' }).handler(
   async () => {
-    // 1. Read session
     const session = await frameworkGetSession<SessionData>(sessionConfig)
     const d = session.data
-    if (!d.accessToken || !d.athleteId) throw redirect({ to: '/' })
+    if (!d.userId) throw redirect({ to: '/' })
 
-    // 2. Refresh token if expired (5 min buffer)
-    let accessToken = d.accessToken
-    const now = Math.floor(Date.now() / 1000)
-    if (d.expiresAt && d.expiresAt < now + 300) {
-      const refreshed = await refreshAccessToken(d.refreshToken!)
-      await frameworkUpdateSession<SessionData>(sessionConfig, {
-        ...d,
-        accessToken: refreshed.access_token,
-        refreshToken: refreshed.refresh_token,
-        expiresAt: refreshed.expires_at,
-      } as SessionData)
-      accessToken = refreshed.access_token
+    const db = getDb()
+
+    // Read all runs from the DB cache. Filter to Runs only (Strava splits
+    // type/sport_type — match either). Sort newest first.
+    const dbRuns = await db
+      .select()
+      .from(activities)
+      .where(
+        and(
+          eq(activities.userId, d.userId),
+          or(eq(activities.type, 'Run'), eq(activities.sportType, 'Run')),
+        ),
+      )
+      .orderBy(desc(activities.startDate))
+
+    const runs: DashboardRun[] = dbRuns.map((a) => ({
+      id: a.id,
+      name: a.name,
+      // startDateLocal is "YYYY-MM-DD HH:MM:SS" (wall-clock string).
+      // Convert to ISO-style "YYYY-MM-DDTHH:MM:SSZ" so consumers' new Date()
+      // parses consistently across browsers.
+      date: a.startDateLocal.replace(' ', 'T') + 'Z',
+      distanceMeters: a.distance,
+      movingTime: a.movingTime,
+      avgSpeed: a.averageSpeed ?? 0,
+      avgHr: a.averageHeartrate,
+      maxHr: a.maxHeartrate,
+      cadence: a.averageCadence ? Math.round(a.averageCadence * 2) : null,
+      elevation: a.totalElevationGain,
+      prCount: a.prCount,
+    }))
+
+    // First-login backfill: if no runs and no sync currently in flight,
+    // kick one off in the background. Browser sees empty dashboard +
+    // SyncBanner polls until it completes, then invalidates this loader.
+    if (runs.length === 0) {
+      const [activeSync] = await db
+        .select({ id: syncLog.id })
+        .from(syncLog)
+        .where(
+          and(
+            eq(syncLog.userId, d.userId),
+            eq(syncLog.status, 'running'),
+          ),
+        )
+        .limit(1)
+
+      if (!activeSync) {
+        // Fire-and-forget. srvx is long-lived Node — the unawaited
+        // promise continues running after the response is sent.
+        // .catch() prevents unhandled-rejection process crashes.
+        backfillActivities(d.userId).catch((err) => {
+          console.error('[backfill] background failure:', err)
+        })
+      }
     }
-
-    // 3. Fetch activities (last 200)
-    const allActivities = await fetchAthleteActivities(accessToken, {
-      per_page: 200,
-    })
-
-    // 4. Filter to runs, shape for dashboard
-    const runs: DashboardRun[] = allActivities
-      .filter((a) => a.type === 'Run' || a.sport_type === 'Run')
-      .map((a) => ({
-        id: a.id,
-        name: a.name,
-        date: a.start_date_local,
-        distanceMeters: a.distance,
-        movingTime: a.moving_time,
-        avgSpeed: a.average_speed,
-        avgHr: a.average_heartrate ?? null,
-        maxHr: a.max_heartrate ?? null,
-        cadence: a.average_cadence ? Math.round(a.average_cadence * 2) : null,
-        elevation: a.total_elevation_gain,
-        prCount: a.pr_count,
-      }))
 
     return {
       runs,
       athlete: {
-        firstname: d.firstname!,
-        lastname: d.lastname!,
-        profile: d.profile!,
+        firstname: d.firstname,
+        lastname: d.lastname,
+        profile: d.profile,
       },
     }
   },
@@ -210,6 +228,9 @@ function Dashboard() {
 
       {/* Main content */}
       <main className="lg:ml-[240px]">
+        {/* Sync status banner (auto-hides when nothing to show) */}
+        <SyncBanner currentRunCount={runs.length} />
+
         {/* Topbar */}
         <div className="sticky top-0 z-30 bg-[var(--bg)]/80 backdrop-blur-xl border-b border-[var(--line)] px-7 py-3.5 flex items-center justify-between">
           <div className="font-mono text-[12px] text-[var(--ink-3)]">

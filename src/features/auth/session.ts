@@ -7,6 +7,8 @@ import {
 
 // ── Types ──────────────────────────────────────────────────────────
 export type SessionData = {
+  /** Internal users.id — required for DB queries (joins, sync attribution). */
+  userId: number
   accessToken: string
   refreshToken: string
   expiresAt: number
@@ -39,6 +41,7 @@ export const getSession = createServerFn({ method: 'GET' }).handler(
 export const setSession = createServerFn({ method: 'POST' })
   .inputValidator(
     (data: {
+      userId: number
       accessToken: string
       refreshToken: string
       expiresAt: number

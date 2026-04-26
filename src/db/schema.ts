@@ -103,9 +103,15 @@ export const activities = pgTable(
 
     /** UTC timestamp from Strava (`start_date`). */
     startDate: timestamp("start_date", { withTimezone: true }).notNull(),
-    /** Local wall-clock time as the athlete saw it; no tz conversion. */
+    /**
+     * Local wall-clock time as the athlete saw it; no tz conversion.
+     * `mode: 'string'` keeps it as a literal "YYYY-MM-DD HH:MM:SS" — the
+     * default Date deserialization would re-interpret it in the server's
+     * TZ and shift the wall-clock when dev (local TZ) ≠ prod (UTC).
+     */
     startDateLocal: timestamp("start_date_local", {
       withTimezone: false,
+      mode: "string",
     }).notNull(),
 
     averageSpeed: real("average_speed"),
@@ -172,8 +178,10 @@ export const bestEfforts = pgTable(
     distance: real("distance").notNull(), // meters (exact effort distance)
     elapsedTime: integer("elapsed_time").notNull(),
     movingTime: integer("moving_time").notNull(),
+    /** Wall-clock string (see activities.startDateLocal for rationale). */
     startDateLocal: timestamp("start_date_local", {
       withTimezone: false,
+      mode: "string",
     }).notNull(),
     /** Strava's `pr_rank`: 1 = current PR, 2 = 2nd best, null = not a PR. */
     prRank: integer("pr_rank"),

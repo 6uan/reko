@@ -1,16 +1,21 @@
 import { createFileRoute, redirect } from '@tanstack/react-router'
 import { createServerFn } from '@tanstack/react-start'
 import { exchangeCodeForTokens } from '../../lib/strava'
+import { persistAthlete } from '../../features/auth/persistAthlete'
 import { setSession } from '../../features/auth/session'
 
-/** Exchange auth code → tokens → encrypted session cookie */
+/** Exchange auth code → persist user + tokens → encrypted session cookie */
 const handleStravaCallback = createServerFn({ method: 'POST' })
   .inputValidator((data: { code: string }) => data)
   .handler(async ({ data }) => {
     const tokens = await exchangeCodeForTokens(data.code)
 
+    // DB-side persistence first — background workers read from here.
+    const userId = await persistAthlete(tokens)
+
     await setSession({
       data: {
+        userId,
         accessToken: tokens.access_token,
         refreshToken: tokens.refresh_token,
         expiresAt: tokens.expires_at,
