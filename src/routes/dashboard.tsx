@@ -6,7 +6,9 @@ import { and, desc, eq, or } from 'drizzle-orm'
 import { getDb } from '../db/client'
 import { activities, syncLog } from '../db/schema'
 import { sessionConfig, type SessionData } from '../features/auth/session'
-import { backfillActivities } from '../features/sync/backfillActivities'
+import { enqueueBackfill } from '../features/sync/backfillActivities'
+import ResyncButton from '../features/sync/ResyncButton'
+import { Avatar } from '../ui/Avatar'
 import SyncBanner from '../features/sync/SyncBanner'
 import {
   LayoutDashboard,
@@ -80,30 +82,27 @@ const loadDashboardData = createServerFn({ method: 'GET' }).handler(
       prCount: a.prCount,
     }))
 
-    // First-login backfill: if no runs and no sync currently in flight,
-    // kick one off in the background. Browser sees empty dashboard +
-    // SyncBanner polls until it completes, then invalidates this loader.
+    // First-login backfill: if no runs cached, enqueue a sync. The
+    // function handles the "already running" idempotency check itself,
+    // so this is safe to call on every load when runs.length === 0.
+    // Awaited (not fire-and-forget) so the sync_log row is committed
+    // before the response — the SyncBanner's first poll then sees it.
     if (runs.length === 0) {
-      const [activeSync] = await db
-        .select({ id: syncLog.id })
-        .from(syncLog)
-        .where(
-          and(
-            eq(syncLog.userId, d.userId),
-            eq(syncLog.status, 'running'),
-          ),
-        )
-        .limit(1)
-
-      if (!activeSync) {
-        // Fire-and-forget. srvx is long-lived Node — the unawaited
-        // promise continues running after the response is sent.
-        // .catch() prevents unhandled-rejection process crashes.
-        backfillActivities(d.userId).catch((err) => {
-          console.error('[backfill] background failure:', err)
-        })
-      }
+      await enqueueBackfill(d.userId).catch((err) => {
+        console.error('[backfill] enqueue failed:', err)
+      })
     }
+
+    // Most recent sync's finishedAt → seeds the ResyncButton's cooldown
+    // ring on page load so the button is correctly disabled if the user
+    // refreshes within the cooldown window. null when no sync has ever
+    // completed (or current latest is still running).
+    const [latestSync] = await db
+      .select({ finishedAt: syncLog.finishedAt })
+      .from(syncLog)
+      .where(eq(syncLog.userId, d.userId))
+      .orderBy(desc(syncLog.startedAt))
+      .limit(1)
 
     return {
       runs,
@@ -112,6 +111,7 @@ const loadDashboardData = createServerFn({ method: 'GET' }).handler(
         lastname: d.lastname,
         profile: d.profile,
       },
+      lastSyncFinishedAt: latestSync?.finishedAt?.toISOString() ?? null,
     }
   },
 )
@@ -142,7 +142,8 @@ const TABS: { id: TabId; icon: typeof LayoutDashboard; label: string }[] = [
 // ── Dashboard component ────────────────────────────────────────────
 
 function Dashboard() {
-  const { runs, athlete } = Route.useLoaderData()
+  const { runs, athlete, lastSyncFinishedAt: initialFinishedAt } =
+    Route.useLoaderData()
   const [tab, setTab] = useState<TabId>('overview')
   const [unit, setUnit] = useState<'km' | 'mi'>(() => {
     if (typeof window !== 'undefined') {
@@ -150,6 +151,17 @@ function Dashboard() {
     }
     return 'km'
   })
+
+  // Bumped on every Resync click → forces SyncBanner to remount and
+  // restart polling, so it picks up the freshly-enqueued sync_log row.
+  const [syncTriggerKey, setSyncTriggerKey] = useState(0)
+
+  // Drives the ResyncButton's cooldown ring. Seeded from the loader so
+  // it's correct on page load, then updated by SyncBanner's
+  // onSyncCompleted callback whenever a sync finishes in this session.
+  const [lastSyncFinishedAt, setLastSyncFinishedAt] = useState<Date | null>(
+    () => (initialFinishedAt ? new Date(initialFinishedAt) : null),
+  )
 
   const toggleUnit = (u: 'km' | 'mi') => {
     setUnit(u)
@@ -205,31 +217,40 @@ function Dashboard() {
           </div>
         </nav>
 
-        {/* Profile */}
-        <Link
-          to="/profile"
-          className="flex items-center gap-2.5 mx-3.5 mb-3.5 px-3 py-2.5 border border-[var(--line)] rounded-[10px] bg-[var(--card)] no-underline hover:bg-[var(--card-2)] transition-colors"
-        >
-          <img
-            src={athlete.profile}
-            alt={athlete.firstname}
-            className="w-8 h-8 rounded-full"
+        {/* Profile + Resync button (button is a sibling of the link to
+            avoid nesting interactive elements, which is invalid HTML). */}
+        <div className="relative mx-3.5 mb-3.5">
+          <Link
+            to="/profile"
+            className="flex items-center gap-2.5 px-3 py-2.5 border border-[var(--line)] rounded-[10px] bg-[var(--card)] no-underline hover:bg-[var(--card-2)] transition-colors"
+          >
+            <Avatar name={athlete.firstname} size="md" />
+            <div>
+              <div className="text-[13px] font-medium text-[var(--ink)]">
+                {athlete.firstname} {athlete.lastname}
+              </div>
+              <div className="font-mono text-[10px] text-[var(--ink-4)]">
+                {runs.length} runs loaded
+              </div>
+            </div>
+          </Link>
+          <ResyncButton
+            onTriggered={() => setSyncTriggerKey((k) => k + 1)}
+            lastSyncFinishedAt={lastSyncFinishedAt}
           />
-          <div>
-            <div className="text-[13px] font-medium text-[var(--ink)]">
-              {athlete.firstname} {athlete.lastname}
-            </div>
-            <div className="font-mono text-[10px] text-[var(--ink-4)]">
-              {runs.length} runs loaded
-            </div>
-          </div>
-        </Link>
+        </div>
       </aside>
 
       {/* Main content */}
       <main className="lg:ml-[240px]">
-        {/* Sync status banner (auto-hides when nothing to show) */}
-        <SyncBanner currentRunCount={runs.length} />
+        {/* Sync status banner (auto-hides when nothing to show).
+            Keyed by syncTriggerKey so each Resync click remounts it and
+            restarts polling against the new sync_log row. */}
+        <SyncBanner
+          key={syncTriggerKey}
+          currentRunCount={runs.length}
+          onSyncCompleted={(finishedAt) => setLastSyncFinishedAt(finishedAt)}
+        />
 
         {/* Topbar */}
         <div className="sticky top-0 z-30 bg-[var(--bg)]/80 backdrop-blur-xl border-b border-[var(--line)] px-7 py-3.5 flex items-center justify-between">

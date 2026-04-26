@@ -13,26 +13,57 @@ import { getSyncStatus, type SyncStatus } from './getSyncStatus'
 
 const POLL_MS = 2000
 const SUCCESS_TOAST_MS = 4000
+/**
+ * If a sync_log row's startedAt is within this many ms of our mount
+ * time, we treat the resulting success as "ours" (i.e. triggered by the
+ * action that caused this banner instance to mount). Anything older is
+ * a stale completion the user has already seen — no toast, no
+ * cooldown-restart toast.
+ */
+const FRESH_SYNC_WINDOW_MS = 10_000
 
 export default function SyncBanner({
   currentRunCount,
+  onSyncCompleted,
 }: {
   /** runs.length the dashboard loader returned — used to detect "DB has new data we haven't loaded yet". */
   currentRunCount: number
+  /**
+   * Fired when a 'running' sync transitions to 'success' (or when we
+   * mount and find a freshly-completed one). The dashboard uses this to
+   * restart the ResyncButton's cooldown ring.
+   */
+  onSyncCompleted?: (finishedAt: Date) => void
 }) {
   const router = useRouter()
   const [status, setStatus] = useState<SyncStatus | null>(null)
-  const [successCount, setSuccessCount] = useState<number | null>(null)
+  const [successInfo, setSuccessInfo] = useState<{
+    delta: number
+    total: number
+  } | null>(null)
 
-  // Snapshot the count we mounted with — successful backfill = runCount
-  // grew past this baseline.
+  // Snapshot the count we mounted with — delta = current - baseline
+  // tells us whether new runs actually came down or it was a no-op resync.
   const baselineRef = useRef(currentRunCount)
+
+  // Hold the latest onSyncCompleted in a ref so the polling effect can
+  // call it without listing it as a dependency — otherwise the inline
+  // arrow the parent passes would restart polling on every render.
+  const onSyncCompletedRef = useRef(onSyncCompleted)
+  useEffect(() => {
+    onSyncCompletedRef.current = onSyncCompleted
+  })
 
   useEffect(() => {
     let cancelled = false
     let pollTimer: ReturnType<typeof setTimeout> | null = null
     let successHideTimer: ReturnType<typeof setTimeout> | null = null
-    let prevStatus: SyncStatus['status'] | null = null
+    // Mount time is the anchor for "is this sync something the user
+    // just triggered?" — see FRESH_SYNC_WINDOW_MS above.
+    const mountTime = Date.now()
+    // Dedupe per-finishedAt notifications so we don't fire the toast or
+    // re-notify the parent for the same completion across multiple polls.
+    let lastReportedFinishedAt: string | null = null
 
     async function tick() {
       let s: SyncStatus
@@ -47,25 +78,49 @@ export default function SyncBanner({
 
       setStatus(s)
 
-      // Decide whether this is a "fresh completion worth celebrating"
-      const transitionedToSuccess =
-        s.status === 'success' &&
-        (prevStatus === 'running' || s.runCount > baselineRef.current)
-
-      prevStatus = s.status
-
       if (s.status === 'running') {
         pollTimer = setTimeout(tick, POLL_MS)
-      } else if (transitionedToSuccess) {
-        // Refresh the dashboard loader so the new runs appear, then show
-        // the success toast briefly and hide.
+        return
+      }
+
+      // Anything other than 'running' lands here. Check whether the
+      // current sync_log row represents a completion we haven't reported
+      // yet — covers both the slow case (saw 'running' first) and the
+      // fast case (no-op resync that finishes before our first poll).
+      const isNewCompletion =
+        s.status === 'success' &&
+        s.finishedAt !== null &&
+        s.finishedAt !== lastReportedFinishedAt
+
+      if (!isNewCompletion) return
+
+      lastReportedFinishedAt = s.finishedAt
+      const finishedAt = new Date(s.finishedAt!)
+
+      // Always notify the parent so the ResyncButton's cooldown ring is
+      // accurate — even for stale completions it's a no-op state update
+      // since the loader already seeded the same value.
+      onSyncCompletedRef.current?.(finishedAt)
+
+      // "Fresh" = startedAt is close to our mount time, meaning this
+      // sync was kicked off around when we mounted (first-login backfill,
+      // or a Resync click that bumped our key). Stale completions from
+      // before mount don't get the toast or invalidate.
+      const startedAtMs = s.startedAt
+        ? new Date(s.startedAt).getTime()
+        : null
+      const isFreshSync =
+        startedAtMs !== null &&
+        Math.abs(startedAtMs - mountTime) < FRESH_SYNC_WINDOW_MS
+
+      if (isFreshSync) {
         router.invalidate()
-        setSuccessCount(s.runCount)
+        const delta = s.runCount - baselineRef.current
+        setSuccessInfo({ delta, total: s.runCount })
         successHideTimer = setTimeout(() => {
-          if (!cancelled) setSuccessCount(null)
+          if (!cancelled) setSuccessInfo(null)
         }, SUCCESS_TOAST_MS)
       }
-      // 'idle' / stale 'success' / 'error' — no further polling, render handles it
     }
 
     tick()
@@ -94,16 +149,18 @@ export default function SyncBanner({
     )
   }
 
-  if (successCount !== null && successCount > 0) {
+  if (successInfo && successInfo.total > 0) {
+    const { delta, total } = successInfo
+    const isNew = delta > 0
+    const count = isNew ? delta : total
+    const noun = count === 1 ? 'run' : 'runs'
     return (
       <Banner tone="success">
         <Check />
         <span>
-          Imported{' '}
-          <strong className="text-[var(--ink)] font-medium">
-            {successCount}
-          </strong>{' '}
-          runs.
+          {isNew ? 'Imported ' : 'Up to date · '}
+          <strong className="text-[var(--ink)] font-medium">{count}</strong>
+          {isNew ? ` new ${noun}` : ` ${noun}`}
         </span>
       </Banner>
     )

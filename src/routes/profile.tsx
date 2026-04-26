@@ -1,5 +1,6 @@
 import { createFileRoute, redirect, useNavigate } from '@tanstack/react-router'
 import { clearSessionFn } from '../features/auth/session'
+import { Avatar } from '../ui/Avatar'
 
 export const Route = createFileRoute('/profile')({
   beforeLoad: async ({ context }) => {
@@ -32,13 +33,7 @@ function Profile() {
             Strava Connection
           </h2>
           <div className="flex items-center gap-4">
-            {session?.profile && (
-              <img
-                src={session.profile}
-                alt={session.firstname}
-                className="w-14 h-14 rounded-full border-2 border-[var(--line)]"
-              />
-            )}
+            <Avatar name={session?.firstname} size="lg" />
             <div>
               <p className="font-semibold text-[var(--ink)]">
                 {session?.firstname} {session?.lastname}

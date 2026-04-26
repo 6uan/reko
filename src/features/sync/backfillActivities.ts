@@ -1,37 +1,80 @@
 /**
  * Bulk-fetch every activity from Strava for a user and upsert into DB.
  *
- * Idempotent — `ON CONFLICT (id) DO UPDATE` means re-running just
- * refreshes existing rows. Safe to call repeatedly.
+ * Public API:
+ *   enqueueBackfill(userId)
+ *     → inserts a sync_log row synchronously (so polling can observe it
+ *       immediately), then fires the worker fire-and-forget. Returns
+ *       { syncLogId, alreadyRunning } so callers can react.
+ *     → idempotent: if a sync is already 'running' for this user, no
+ *       new row is created and `alreadyRunning: true` is returned.
  *
- * Writes a `sync_log` row to make progress observable (used by the
- * polling banner UX in 1.1.c).
+ * Why split insert + worker:
+ *   The dashboard loader and the resync button both need the sync_log
+ *   row to exist BEFORE they invalidate the route / remount the banner —
+ *   otherwise the banner's first poll races and misses the new sync.
  *
- * Stores ALL activity types, not just runs. Filtering happens at read
- * time so we keep options open for future cross-training tabs.
+ * Idempotent at the data level too — `ON CONFLICT (id) DO UPDATE` means
+ * re-running just refreshes existing rows. Stores ALL activity types,
+ * not just runs (filtering happens at read time).
  */
 
-import { eq, sql } from 'drizzle-orm'
+import { and, desc, eq, isNotNull, sql } from 'drizzle-orm'
 import { getDb } from '../../db/client'
 import { activities, syncLog } from '../../db/schema'
 import { fetchAthleteActivities } from '../../lib/strava'
+import { RESYNC_COOLDOWN_MS } from './constants'
 import { mapStravaActivity } from './mapStravaActivity'
 import { withFreshToken } from './withFreshToken'
 
 const PAGE_SIZE = 200 // Strava's max
 
-export type BackfillResult = {
-  syncLogId: number
-  pagesFetched: number
-  activitiesUpserted: number
+export type EnqueueResult = {
+  /** null when cooledDown short-circuited — no sync_log row was created. */
+  syncLogId: number | null
+  alreadyRunning: boolean
+  /** True when refused because the previous sync finished < cooldown ago. */
+  cooledDown: boolean
 }
 
-export async function backfillActivities(
+/**
+ * Insert a sync_log row + start the worker. Returns as soon as the row
+ * is committed; the worker continues in the background.
+ */
+export async function enqueueBackfill(
   userId: number,
-): Promise<BackfillResult> {
+): Promise<EnqueueResult> {
   const db = getDb()
 
-  // Open a sync_log row so the UX can observe progress
+  // Reuse an in-flight sync if one exists.
+  const [active] = await db
+    .select({ id: syncLog.id })
+    .from(syncLog)
+    .where(and(eq(syncLog.userId, userId), eq(syncLog.status, 'running')))
+    .limit(1)
+
+  if (active) {
+    return { syncLogId: active.id, alreadyRunning: true, cooledDown: false }
+  }
+
+  // Cooldown guard: if the most recent FINISHED sync is within the
+  // cooldown window, refuse to fire a new one. Defense-in-depth — the
+  // ResyncButton is visually disabled during this window, so this only
+  // trips for direct API hits (devtools, scripts).
+  const [recent] = await db
+    .select({ finishedAt: syncLog.finishedAt })
+    .from(syncLog)
+    .where(and(eq(syncLog.userId, userId), isNotNull(syncLog.finishedAt)))
+    .orderBy(desc(syncLog.finishedAt))
+    .limit(1)
+
+  if (recent?.finishedAt) {
+    const sinceMs = Date.now() - recent.finishedAt.getTime()
+    if (sinceMs < RESYNC_COOLDOWN_MS) {
+      return { syncLogId: null, alreadyRunning: false, cooledDown: true }
+    }
+  }
+
   const [{ id: syncLogId }] = await db
     .insert(syncLog)
     .values({
@@ -41,8 +84,25 @@ export async function backfillActivities(
     })
     .returning({ id: syncLog.id })
 
+  // Fire-and-forget — srvx is long-lived Node, the unawaited promise
+  // continues running on the event loop after the response sends.
+  runBackfillWorker(userId, syncLogId).catch((err) => {
+    console.error('[backfill worker] failed:', err)
+  })
+
+  return { syncLogId, alreadyRunning: false, cooledDown: false }
+}
+
+/**
+ * The actual page-by-page worker. Owns the sync_log row identified by
+ * syncLogId and updates it as it progresses.
+ */
+async function runBackfillWorker(
+  userId: number,
+  syncLogId: number,
+): Promise<void> {
+  const db = getDb()
   let pagesFetched = 0
-  let activitiesUpserted = 0
 
   try {
     const accessToken = await withFreshToken(userId)
@@ -93,8 +153,6 @@ export async function backfillActivities(
           },
         })
 
-      activitiesUpserted += batch.length
-
       // Strava returns a full page when more remain; short page = end.
       if (batch.length < PAGE_SIZE) break
     }
@@ -107,8 +165,6 @@ export async function backfillActivities(
         callsUsed: pagesFetched,
       })
       .where(eq(syncLog.id, syncLogId))
-
-    return { syncLogId, pagesFetched, activitiesUpserted }
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err)
     await db

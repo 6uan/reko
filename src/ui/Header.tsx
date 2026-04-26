@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react'
 import { Link } from '@tanstack/react-router'
 import ThemeToggle from './ThemeToggle'
+import { Avatar } from './Avatar'
 import type { SessionData } from '../features/auth/session'
 
 export default function Header({
@@ -80,11 +81,7 @@ export default function Header({
               to="/profile"
               className="inline-flex items-center gap-2 text-sm font-medium text-[var(--ink-2)] no-underline px-2 py-1.5 rounded-[10px] transition-[background,color] duration-150 ease-in-out hover:bg-[rgba(20,20,20,0.05)] hover:text-[var(--ink)]"
             >
-              <img
-                src={session.profile}
-                alt={session.firstname}
-                className="w-7 h-7 rounded-full border border-[var(--line)]"
-              />
+              <Avatar name={session.firstname} size="sm" />
               <span className="hide-m">{session.firstname}</span>
             </Link>
           ) : (
