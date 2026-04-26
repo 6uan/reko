@@ -109,13 +109,9 @@ export default function Overview({ runs, unit }: Props) {
     return totalPace / lastMonthRuns.length;
   }, [lastMonthRuns, unit]);
 
-  // KPI 3 — Longest run this month
-  const longestRun = useMemo(() => {
-    if (thisMonthRuns.length === 0) return null;
-    return thisMonthRuns.reduce((best, r) =>
-      r.distanceMeters > best.distanceMeters ? r : best,
-    );
-  }, [thisMonthRuns]);
+  // KPI 3 — Monthly distance
+  const thisMonthDist = thisMonthRuns.reduce((s, r) => s + r.distanceMeters, 0);
+  const lastMonthDist = lastMonthRuns.reduce((s, r) => s + r.distanceMeters, 0);
 
   // KPI 4 — PRs this month
   const prCountMonth = thisMonthRuns.reduce((s, r) => s + r.prCount, 0);
@@ -218,18 +214,18 @@ export default function Overview({ runs, unit }: Props) {
           </span>
         </div>
 
-        {/* Longest */}
+        {/* Monthly Distance */}
         <div className="bg-[var(--card)] border border-[var(--line)] rounded-[14px] p-4">
           <span className="font-[family-name:var(--font-mono)] text-[10px] uppercase tracking-widest text-[var(--ink-4)]">
-            Longest
+            This Month
           </span>
           <div className="mt-2 font-[family-name:var(--font-mono)] text-[26px] font-medium tracking-tight tabular-nums text-[var(--ink)]">
-            {longestRun
-              ? `${toDisplayDistance(longestRun.distanceMeters, unit)} ${unitLabel}`
-              : "—"}
+            {toDisplayDistance(thisMonthDist, unit)}{" "}
+            <span className="text-[14px] text-[var(--ink-3)]">{unitLabel}</span>
           </div>
-          <span className="text-[12px] text-[var(--ink-3)] truncate block">
-            {longestRun?.name ?? "No runs this month"}
+          <span className="text-[12px] text-[var(--ink-3)]">
+            {pctChange(thisMonthDist, lastMonthDist)} vs last month
+            {" · "}{thisMonthRuns.length} run{thisMonthRuns.length !== 1 ? "s" : ""}
           </span>
         </div>
 
@@ -287,7 +283,6 @@ export default function Overview({ runs, unit }: Props) {
                 </g>
               );
             })}
-            {/* Baseline */}
             <line
               x1="0"
               y1="120"
@@ -331,13 +326,11 @@ export default function Overview({ runs, unit }: Props) {
                     />
                   </linearGradient>
                 </defs>
-                {/* Area fill */}
                 <path
                   d={
                     pacePoints
                       .map((p, i) => {
                         const x = (p.week / 12) * 340 + 10;
-                        // Invert: lower pace = higher on chart (faster)
                         const y =
                           120 -
                           ((paceMax - p.pace) / (paceMax - paceMin)) * 100;
@@ -348,7 +341,6 @@ export default function Overview({ runs, unit }: Props) {
                   }
                   fill="url(#paceGradient)"
                 />
-                {/* Line */}
                 <polyline
                   points={pacePoints
                     .map((p) => {
@@ -365,7 +357,6 @@ export default function Overview({ runs, unit }: Props) {
                   strokeLinecap="round"
                   strokeLinejoin="round"
                 />
-                {/* Dots */}
                 {pacePoints.map((p, i) => {
                   const x = (p.week / 12) * 340 + 10;
                   const y =
@@ -425,7 +416,7 @@ export default function Overview({ runs, unit }: Props) {
                 <th className="px-4 py-2 font-medium text-right">Time</th>
                 <th className="px-4 py-2 font-medium text-right">Pace</th>
                 <th className="px-4 py-2 font-medium text-right">Avg HR</th>
-                <th className="px-4 py-2 font-medium text-right">Cadence</th>
+                <th className="px-4 py-2 font-medium text-right">Elev</th>
                 <th className="px-4 py-2 font-medium text-center">PR</th>
               </tr>
             </thead>
@@ -458,7 +449,7 @@ export default function Overview({ runs, unit }: Props) {
                     {run.avgHr !== null ? run.avgHr : "—"}
                   </td>
                   <td className="px-4 py-2.5 text-right font-[family-name:var(--font-mono)] tabular-nums">
-                    {run.cadence !== null ? run.cadence : "—"}
+                    {run.elevation > 0 ? `${Math.round(run.elevation)}m` : "—"}
                   </td>
                   <td className="px-4 py-2.5 text-center">
                     {run.prCount > 0 ? (

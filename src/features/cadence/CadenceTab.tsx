@@ -27,9 +27,9 @@ type Props = {
 
 // ── Helpers ───────────────────────────────────────────────────────
 
-function mean(arr: number[]): number {
-  if (arr.length === 0) return 0
-  return arr.reduce((a, b) => a + b, 0) / arr.length
+function paceForUnit(speedMs: number, unit: 'km' | 'mi'): number {
+  const paceSec = speedToPaceSeconds(speedMs)
+  return unit === 'mi' ? paceSec * 1.60934 : paceSec
 }
 
 function linearRegression(pts: { x: number; y: number }[]) {
@@ -46,10 +46,17 @@ function linearRegression(pts: { x: number; y: number }[]) {
   return { slope, intercept }
 }
 
-function paceForUnit(speedMs: number, unit: 'km' | 'mi'): number {
-  const paceSec = speedToPaceSeconds(speedMs)
-  return unit === 'mi' ? paceSec * 1.60934 : paceSec
-}
+// ── Cadence range definitions ────────────────────────────────────
+
+const CADENCE_RANGES = [
+  { label: '185+', min: 185, max: Infinity },
+  { label: '180–184', min: 180, max: 185 },
+  { label: '175–179', min: 175, max: 180 },
+  { label: '170–174', min: 170, max: 175 },
+  { label: '165–169', min: 165, max: 170 },
+  { label: '160–164', min: 160, max: 165 },
+  { label: '<160', min: 0, max: 160 },
+]
 
 // ── Component ─────────────────────────────────────────────────────
 
@@ -59,53 +66,46 @@ export default function Cadence({ runs, unit }: Props) {
     [runs],
   )
 
-  // ── KPI computations ──────────────────────────────────────────
+  // ── Best pace per cadence range (highest cadence first) ───────
 
-  const avgCadence30d = useMemo(
-    () => mean(withCadence.map((r) => r.cadence!)),
-    [withCadence],
-  )
+  const bestByRange = useMemo(() => {
+    return CADENCE_RANGES.map((range) => {
+      const inRange = withCadence.filter(
+        (r) => r.cadence! >= range.min && r.cadence! < range.max,
+      )
+      if (inRange.length === 0) return { ...range, bestRun: null, count: 0 }
 
-  const fastestCadence = useMemo(
-    () =>
-      withCadence.length > 0
-        ? Math.max(...withCadence.map((r) => r.cadence!))
-        : 0,
-    [withCadence],
-  )
-
-  const easyCadence = useMemo(() => {
-    const easy = withCadence.filter((r) => r.avgHr != null && r.avgHr < 150)
-    return mean(easy.map((r) => r.cadence!))
-  }, [withCadence])
-
-  const baseline = avgCadence30d
-
-  // ── Histogram bins ────────────────────────────────────────────
-
-  const BIN_WIDTH = 2
-  const BIN_START = 158
-  const BIN_END = 188
-
-  const histogram = useMemo(() => {
-    const bins: { lo: number; hi: number; count: number }[] = []
-    for (let lo = BIN_START; lo < BIN_END; lo += BIN_WIDTH) {
-      bins.push({ lo, hi: lo + BIN_WIDTH, count: 0 })
-    }
-    withCadence.forEach((r) => {
-      const c = r.cadence!
-      const idx = Math.floor((c - BIN_START) / BIN_WIDTH)
-      if (idx >= 0 && idx < bins.length) bins[idx].count++
+      // Best pace = highest avgSpeed (fastest)
+      const bestRun = inRange.reduce((best, r) =>
+        r.avgSpeed > best.avgSpeed ? r : best,
+      )
+      return { ...range, bestRun, count: inRange.length }
     })
-    return bins
   }, [withCadence])
 
-  const histMax = useMemo(
-    () => Math.max(1, ...histogram.map((b) => b.count)),
-    [histogram],
-  )
+  // ── KPIs ──────────────────────────────────────────────────────
 
-  // ── Scatter plot data ─────────────────────────────────────────
+  const highestCadence = useMemo(() => {
+    if (withCadence.length === 0) return null
+    return withCadence.reduce((best, r) =>
+      r.cadence! > best.cadence! ? r : best,
+    )
+  }, [withCadence])
+
+  const avgCadence = useMemo(() => {
+    if (withCadence.length === 0) return 0
+    return Math.round(
+      withCadence.reduce((s, r) => s + r.cadence!, 0) / withCadence.length,
+    )
+  }, [withCadence])
+
+  const fastestAtHighCadence = useMemo(() => {
+    const high = withCadence.filter((r) => r.cadence! >= 180)
+    if (high.length === 0) return null
+    return high.reduce((best, r) => (r.avgSpeed > best.avgSpeed ? r : best))
+  }, [withCadence])
+
+  // ── Scatter data ──────────────────────────────────────────────
 
   const scatterData = useMemo(
     () =>
@@ -124,31 +124,12 @@ export default function Cadence({ runs, unit }: Props) {
     [scatterData],
   )
 
-  // scatter axis ranges
   const paceValues = scatterData.map((d) => d.pace)
   const cadenceValues = scatterData.map((d) => d.cadence)
   const paceMin = paceValues.length > 0 ? Math.min(...paceValues) - 10 : 240
   const paceMax = paceValues.length > 0 ? Math.max(...paceValues) + 10 : 420
-  const cadMin =
-    cadenceValues.length > 0 ? Math.min(...cadenceValues) - 4 : 154
-  const cadMax =
-    cadenceValues.length > 0 ? Math.max(...cadenceValues) + 4 : 192
-
-  // ── Table data ────────────────────────────────────────────────
-
-  const tableRows = useMemo(
-    () =>
-      withCadence.map((r) => {
-        const cad = r.cadence!
-        const stride = r.avgSpeed / (cad / 60)
-        const delta = cad - baseline
-        const pace = paceForUnit(r.avgSpeed, unit)
-        return { run: r, cad, stride, delta, pace }
-      }),
-    [withCadence, baseline, unit],
-  )
-
-  // ── Render helpers ────────────────────────────────────────────
+  const cadMin = cadenceValues.length > 0 ? Math.min(...cadenceValues) - 4 : 154
+  const cadMax = cadenceValues.length > 0 ? Math.max(...cadenceValues) + 4 : 192
 
   function scatterX(pace: number) {
     return 40 + ((pace - paceMin) / (paceMax - paceMin)) * 480
@@ -157,224 +138,218 @@ export default function Cadence({ runs, unit }: Props) {
     return 180 - ((cad - cadMin) / (cadMax - cadMin)) * 160
   }
 
+  // ── All runs sorted by cadence (highest first) ────────────────
+
+  const sortedRuns = useMemo(
+    () => [...withCadence].sort((a, b) => b.cadence! - a.cadence!),
+    [withCadence],
+  )
+
+  const unitLabel = unit === 'mi' ? '/mi' : '/km'
+
   // ── JSX ───────────────────────────────────────────────────────
 
   return (
     <div className="flex flex-col gap-4">
       {/* KPI Row */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5">
-        {/* Avg cadence 30d */}
         <div className="bg-[var(--card)] border border-[var(--line)] rounded-[14px] p-4">
           <div className="font-mono text-[10px] uppercase tracking-widest text-[var(--ink-4)]">
-            Avg cadence &middot; 30d
+            Highest cadence
           </div>
           <div className="font-mono text-[26px] font-medium tracking-tight tabular-nums mt-1.5">
-            {avgCadence30d > 0 ? Math.round(avgCadence30d) : '—'}
-            <span className="text-[13px] text-[var(--ink-3)] ml-0.5 font-normal">
-              spm
-            </span>
+            {highestCadence ? highestCadence.cadence : '—'}
+            <span className="text-[13px] text-[var(--ink-3)] ml-0.5 font-normal">spm</span>
+          </div>
+          <div className="font-mono text-[11px] mt-1.5 text-[var(--ink-3)]">
+            {highestCadence ? highestCadence.name : 'No data'}
+          </div>
+        </div>
+
+        <div className="bg-[var(--card)] border border-[var(--line)] rounded-[14px] p-4">
+          <div className="font-mono text-[10px] uppercase tracking-widest text-[var(--ink-4)]">
+            Average cadence
+          </div>
+          <div className="font-mono text-[26px] font-medium tracking-tight tabular-nums mt-1.5">
+            {avgCadence > 0 ? avgCadence : '—'}
+            <span className="text-[13px] text-[var(--ink-3)] ml-0.5 font-normal">spm</span>
           </div>
           <div className="font-mono text-[11px] mt-1.5 text-[var(--ink-3)]">
             {withCadence.length} runs with cadence
           </div>
         </div>
 
-        {/* Fastest cadence */}
         <div className="bg-[var(--card)] border border-[var(--line)] rounded-[14px] p-4">
           <div className="font-mono text-[10px] uppercase tracking-widest text-[var(--ink-4)]">
-            Fastest cadence
+            Best pace at 180+ spm
           </div>
           <div className="font-mono text-[26px] font-medium tracking-tight tabular-nums mt-1.5">
-            {fastestCadence > 0 ? fastestCadence : '—'}
-            <span className="text-[13px] text-[var(--ink-3)] ml-0.5 font-normal">
-              spm
-            </span>
+            {fastestAtHighCadence
+              ? formatPace(paceForUnit(fastestAtHighCadence.avgSpeed, unit))
+              : '—'}
+            <span className="text-[13px] text-[var(--ink-3)] ml-0.5 font-normal">{unitLabel}</span>
           </div>
           <div className="font-mono text-[11px] mt-1.5 text-[var(--ink-3)]">
-            Peak from any run
+            {fastestAtHighCadence ? fastestAtHighCadence.name : 'No runs at 180+'}
           </div>
         </div>
 
-        {/* Easy cadence */}
         <div className="bg-[var(--card)] border border-[var(--line)] rounded-[14px] p-4">
           <div className="font-mono text-[10px] uppercase tracking-widest text-[var(--ink-4)]">
-            Easy cadence
+            Cadence ranges hit
           </div>
           <div className="font-mono text-[26px] font-medium tracking-tight tabular-nums mt-1.5">
-            {easyCadence > 0 ? Math.round(easyCadence) : '—'}
+            {bestByRange.filter((r) => r.bestRun !== null).length}
             <span className="text-[13px] text-[var(--ink-3)] ml-0.5 font-normal">
-              spm
+              / {CADENCE_RANGES.length}
             </span>
           </div>
           <div className="font-mono text-[11px] mt-1.5 text-[var(--ink-3)]">
-            Avg HR &lt; 150 bpm
-          </div>
-        </div>
-
-        {/* Baseline */}
-        <div className="bg-[var(--card)] border border-[var(--line)] rounded-[14px] p-4">
-          <div className="font-mono text-[10px] uppercase tracking-widest text-[var(--ink-4)]">
-            Baseline
-          </div>
-          <div className="font-mono text-[26px] font-medium tracking-tight tabular-nums mt-1.5">
-            {baseline > 0 ? Math.round(baseline) : '—'}
-            <span className="text-[13px] text-[var(--ink-3)] ml-0.5 font-normal">
-              spm
-            </span>
-          </div>
-          <div className="font-mono text-[11px] mt-1.5 text-[var(--ink-3)]">
-            30d rolling avg
+            Ranges with data
           </div>
         </div>
       </div>
 
-      {/* Charts */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-2.5">
-        {/* Histogram */}
-        <div className="bg-[var(--card)] border border-[var(--line)] rounded-[14px] p-4">
-          <div className="font-mono text-[10px] uppercase tracking-widest text-[var(--ink-4)] mb-3">
-            Cadence distribution &middot; all runs
-          </div>
-          <svg viewBox="0 0 560 200" className="w-full" role="img">
-            {histogram.map((bin, i) => {
-              const barW = 480 / histogram.length - 2
-              const barH = (bin.count / histMax) * 160
-              const x = 40 + i * (480 / histogram.length) + 1
-              const y = 180 - barH
-              const isBaseline =
-                baseline >= bin.lo && baseline < bin.hi
-              return (
-                <rect
-                  key={bin.lo}
-                  x={x}
-                  y={y}
-                  width={barW}
-                  height={barH}
-                  rx={2}
-                  fill={isBaseline ? 'var(--accent)' : '#d6cfbc'}
-                />
-              )
-            })}
-
-            {/* Baseline dashed line */}
-            {baseline > 0 && (
-              <line
-                x1={
-                  40 +
-                  ((baseline - BIN_START) / (BIN_END - BIN_START)) * 480
-                }
-                y1={10}
-                x2={
-                  40 +
-                  ((baseline - BIN_START) / (BIN_END - BIN_START)) * 480
-                }
-                y2={180}
-                stroke="var(--accent)"
-                strokeWidth={1.5}
-                strokeDasharray="4 3"
-              />
-            )}
-
-            {/* X-axis labels every 4th bin */}
-            {histogram.map((bin, i) =>
-              i % 4 === 0 ? (
-                <text
-                  key={`label-${bin.lo}`}
-                  x={40 + i * (480 / histogram.length) + (480 / histogram.length) / 2}
-                  y={196}
-                  textAnchor="middle"
-                  fill="var(--ink-4)"
-                  fontSize={10}
-                  fontFamily="var(--font-mono)"
-                >
-                  {bin.lo}
-                </text>
-              ) : null,
-            )}
-          </svg>
-        </div>
-
-        {/* Scatter plot */}
-        <div className="bg-[var(--card)] border border-[var(--line)] rounded-[14px] p-4">
-          <div className="font-mono text-[10px] uppercase tracking-widest text-[var(--ink-4)] mb-3">
-            Cadence vs pace
-          </div>
-          <svg viewBox="0 0 560 200" className="w-full" role="img">
-            {/* Box border */}
-            <rect
-              x={40}
-              y={10}
-              width={480}
-              height={170}
-              fill="none"
-              stroke="var(--line-2)"
-              strokeWidth={1}
-            />
-
-            {/* Dots */}
-            {scatterData.map((d, i) => (
-              <circle
-                key={i}
-                cx={scatterX(d.pace)}
-                cy={scatterY(d.cadence)}
-                r={4}
-                fill="var(--accent)"
-                opacity={0.7}
-              />
-            ))}
-
-            {/* Regression line */}
-            {scatterData.length >= 2 && (
-              <line
-                x1={scatterX(paceMin)}
-                y1={scatterY(
-                  regression.slope * paceMin + regression.intercept,
-                )}
-                x2={scatterX(paceMax)}
-                y2={scatterY(
-                  regression.slope * paceMax + regression.intercept,
-                )}
-                stroke="#666"
-                strokeWidth={1.5}
-                strokeDasharray="6 4"
-              />
-            )}
-
-            {/* Axis labels */}
-            <text
-              x={44}
-              y={196}
-              fill="var(--ink-4)"
-              fontSize={9}
-              fontFamily="var(--font-mono)"
-            >
-              slower &rarr;
-            </text>
-            <text
-              x={516}
-              y={196}
-              textAnchor="end"
-              fill="var(--ink-4)"
-              fontSize={9}
-              fontFamily="var(--font-mono)"
-            >
-              &larr; faster
-            </text>
-            <text
-              x={16}
-              y={14}
-              fill="var(--ink-4)"
-              fontSize={9}
-              fontFamily="var(--font-mono)"
-            >
-              spm &uarr;
-            </text>
-          </svg>
-        </div>
-      </div>
-
-      {/* Table */}
+      {/* Best pace per cadence range */}
       <div className="bg-[var(--card)] border border-[var(--line)] rounded-[14px] overflow-hidden">
+        <div className="px-4 py-3 border-b border-[var(--line)]">
+          <h3 className="text-[15px] font-medium text-[var(--ink)]">
+            Best pace at each cadence range
+          </h3>
+          <p className="font-mono text-[11px] text-[var(--ink-4)] mt-0.5">
+            Highest cadence first
+          </p>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse min-w-[600px]">
+            <thead>
+              <tr>
+                <th className="bg-[var(--card-2)] font-mono text-[10px] uppercase tracking-widest text-[var(--ink-4)] px-3 py-2.5 text-left font-medium">
+                  Cadence range
+                </th>
+                <th className="bg-[var(--card-2)] font-mono text-[10px] uppercase tracking-widest text-[var(--ink-4)] px-3 py-2.5 text-left font-medium">
+                  Best pace
+                </th>
+                <th className="bg-[var(--card-2)] font-mono text-[10px] uppercase tracking-widest text-[var(--ink-4)] px-3 py-2.5 text-left font-medium">
+                  Activity
+                </th>
+                <th className="bg-[var(--card-2)] font-mono text-[10px] uppercase tracking-widest text-[var(--ink-4)] px-3 py-2.5 text-left font-medium">
+                  Date
+                </th>
+                <th className="bg-[var(--card-2)] font-mono text-[10px] uppercase tracking-widest text-[var(--ink-4)] px-3 py-2.5 text-right font-medium">
+                  Runs
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {bestByRange.map((range) => (
+                <tr key={range.label}>
+                  <td className="px-3 py-3 border-b border-[var(--line-2)] text-[13px] font-medium text-[var(--ink)]">
+                    {range.label}
+                    <span className="text-[var(--ink-3)] ml-0.5">spm</span>
+                  </td>
+                  <td className="px-3 py-3 border-b border-[var(--line-2)] text-[13px] font-mono tabular-nums">
+                    {range.bestRun ? (
+                      <span className="text-[var(--accent)] font-medium">
+                        {formatPace(paceForUnit(range.bestRun.avgSpeed, unit))}
+                        <span className="text-[var(--ink-3)] font-normal ml-0.5">
+                          {unitLabel}
+                        </span>
+                      </span>
+                    ) : (
+                      <span className="text-[var(--ink-4)]">—</span>
+                    )}
+                  </td>
+                  <td className="px-3 py-3 border-b border-[var(--line-2)] text-[13px] text-[var(--ink-3)]">
+                    {range.bestRun?.name ?? '—'}
+                  </td>
+                  <td className="px-3 py-3 border-b border-[var(--line-2)] text-[13px] font-mono tabular-nums text-[var(--ink-3)]">
+                    {range.bestRun
+                      ? new Date(range.bestRun.date).toLocaleDateString('en-GB', {
+                          day: 'numeric',
+                          month: 'short',
+                          year: 'numeric',
+                        })
+                      : '—'}
+                  </td>
+                  <td className="px-3 py-3 border-b border-[var(--line-2)] text-[13px] font-mono tabular-nums text-[var(--ink-3)] text-right">
+                    {range.count}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* Scatter plot */}
+      <div className="bg-[var(--card)] border border-[var(--line)] rounded-[14px] p-4">
+        <div className="font-mono text-[10px] uppercase tracking-widest text-[var(--ink-4)] mb-3">
+          Cadence vs pace
+        </div>
+        <svg viewBox="0 0 560 200" className="w-full" role="img">
+          <rect
+            x={40}
+            y={10}
+            width={480}
+            height={170}
+            fill="none"
+            stroke="var(--line-2)"
+            strokeWidth={1}
+          />
+
+          {scatterData.map((d, i) => (
+            <circle
+              key={i}
+              cx={scatterX(d.pace)}
+              cy={scatterY(d.cadence)}
+              r={4}
+              fill="var(--accent)"
+              opacity={0.7}
+            />
+          ))}
+
+          {scatterData.length >= 2 && (
+            <line
+              x1={scatterX(paceMin)}
+              y1={scatterY(regression.slope * paceMin + regression.intercept)}
+              x2={scatterX(paceMax)}
+              y2={scatterY(regression.slope * paceMax + regression.intercept)}
+              stroke="#666"
+              strokeWidth={1.5}
+              strokeDasharray="6 4"
+            />
+          )}
+
+          <text x={44} y={196} fill="var(--ink-4)" fontSize={9} fontFamily="var(--font-mono)">
+            slower &rarr;
+          </text>
+          <text
+            x={516}
+            y={196}
+            textAnchor="end"
+            fill="var(--ink-4)"
+            fontSize={9}
+            fontFamily="var(--font-mono)"
+          >
+            &larr; faster
+          </text>
+          <text x={16} y={14} fill="var(--ink-4)" fontSize={9} fontFamily="var(--font-mono)">
+            spm &uarr;
+          </text>
+        </svg>
+      </div>
+
+      {/* All runs table sorted by cadence */}
+      <div className="bg-[var(--card)] border border-[var(--line)] rounded-[14px] overflow-hidden">
+        <div className="px-4 py-3 border-b border-[var(--line)]">
+          <h3 className="text-[15px] font-medium text-[var(--ink)]">
+            All runs by cadence
+          </h3>
+          <p className="font-mono text-[11px] text-[var(--ink-4)] mt-0.5">
+            Highest first
+          </p>
+        </div>
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse min-w-[600px]">
             <thead>
@@ -383,55 +358,50 @@ export default function Cadence({ runs, unit }: Props) {
                   Activity
                 </th>
                 <th className="bg-[var(--card-2)] font-mono text-[10px] uppercase tracking-widest text-[var(--ink-4)] px-3 py-2.5 text-left font-medium">
-                  Avg cadence
+                  Cadence
                 </th>
                 <th className="bg-[var(--card-2)] font-mono text-[10px] uppercase tracking-widest text-[var(--ink-4)] px-3 py-2.5 text-left font-medium">
                   Pace
                 </th>
                 <th className="bg-[var(--card-2)] font-mono text-[10px] uppercase tracking-widest text-[var(--ink-4)] px-3 py-2.5 text-left font-medium">
-                  Stride length
+                  Stride
                 </th>
                 <th className="bg-[var(--card-2)] font-mono text-[10px] uppercase tracking-widest text-[var(--ink-4)] px-3 py-2.5 text-left font-medium">
-                  &Delta; vs baseline
+                  Date
                 </th>
               </tr>
             </thead>
             <tbody>
-              {tableRows.map((row) => {
-                const deltaColor =
-                  row.delta > 0 ? 'var(--ok)' : 'var(--ink-3)'
-                const deltaPrefix = row.delta > 0 ? '+' : ''
+              {sortedRuns.map((run) => {
+                const pace = paceForUnit(run.avgSpeed, unit)
+                const stride = run.avgSpeed / (run.cadence! / 60)
                 return (
-                  <tr key={row.run.id}>
+                  <tr key={run.id}>
                     <td className="px-3 py-3 border-b border-[var(--line-2)] text-[13px] font-medium text-[var(--ink)]">
-                      {row.run.name}
+                      {run.name}
                     </td>
                     <td className="px-3 py-3 border-b border-[var(--line-2)] text-[13px] font-mono tabular-nums text-[var(--ink)]">
-                      {row.cad}
-                      <span className="text-[var(--ink-3)] ml-0.5">
-                        spm
-                      </span>
+                      {run.cadence}
+                      <span className="text-[var(--ink-3)] ml-0.5">spm</span>
                     </td>
                     <td className="px-3 py-3 border-b border-[var(--line-2)] text-[13px] font-mono tabular-nums text-[var(--ink)]">
-                      {formatPace(row.pace)}/{unit}
+                      {formatPace(pace)}{unitLabel}
                     </td>
                     <td className="px-3 py-3 border-b border-[var(--line-2)] text-[13px] font-mono tabular-nums text-[var(--ink)]">
-                      {row.stride.toFixed(2)}
-                      <span className="text-[var(--ink-3)] ml-0.5">
-                        m
-                      </span>
+                      {stride.toFixed(2)}
+                      <span className="text-[var(--ink-3)] ml-0.5">m</span>
                     </td>
-                    <td
-                      className="px-3 py-3 border-b border-[var(--line-2)] text-[13px] font-mono tabular-nums"
-                      style={{ color: deltaColor }}
-                    >
-                      {deltaPrefix}
-                      {Math.round(row.delta)} spm
+                    <td className="px-3 py-3 border-b border-[var(--line-2)] text-[13px] font-mono tabular-nums text-[var(--ink-3)]">
+                      {new Date(run.date).toLocaleDateString('en-GB', {
+                        day: 'numeric',
+                        month: 'short',
+                        year: 'numeric',
+                      })}
                     </td>
                   </tr>
                 )
               })}
-              {tableRows.length === 0 && (
+              {sortedRuns.length === 0 && (
                 <tr>
                   <td
                     colSpan={5}

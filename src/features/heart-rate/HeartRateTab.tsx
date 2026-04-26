@@ -1,4 +1,8 @@
 import { useMemo } from 'react'
+import {
+  speedToPaceSeconds,
+  formatPace,
+} from '../../lib/strava'
 
 // ── Types ─────────────────────────────────────────────────────────
 
@@ -25,11 +29,16 @@ const ZONES = [
   { name: 'Z2 Aerobic', min: 124, max: 143, color: 'var(--hr-2)' },
   { name: 'Z3 Tempo', min: 143, max: 162, color: 'var(--hr-3)' },
   { name: 'Z4 Threshold', min: 162, max: 181, color: 'var(--hr-4)' },
-  { name: 'Z5 VO\u2082max', min: 181, max: Infinity, color: 'var(--hr-5)' },
+  { name: 'Z5 VO₂max', min: 181, max: Infinity, color: 'var(--hr-5)' },
 ] as const
 
 function zoneFor(hr: number) {
   return ZONES.find((z) => hr >= z.min && hr < z.max) ?? ZONES[4]
+}
+
+function paceForUnit(speedMs: number, unit: 'km' | 'mi'): number {
+  const paceSec = speedToPaceSeconds(speedMs)
+  return unit === 'mi' ? paceSec * 1.60934 : paceSec
 }
 
 function avg(nums: number[]) {
@@ -38,23 +47,41 @@ function avg(nums: number[]) {
 
 // ── Component ─────────────────────────────────────────────────────
 
-export default function HeartRate({ runs }: Props) {
-  // ── 30-day filter ───────────────────────────────────────────────
+export default function HeartRate({ runs, unit }: Props) {
+  const unitLabel = unit === 'mi' ? '/mi' : '/km'
 
-  const thirtyDayRuns = useMemo(() => {
-    const cutoff = new Date()
-    cutoff.setDate(cutoff.getDate() - 30)
-    return runs.filter((r) => new Date(r.date) >= cutoff)
-  }, [runs])
+  const withHr = useMemo(
+    () => runs.filter((r) => r.avgHr !== null),
+    [runs],
+  )
 
-  // ── KPI: avg HR 30d ─────────────────────────────────────────────
+  // ── Best pace per zone ─────────────────────────────────────────
+
+  const zoneData = useMemo(() => {
+    return ZONES.map((zone) => {
+      const inZone = withHr.filter(
+        (r) => r.avgHr! >= zone.min && r.avgHr! < zone.max,
+      )
+      if (inZone.length === 0) return { ...zone, bestRun: null, count: 0, avgPace: 0 }
+
+      const bestRun = inZone.reduce((best, r) =>
+        r.avgSpeed > best.avgSpeed ? r : best,
+      )
+      const avgPace = avg(inZone.map((r) => paceForUnit(r.avgSpeed, unit)))
+
+      return { ...zone, bestRun, count: inZone.length, avgPace }
+    })
+  }, [withHr, unit])
+
+  // ── KPIs ───────────────────────────────────────────────────────
 
   const avgHr30 = useMemo(() => {
-    const hrs = thirtyDayRuns.map((r) => r.avgHr).filter((h): h is number => h !== null)
+    const cutoff = new Date()
+    cutoff.setDate(cutoff.getDate() - 30)
+    const recent = withHr.filter((r) => new Date(r.date) >= cutoff)
+    const hrs = recent.map((r) => r.avgHr!)
     return Math.round(avg(hrs))
-  }, [thirtyDayRuns])
-
-  // ── KPI: max HR seen ────────────────────────────────────────────
+  }, [withHr])
 
   const maxHrData = useMemo(() => {
     let best = 0
@@ -68,21 +95,24 @@ export default function HeartRate({ runs }: Props) {
     return { value: best, activity: activityName }
   }, [runs])
 
-  // ── KPI: Z2 share ──────────────────────────────────────────────
-
   const z2Share = useMemo(() => {
-    const withHr = runs.filter((r) => r.avgHr !== null)
     if (!withHr.length) return 0
     const inZ2 = withHr.filter((r) => r.avgHr! >= 124 && r.avgHr! < 143)
     return Math.round((inZ2.length / withHr.length) * 100)
-  }, [runs])
+  }, [withHr])
+
+  const zonesHit = zoneData.filter((z) => z.bestRun !== null).length
 
   // ── Zone time distribution (30d) ───────────────────────────────
 
   const zoneDistribution = useMemo(() => {
+    const cutoff = new Date()
+    cutoff.setDate(cutoff.getDate() - 30)
+    const recent = runs.filter((r) => new Date(r.date) >= cutoff)
+
     const totals = ZONES.map(() => 0)
     let totalTime = 0
-    for (const r of thirtyDayRuns) {
+    for (const r of recent) {
       if (r.avgHr === null) continue
       const zone = zoneFor(r.avgHr)
       const idx = ZONES.indexOf(zone)
@@ -94,17 +124,6 @@ export default function HeartRate({ runs }: Props) {
       seconds: totals[i],
       pct: totalTime > 0 ? (totals[i] / totalTime) * 100 : 0,
     }))
-  }, [thirtyDayRuns])
-
-  // ── 90-day maxHR points ─────────────────────────────────────────
-
-  const maxHrPoints = useMemo(() => {
-    const cutoff = new Date()
-    cutoff.setDate(cutoff.getDate() - 90)
-    return runs
-      .filter((r) => new Date(r.date) >= cutoff && r.maxHr !== null)
-      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
-      .map((r) => ({ date: r.date, value: r.maxHr! }))
   }, [runs])
 
   // ── Render ──────────────────────────────────────────────────────
@@ -112,308 +131,221 @@ export default function HeartRate({ runs }: Props) {
   return (
     <div className="space-y-4">
       {/* KPI row */}
-      <div className="grid grid-cols-4 gap-4">
-        <KpiCard
-          label="Avg HR · 30d"
-          value={avgHr30 || '—'}
-          unit="bpm"
-          detail={`${thirtyDayRuns.filter((r) => r.avgHr !== null).length} runs with HR data`}
-        />
-        <KpiCard
-          label="Resting HR"
-          value={48}
-          unit="bpm"
-          detail="Not available from activity data"
-          detailGreen={false}
-          mock
-        />
-        <KpiCard
-          label="Max HR seen"
-          value={maxHrData.value || '—'}
-          unit="bpm"
-          detail={maxHrData.activity || 'No data'}
-        />
-        <KpiCard
-          label="Z2 share"
-          value={z2Share}
-          unit="%"
-          detail="Runs with avg HR 124-143"
-          detailGreen={z2Share >= 60}
-        />
-      </div>
-
-      {/* Two charts side by side */}
-      <div className="grid grid-cols-2 gap-4">
-        {/* Zone distribution bars */}
-        <div className="bg-[var(--card)] border border-[var(--line)] rounded-[14px] p-[18px]">
-          <div className="flex justify-between items-baseline mb-4">
-            <h3 className="text-[15px] font-medium">Time in zones · last 30 days</h3>
-            <span className="font-mono text-[11px] text-[var(--ink-3)]">
-              {thirtyDayRuns.filter((r) => r.avgHr !== null).length} runs
-            </span>
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5">
+        <div className="bg-[var(--card)] border border-[var(--line)] rounded-[14px] p-4">
+          <div className="font-mono text-[10px] uppercase tracking-widest text-[var(--ink-4)]">
+            Avg HR · 30d
           </div>
-          <div className="space-y-3">
-            {zoneDistribution.map((zone) => (
-              <div key={zone.name} className="grid items-center gap-3" style={{ gridTemplateColumns: '100px 1fr 60px' }}>
-                <span className="font-mono text-[11px] text-[var(--ink-3)] truncate">
-                  {zone.name}
-                </span>
-                <div className="h-2.5 rounded-full bg-[var(--line-2)] overflow-hidden">
-                  <div
-                    className="h-full rounded-full transition-all"
-                    style={{
-                      width: `${zone.pct}%`,
-                      backgroundColor: zone.color,
-                    }}
-                  />
-                </div>
-                <span className="font-mono text-[11px] text-[var(--ink-3)] text-right tabular-nums">
-                  {zone.pct.toFixed(1)}%
-                </span>
-              </div>
-            ))}
+          <div className="font-mono text-[26px] font-medium tracking-tight tabular-nums mt-1.5">
+            {avgHr30 || '—'}
+            <span className="text-[13px] text-[var(--ink-3)] ml-0.5 font-normal">bpm</span>
+          </div>
+          <div className="font-mono text-[11px] mt-1.5 text-[var(--ink-3)]">
+            {withHr.length} runs with HR data
           </div>
         </div>
 
-        {/* Aerobic decoupling (mock) */}
-        <div className="bg-[var(--card)] border border-[var(--line)] rounded-[14px] p-[18px]">
-          <div className="flex justify-between items-baseline mb-3">
-            <h3 className="text-[15px] font-medium">Aerobic decoupling</h3>
-            <span className="font-mono text-[11px] text-[var(--ink-3)]">mock data</span>
+        <div className="bg-[var(--card)] border border-[var(--line)] rounded-[14px] p-4">
+          <div className="font-mono text-[10px] uppercase tracking-widest text-[var(--ink-4)]">
+            Max HR seen
           </div>
-          <DecouplingChart />
-          <div className="flex gap-4 mt-2">
-            <span className="flex items-center gap-1.5 font-mono text-[10px] text-[var(--ink-3)]">
-              <span className="inline-block w-3 h-0.5 rounded-full bg-[var(--accent)]" />
-              Heart rate
-            </span>
-            <span className="flex items-center gap-1.5 font-mono text-[10px] text-[var(--ink-3)]">
-              <span
-                className="inline-block w-3 h-0.5 rounded-full"
-                style={{ backgroundColor: '#666' }}
-              />
-              Pace
-            </span>
+          <div className="font-mono text-[26px] font-medium tracking-tight tabular-nums mt-1.5">
+            {maxHrData.value || '—'}
+            <span className="text-[13px] text-[var(--ink-3)] ml-0.5 font-normal">bpm</span>
+          </div>
+          <div className="font-mono text-[11px] mt-1.5 text-[var(--ink-3)]">
+            {maxHrData.activity || 'No data'}
+          </div>
+        </div>
+
+        <div className="bg-[var(--card)] border border-[var(--line)] rounded-[14px] p-4">
+          <div className="font-mono text-[10px] uppercase tracking-widest text-[var(--ink-4)]">
+            Z2 share
+          </div>
+          <div className="font-mono text-[26px] font-medium tracking-tight tabular-nums mt-1.5">
+            {z2Share}
+            <span className="text-[13px] text-[var(--ink-3)] ml-0.5 font-normal">%</span>
+          </div>
+          <div className={`font-mono text-[11px] mt-1.5 ${z2Share >= 60 ? 'text-[var(--ok)]' : 'text-[var(--ink-3)]'}`}>
+            Runs with avg HR 124–143
+          </div>
+        </div>
+
+        <div className="bg-[var(--card)] border border-[var(--line)] rounded-[14px] p-4">
+          <div className="font-mono text-[10px] uppercase tracking-widest text-[var(--ink-4)]">
+            Zones hit
+          </div>
+          <div className="font-mono text-[26px] font-medium tracking-tight tabular-nums mt-1.5">
+            {zonesHit}
+            <span className="text-[13px] text-[var(--ink-3)] ml-0.5 font-normal">/ {ZONES.length}</span>
+          </div>
+          <div className="font-mono text-[11px] mt-1.5 text-[var(--ink-3)]">
+            Zones with data
           </div>
         </div>
       </div>
 
-      {/* Bottom chart: resting & max HR 90 days */}
-      <div className="bg-[var(--card)] border border-[var(--line)] rounded-[14px] p-[18px]">
-        <div className="flex justify-between items-baseline mb-3">
-          <h3 className="text-[15px] font-medium">Resting &amp; max HR · 90 days</h3>
-          <span className="font-mono text-[11px] text-[var(--ink-3)]">
-            {maxHrPoints.length} data points
-          </span>
-        </div>
-        <HrTrendChart maxHrPoints={maxHrPoints} />
-        <div className="flex gap-4 mt-2">
-          <span className="flex items-center gap-1.5 font-mono text-[10px] text-[var(--ink-3)]">
-            <span className="inline-block w-3 h-0.5 rounded-full" style={{ backgroundColor: 'var(--hr-1)' }} />
-            Resting HR (mock)
-          </span>
-          <span className="flex items-center gap-1.5 font-mono text-[10px] text-[var(--ink-3)]">
-            <span className="inline-block w-3 h-0.5 rounded-full" style={{ backgroundColor: 'var(--hr-5)' }} />
-            Max HR
-          </span>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-// ── Sub-components ────────────────────────────────────────────────
-
-function KpiCard({
-  label,
-  value,
-  unit,
-  detail,
-  detailGreen,
-  mock,
-}: {
-  label: string
-  value: string | number
-  unit: string
-  detail: string
-  detailGreen?: boolean
-  mock?: boolean
-}) {
-  return (
-    <div className="bg-[var(--card)] border border-[var(--line)] rounded-[14px] p-4">
-      <div className="font-mono text-[10px] uppercase tracking-widest text-[var(--ink-4)]">
-        {label}
-      </div>
-      <div className="font-mono text-[26px] font-medium tracking-tight tabular-nums mt-1.5">
-        {value}
-        <span className="text-[13px] text-[var(--ink-3)] ml-0.5 font-normal">{unit}</span>
-      </div>
-      <div
-        className={`font-mono text-[11px] mt-1.5 ${
-          detailGreen ? 'text-[var(--ok)]' : 'text-[var(--ink-3)]'
-        }`}
-      >
-        {detail}
-        {mock && <span className="ml-1 opacity-60">(mock)</span>}
-      </div>
-    </div>
-  )
-}
-
-function DecouplingChart() {
-  // Generate mock: HR gently rising, pace slightly rising
-  const points = 20
-  const padL = 10
-  const padR = 10
-  const padT = 10
-  const padB = 10
-  const w = 560 - padL - padR
-  const h = 150 - padT - padB
-
-  const hrPoints: { x: number; y: number }[] = []
-  const pacePoints: { x: number; y: number }[] = []
-
-  for (let i = 0; i < points; i++) {
-    const x = padL + (i / (points - 1)) * w
-    // HR: starts around 140, gently rises to ~160 with some noise
-    const hrVal = 140 + (i / (points - 1)) * 20 + Math.sin(i * 0.7) * 3
-    // Pace: starts around 280s (4:40), gently rises to ~295s (4:55)
-    const paceVal = 280 + (i / (points - 1)) * 15 + Math.sin(i * 0.9) * 4
-
-    // Normalize: HR 130-170, Pace 270-310
-    const hrY = padT + h - ((hrVal - 130) / 40) * h
-    const paceY = padT + h - ((310 - paceVal) / 40) * h
-
-    hrPoints.push({ x, y: hrY })
-    pacePoints.push({ x, y: paceY })
-  }
-
-  const hrLine = hrPoints.map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x},${p.y}`).join(' ')
-  const paceLine = pacePoints.map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x},${p.y}`).join(' ')
-
-  return (
-    <svg viewBox="0 0 560 150" className="w-full">
-      {/* Grid lines */}
-      {[0, 0.25, 0.5, 0.75, 1].map((frac) => (
-        <line
-          key={frac}
-          x1={padL}
-          y1={padT + frac * h}
-          x2={padL + w}
-          y2={padT + frac * h}
-          stroke="var(--line-2)"
-          strokeWidth={0.5}
-        />
-      ))}
-      <path d={paceLine} fill="none" stroke="#666" strokeWidth={1.5} strokeDasharray="4 3" />
-      <path d={hrLine} fill="none" stroke="var(--accent)" strokeWidth={2} strokeLinejoin="round" />
-    </svg>
-  )
-}
-
-function HrTrendChart({ maxHrPoints }: { maxHrPoints: { date: string; value: number }[] }) {
-  const padL = 40
-  const padR = 10
-  const padT = 10
-  const padB = 24
-  const chartW = 800 - padL - padR
-  const chartH = 200 - padT - padB
-
-  // Mock RHR: gently declining from ~52 to ~47 over 90 days
-  const mockRhrPoints = useMemo(() => {
-    const pts: { x: number; y: number }[] = []
-    const count = 14
-    for (let i = 0; i < count; i++) {
-      const x = padL + (i / (count - 1)) * chartW
-      const rhr = 52 - (i / (count - 1)) * 5 + Math.sin(i * 0.8) * 1.5
-      pts.push({ x, y: rhr })
-    }
-    return pts
-  }, [])
-
-  if (!maxHrPoints.length) {
-    return (
-      <svg viewBox="0 0 800 200" className="w-full">
-        <text x="400" y="110" textAnchor="middle" fill="var(--ink-4)" fontSize="12">
-          No heart rate data in the last 90 days
-        </text>
-      </svg>
-    )
-  }
-
-  // Y range: from ~40 (RHR low) to max HR + margin
-  const allMaxVals = maxHrPoints.map((p) => p.value)
-  const yMin = 40
-  const yMax = Math.max(...allMaxVals) + 5
-
-  const toY = (val: number) => padT + chartH - ((val - yMin) / (yMax - yMin)) * chartH
-
-  // Date range
-  const now = new Date()
-  const cutoff = new Date()
-  cutoff.setDate(cutoff.getDate() - 90)
-  const dateRange = now.getTime() - cutoff.getTime()
-  const toX = (dateStr: string) => {
-    const t = new Date(dateStr).getTime() - cutoff.getTime()
-    return padL + (t / dateRange) * chartW
-  }
-
-  // Max HR line
-  const maxPts = maxHrPoints.map((p) => ({
-    x: toX(p.date),
-    y: toY(p.value),
-  }))
-  const maxLine = maxPts.map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x},${p.y}`).join(' ')
-
-  // Mock RHR line (use same y-scale)
-  const rhrLine = mockRhrPoints
-    .map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x},${toY(p.y)}`)
-    .join(' ')
-
-  // Grid lines
-  const gridValues = [60, 80, 100, 120, 140, 160, 180].filter((v) => v >= yMin && v <= yMax)
-
-  return (
-    <svg viewBox="0 0 800 200" className="w-full">
-      <defs>
-        <pattern id="hrGridPattern" width="40" height="40" patternUnits="userSpaceOnUse">
-          <path d="M 40 0 L 0 0 0 40" fill="none" stroke="var(--line-2)" strokeWidth={0.3} />
-        </pattern>
-      </defs>
-      <rect x={padL} y={padT} width={chartW} height={chartH} fill="url(#hrGridPattern)" />
-
-      {/* Y-axis labels */}
-      {gridValues.map((v) => (
-        <g key={v}>
-          <line
-            x1={padL}
-            y1={toY(v)}
-            x2={padL + chartW}
-            y2={toY(v)}
-            stroke="var(--line-2)"
-            strokeWidth={0.5}
-          />
-          <text
-            x={padL - 6}
-            y={toY(v) + 3}
-            textAnchor="end"
-            fontSize="9"
-            fontFamily="var(--font-mono)"
-            fill="var(--ink-4)"
+      {/* Best pace per zone — main feature */}
+      <div className="grid grid-cols-1 sm:grid-cols-5 gap-2.5">
+        {zoneData.map((zone) => (
+          <div
+            key={zone.name}
+            className="bg-[var(--card)] border border-[var(--line)] rounded-[14px] p-[18px] relative overflow-hidden"
           >
-            {v}
-          </text>
-        </g>
-      ))}
+            {/* Zone color bar */}
+            <div
+              className="absolute top-0 left-0 right-0 h-1 rounded-t-[14px]"
+              style={{ backgroundColor: zone.color }}
+            />
 
-      {/* RHR mock line */}
-      <path d={rhrLine} fill="none" stroke="var(--hr-1)" strokeWidth={2} strokeLinejoin="round" />
+            <div className="font-mono text-[11px] uppercase tracking-widest text-[var(--ink-3)] mt-1">
+              {zone.name}
+            </div>
+            <div className="font-mono text-[10px] text-[var(--ink-4)] mt-0.5">
+              {zone.max === Infinity ? `${zone.min}+ bpm` : `${zone.min}–${zone.max} bpm`}
+            </div>
 
-      {/* Max HR line */}
-      <path d={maxLine} fill="none" stroke="var(--hr-5)" strokeWidth={2} strokeLinejoin="round" />
-      {maxPts.map((p, i) => (
-        <circle key={i} cx={p.x} cy={p.y} r={2.5} fill="var(--hr-5)" />
-      ))}
-    </svg>
+            <div className="font-mono text-[28px] font-medium tracking-tight tabular-nums mt-3 text-[var(--ink)]">
+              {zone.bestRun
+                ? formatPace(paceForUnit(zone.bestRun.avgSpeed, unit))
+                : '—'}
+              {zone.bestRun && (
+                <span className="text-[12px] text-[var(--ink-3)] ml-0.5 font-normal">
+                  {unitLabel}
+                </span>
+              )}
+            </div>
+
+            <div className="font-mono text-[11px] text-[var(--ink-3)] mt-1.5 truncate">
+              {zone.bestRun?.name ?? 'No runs'}
+            </div>
+
+            <div className="flex justify-between font-mono text-[10px] text-[var(--ink-4)] mt-3 pt-2.5 border-t border-[var(--line-2)]">
+              <span>{zone.count} run{zone.count !== 1 ? 's' : ''}</span>
+              {zone.avgPace > 0 && (
+                <span>avg {formatPace(zone.avgPace)}</span>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Zone time distribution */}
+      <div className="bg-[var(--card)] border border-[var(--line)] rounded-[14px] p-[18px]">
+        <div className="flex justify-between items-baseline mb-4">
+          <h3 className="text-[15px] font-medium">Time in zones · last 30 days</h3>
+          <span className="font-mono text-[11px] text-[var(--ink-3)]">
+            {withHr.length} runs
+          </span>
+        </div>
+        <div className="space-y-3">
+          {zoneDistribution.map((zone) => (
+            <div key={zone.name} className="grid items-center gap-3" style={{ gridTemplateColumns: '100px 1fr 60px' }}>
+              <span className="font-mono text-[11px] text-[var(--ink-3)] truncate">
+                {zone.name}
+              </span>
+              <div className="h-2.5 rounded-full bg-[var(--line-2)] overflow-hidden">
+                <div
+                  className="h-full rounded-full transition-all"
+                  style={{
+                    width: `${zone.pct}%`,
+                    backgroundColor: zone.color,
+                  }}
+                />
+              </div>
+              <span className="font-mono text-[11px] text-[var(--ink-3)] text-right tabular-nums">
+                {zone.pct.toFixed(1)}%
+              </span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* All runs by zone table */}
+      <div className="bg-[var(--card)] border border-[var(--line)] rounded-[14px] overflow-hidden">
+        <div className="px-4 py-3 border-b border-[var(--line)]">
+          <h3 className="text-[15px] font-medium text-[var(--ink)]">
+            Best pace per zone breakdown
+          </h3>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse min-w-[640px]">
+            <thead>
+              <tr>
+                <th className="bg-[var(--card-2)] font-mono text-[10px] uppercase tracking-widest text-[var(--ink-4)] px-3 py-2.5 text-left font-medium">
+                  Zone
+                </th>
+                <th className="bg-[var(--card-2)] font-mono text-[10px] uppercase tracking-widest text-[var(--ink-4)] px-3 py-2.5 text-left font-medium">
+                  HR range
+                </th>
+                <th className="bg-[var(--card-2)] font-mono text-[10px] uppercase tracking-widest text-[var(--ink-4)] px-3 py-2.5 text-left font-medium">
+                  Best pace
+                </th>
+                <th className="bg-[var(--card-2)] font-mono text-[10px] uppercase tracking-widest text-[var(--ink-4)] px-3 py-2.5 text-left font-medium">
+                  Avg pace
+                </th>
+                <th className="bg-[var(--card-2)] font-mono text-[10px] uppercase tracking-widest text-[var(--ink-4)] px-3 py-2.5 text-left font-medium">
+                  Best run
+                </th>
+                <th className="bg-[var(--card-2)] font-mono text-[10px] uppercase tracking-widest text-[var(--ink-4)] px-3 py-2.5 text-left font-medium">
+                  Date
+                </th>
+                <th className="bg-[var(--card-2)] font-mono text-[10px] uppercase tracking-widest text-[var(--ink-4)] px-3 py-2.5 text-right font-medium">
+                  Runs
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {zoneData.map((zone) => (
+                <tr key={zone.name}>
+                  <td className="px-3 py-3 border-b border-[var(--line-2)] text-[13px] font-medium text-[var(--ink)]">
+                    <span className="flex items-center gap-2">
+                      <span
+                        className="inline-block w-2.5 h-2.5 rounded-full"
+                        style={{ backgroundColor: zone.color }}
+                      />
+                      {zone.name}
+                    </span>
+                  </td>
+                  <td className="px-3 py-3 border-b border-[var(--line-2)] text-[13px] font-mono tabular-nums text-[var(--ink-3)]">
+                    {zone.max === Infinity ? `${zone.min}+` : `${zone.min}–${zone.max}`} bpm
+                  </td>
+                  <td className="px-3 py-3 border-b border-[var(--line-2)] text-[13px] font-mono tabular-nums">
+                    {zone.bestRun ? (
+                      <span className="text-[var(--accent)] font-medium">
+                        {formatPace(paceForUnit(zone.bestRun.avgSpeed, unit))}
+                        <span className="text-[var(--ink-3)] font-normal ml-0.5">{unitLabel}</span>
+                      </span>
+                    ) : (
+                      <span className="text-[var(--ink-4)]">—</span>
+                    )}
+                  </td>
+                  <td className="px-3 py-3 border-b border-[var(--line-2)] text-[13px] font-mono tabular-nums text-[var(--ink-3)]">
+                    {zone.avgPace > 0
+                      ? `${formatPace(zone.avgPace)}${unitLabel}`
+                      : '—'}
+                  </td>
+                  <td className="px-3 py-3 border-b border-[var(--line-2)] text-[13px] text-[var(--ink-3)]">
+                    {zone.bestRun?.name ?? '—'}
+                  </td>
+                  <td className="px-3 py-3 border-b border-[var(--line-2)] text-[13px] font-mono tabular-nums text-[var(--ink-3)]">
+                    {zone.bestRun
+                      ? new Date(zone.bestRun.date).toLocaleDateString('en-GB', {
+                          day: 'numeric',
+                          month: 'short',
+                          year: 'numeric',
+                        })
+                      : '—'}
+                  </td>
+                  <td className="px-3 py-3 border-b border-[var(--line-2)] text-[13px] font-mono tabular-nums text-[var(--ink-3)] text-right">
+                    {zone.count}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
   )
 }

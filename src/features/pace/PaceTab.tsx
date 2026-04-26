@@ -1,6 +1,8 @@
 import { useMemo } from 'react'
 import {
   formatPace,
+  formatDuration,
+  formatDistanceKm,
   getMonday,
 } from '../../lib/strava'
 
@@ -28,6 +30,11 @@ function distInUnit(meters: number, unit: 'km' | 'mi') {
   return unit === 'mi' ? meters / 1609.34 : meters / 1000
 }
 
+function formatDistForUnit(meters: number, unit: 'km' | 'mi'): string {
+  if (unit === 'mi') return (meters / 1609.34).toFixed(2)
+  return formatDistanceKm(meters)
+}
+
 function paceForRun(run: DashboardRun, unit: 'km' | 'mi') {
   const d = distInUnit(run.distanceMeters, unit)
   return d > 0 ? run.movingTime / d : 0
@@ -36,56 +43,6 @@ function paceForRun(run: DashboardRun, unit: 'km' | 'mi') {
 function avg(nums: number[]) {
   return nums.length ? nums.reduce((a, b) => a + b, 0) / nums.length : 0
 }
-
-// ── Mock PR data ──────────────────────────────────────────────────
-
-const MOCK_PRS = [
-  {
-    distance: '1K',
-    bestTime: '3:42',
-    pace: '3:42',
-    setOn: '2025-11-14',
-    activity: 'Morning interval session',
-    previous: '3:48',
-    delta: '-6s',
-  },
-  {
-    distance: '5K',
-    bestTime: '21:05',
-    pace: '4:13',
-    setOn: '2025-10-22',
-    activity: 'Parkrun PB attempt',
-    previous: '21:32',
-    delta: '-27s',
-  },
-  {
-    distance: '10K',
-    bestTime: '44:18',
-    pace: '4:26',
-    setOn: '2025-09-08',
-    activity: 'Sunday long run',
-    previous: '45:01',
-    delta: '-43s',
-  },
-  {
-    distance: 'Half marathon',
-    bestTime: '1:38:22',
-    pace: '4:40',
-    setOn: '2025-06-15',
-    activity: 'City half marathon',
-    previous: '1:41:05',
-    delta: '-2:43',
-  },
-  {
-    distance: 'Marathon',
-    bestTime: '3:32:11',
-    pace: '5:02',
-    setOn: '2025-03-02',
-    activity: 'Spring marathon',
-    previous: '3:38:44',
-    delta: '-6:33',
-  },
-]
 
 // ── Component ─────────────────────────────────────────────────────
 
@@ -174,12 +131,21 @@ export default function Pace({ runs, unit }: Props) {
     return sorted
   }, [runs, unit])
 
+  // ── Fastest runs (sorted by pace, ascending) ───────────────────
+
+  const fastestRuns = useMemo(() => {
+    return [...runs]
+      .filter((r) => r.avgSpeed > 0)
+      .sort((a, b) => b.avgSpeed - a.avgSpeed)
+      .slice(0, 20)
+  }, [runs])
+
   // ── Render ──────────────────────────────────────────────────────
 
   return (
     <div className="space-y-4">
       {/* KPI row */}
-      <div className="grid grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5">
         <KpiCard
           label="Current avg"
           value={formatPace(currentAvgPace)}
@@ -207,7 +173,7 @@ export default function Pace({ runs, unit }: Props) {
       </div>
 
       {/* Charts */}
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-2.5">
         {/* Histogram */}
         <div className="bg-[var(--card)] border border-[var(--line)] rounded-[14px] p-[18px]">
           <div className="flex justify-between items-baseline mb-3">
@@ -236,55 +202,76 @@ export default function Pace({ runs, unit }: Props) {
         </div>
       </div>
 
-      {/* PR Table */}
-      <div className="bg-[var(--card)] border border-[var(--line)] rounded-[14px] overflow-hidden p-0">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="bg-[var(--card-2)]">
-              {['Distance', 'Best time', 'Pace', 'Set on', 'Activity', 'Previous', 'Δ'].map(
-                (h) => (
+      {/* Fastest runs table */}
+      <div className="bg-[var(--card)] border border-[var(--line)] rounded-[14px] overflow-hidden">
+        <div className="px-4 py-3 border-b border-[var(--line)]">
+          <h3 className="text-[15px] font-medium text-[var(--ink)]">
+            Fastest runs
+          </h3>
+          <p className="font-mono text-[11px] text-[var(--ink-4)] mt-0.5">
+            Sorted by pace, fastest first
+          </p>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="bg-[var(--card-2)]">
+                {['#', 'Activity', 'Pace', 'Distance', 'Time', 'Avg HR', 'Date'].map((h) => (
                   <th
                     key={h}
                     className="font-mono text-[10px] uppercase tracking-widest text-[var(--ink-4)] px-3 py-2.5 text-left font-medium"
                   >
                     {h}
                   </th>
-                ),
-              )}
-            </tr>
-          </thead>
-          <tbody>
-            {MOCK_PRS.map((pr) => (
-              <tr key={pr.distance}>
-                <td className="px-3 py-3 border-b border-[var(--line-2)] font-medium text-[var(--ink)]">
-                  {pr.distance}
-                </td>
-                <td className="px-3 py-3 border-b border-[var(--line-2)] font-mono tabular-nums">
-                  {pr.bestTime}
-                </td>
-                <td className="px-3 py-3 border-b border-[var(--line-2)] font-mono tabular-nums">
-                  {pr.pace}
-                  <span className="text-[var(--ink-3)] text-xs ml-0.5">{unitLabel}</span>
-                </td>
-                <td className="px-3 py-3 border-b border-[var(--line-2)] font-mono tabular-nums text-[var(--ink-3)]">
-                  {pr.setOn}
-                </td>
-                <td className="px-3 py-3 border-b border-[var(--line-2)] text-[var(--ink-3)]">
-                  {pr.activity}
-                </td>
-                <td className="px-3 py-3 border-b border-[var(--line-2)] font-mono tabular-nums text-[var(--ink-3)]">
-                  {pr.previous}
-                </td>
-                <td className="px-3 py-3 border-b border-[var(--line-2)] font-mono tabular-nums text-[var(--ok)]">
-                  {pr.delta}
-                </td>
+                ))}
               </tr>
-            ))}
-          </tbody>
-        </table>
-        <p className="px-3 py-2 text-[11px] text-[var(--ink-4)] font-mono">
-          Note: placeholder values — real PR data requires the detailed activity endpoint.
-        </p>
+            </thead>
+            <tbody>
+              {fastestRuns.map((run, i) => {
+                const pace = paceForRun(run, unit)
+                return (
+                  <tr key={run.id}>
+                    <td className="px-3 py-3 border-b border-[var(--line-2)] text-[13px] font-mono tabular-nums text-[var(--ink-3)]">
+                      {i + 1}
+                    </td>
+                    <td className="px-3 py-3 border-b border-[var(--line-2)] font-medium text-[var(--ink)]">
+                      {run.name}
+                    </td>
+                    <td className="px-3 py-3 border-b border-[var(--line-2)] font-mono tabular-nums">
+                      <span className={i === 0 ? 'text-[var(--accent)] font-medium' : 'text-[var(--ink)]'}>
+                        {formatPace(pace)}
+                      </span>
+                      <span className="text-[var(--ink-3)] text-xs ml-0.5">{unitLabel}</span>
+                    </td>
+                    <td className="px-3 py-3 border-b border-[var(--line-2)] font-mono tabular-nums text-[var(--ink-3)]">
+                      {formatDistForUnit(run.distanceMeters, unit)} {unit}
+                    </td>
+                    <td className="px-3 py-3 border-b border-[var(--line-2)] font-mono tabular-nums text-[var(--ink-3)]">
+                      {formatDuration(run.movingTime)}
+                    </td>
+                    <td className="px-3 py-3 border-b border-[var(--line-2)] font-mono tabular-nums text-[var(--ink-3)]">
+                      {run.avgHr !== null ? `${Math.round(run.avgHr)} bpm` : '—'}
+                    </td>
+                    <td className="px-3 py-3 border-b border-[var(--line-2)] font-mono tabular-nums text-[var(--ink-3)]">
+                      {new Date(run.date).toLocaleDateString('en-GB', {
+                        day: 'numeric',
+                        month: 'short',
+                        year: 'numeric',
+                      })}
+                    </td>
+                  </tr>
+                )
+              })}
+              {fastestRuns.length === 0 && (
+                <tr>
+                  <td colSpan={7} className="px-3 py-6 text-center text-[13px] text-[var(--ink-3)]">
+                    No pace data yet
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   )
@@ -377,7 +364,6 @@ function HistogramChart({
           </g>
         )
       })}
-      {/* Min / max pace labels */}
       <text
         x={offsetX}
         y={topPad + chartH + 18}
