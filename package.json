@@ -11,7 +11,7 @@
   },
   "scripts": {
     "dev": "vite dev --port 3000",
-    "build": "vite build",
+    "build": "vite build && bash scripts/fix-css-hash.sh",
     "start": "srvx --prod -s ../client --port ${PORT:-3000} dist/server/server.js",
     "preview": "vite preview",
     "test": "vitest run",
@@ -20,7 +20,7 @@
     "db:studio": "drizzle-kit studio"
   },
   "dependencies": {
-    "@tailwindcss/vite": "^4.1.18",
+    "@tailwindcss/vite": "^4.2.4",
     "@tanstack/react-devtools": "latest",
     "@tanstack/react-router": "latest",
     "@tanstack/react-router-devtools": "latest",
