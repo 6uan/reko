@@ -7,9 +7,9 @@ import {
 } from '@tanstack/react-router'
 import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
 import { TanStackDevtools } from '@tanstack/react-devtools'
-import Footer from '../components/Footer'
-import Header from '../components/Header'
-import { getSession } from '../lib/session'
+import Footer from '../ui/Footer'
+import Header from '../ui/Header'
+import { getSession } from '../features/auth/session'
 
 import appCss from '../styles.css?url'
 
@@ -70,9 +70,11 @@ function RootLayout() {
   }
 
   return (
-    <>
+    <div className="min-h-screen flex flex-col">
       <Header session={session} />
-      <Outlet />
+      <div className="flex-1 flex flex-col">
+        <Outlet />
+      </div>
       <Footer />
       <TanStackDevtools
         config={{
@@ -85,7 +87,7 @@ function RootLayout() {
           },
         ]}
       />
-    </>
+    </div>
   )
 }
 

@@ -1,7 +1,7 @@
 import { createFileRoute, redirect } from '@tanstack/react-router'
 import { createServerFn } from '@tanstack/react-start'
 import { exchangeCodeForTokens } from '../../lib/strava'
-import { setSession } from '../../lib/session'
+import { setSession } from '../../features/auth/session'
 
 /** Exchange auth code → tokens → encrypted session cookie */
 const handleStravaCallback = createServerFn({ method: 'POST' })

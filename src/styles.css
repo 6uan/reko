@@ -2,6 +2,10 @@
 @import "tailwindcss";
 @plugin "@tailwindcss/typography";
 
+/* Use the .dark class on <html> (set by ThemeToggle) for `dark:*` utilities,
+   instead of Tailwind 4's default `prefers-color-scheme: dark` media query. */
+@custom-variant dark (&:where(.dark, .dark *));
+
 @theme {
   --font-sans:
     "Geist", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Helvetica,
@@ -259,27 +263,6 @@ a {
 }
 
 /* ─── Pseudo-element components (can't be done with Tailwind) ─── */
-.strava-dot {
-  width: 16px;
-  height: 16px;
-  border-radius: 50%;
-  background: #fc4c02;
-  display: inline-block;
-  position: relative;
-  flex-shrink: 0;
-}
-.strava-dot::after {
-  content: "";
-  position: absolute;
-  inset: 3px;
-  border-radius: 50%;
-  background: radial-gradient(
-    circle at 30% 30%,
-    rgba(255, 255, 255, 0.55),
-    transparent 60%
-  );
-}
-
 .brand-mark {
   width: 26px;
   height: 26px;

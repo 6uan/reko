@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react'
 import { Link } from '@tanstack/react-router'
 import ThemeToggle from './ThemeToggle'
-import type { SessionData } from '../lib/session'
+import type { SessionData } from '../features/auth/session'
 
 export default function Header({
   session,
@@ -88,9 +88,19 @@ export default function Header({
               <span className="hide-m">{session.firstname}</span>
             </Link>
           ) : (
-            <Link to="/auth/strava" className="btn btn-primary btn-sm">
-              <span className="strava-dot" />
-              Connect
+            <Link
+              to="/auth/strava"
+              aria-label="Connect with Strava"
+              className="inline-block transition-transform duration-150 ease-out hover:-translate-y-0.5"
+            >
+              <img
+                src="/strava/btn_strava_connect_with_orange.png"
+                srcSet="/strava/btn_strava_connect_with_orange.png 1x, /strava/btn_strava_connect_with_orange@2x.png 2x"
+                alt="Connect with Strava"
+                width={158}
+                height={32}
+                className="block h-8 w-auto"
+              />
             </Link>
           )}
         </div>

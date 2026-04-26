@@ -1,7 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
-import DashboardMockup from '../components/DashboardMockup'
-import StatsStrip from '../components/StatsStrip'
-import OpenSourceSection from '../components/OpenSourceSection'
+import DashboardMockup from '../features/landing/DashboardMockup'
+import StatsStrip from '../features/landing/StatsStrip'
+import OpenSourceSection from '../features/landing/OpenSourceSection'
 
 export const Route = createFileRoute('/')({ component: Home })
 
@@ -29,10 +29,20 @@ function Home() {
             Self-hosted. Your data stays yours.
           </p>
 
-          <div className="flex gap-2.5 mt-8 flex-wrap max-sm:[&_.btn]:flex-1">
-            <a href="/auth/strava" className="btn btn-primary">
-              <span className="strava-dot" />
-              Connect with Strava
+          <div className="flex gap-2.5 mt-8 flex-wrap items-center max-sm:[&_.btn]:flex-1">
+            <a
+              href="/auth/strava"
+              aria-label="Connect with Strava"
+              className="inline-block transition-transform duration-150 ease-out hover:-translate-y-0.5 max-sm:flex-1"
+            >
+              <img
+                src="/strava/btn_strava_connect_with_orange@2x.png"
+                srcSet="/strava/btn_strava_connect_with_orange.png 1x, /strava/btn_strava_connect_with_orange@2x.png 2x"
+                alt="Connect with Strava"
+                width={237}
+                height={48}
+                className="block h-12 w-auto max-sm:w-full max-sm:h-auto"
+              />
             </a>
             <a
               href="https://github.com/6uan/reko"

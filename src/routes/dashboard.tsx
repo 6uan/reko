@@ -5,7 +5,7 @@ import {
   getSession as frameworkGetSession,
   updateSession as frameworkUpdateSession,
 } from '@tanstack/react-start/server'
-import { sessionConfig, type SessionData } from '../lib/session'
+import { sessionConfig, type SessionData } from '../features/auth/session'
 import {
   fetchAthleteActivities,
   refreshAccessToken,
@@ -19,12 +19,12 @@ import {
   Trophy,
 } from 'lucide-react'
 
-import Overview from '../components/dashboard/Overview'
-import Activities from '../components/dashboard/Activities'
-import Pace from '../components/dashboard/Pace'
-import HeartRate from '../components/dashboard/HeartRate'
-import Cadence from '../components/dashboard/Cadence'
-import Records from '../components/dashboard/Records'
+import OverviewTab from '../features/overview/OverviewTab'
+import ActivitiesTab from '../features/activities/ActivitiesTab'
+import PaceTab from '../features/pace/PaceTab'
+import HeartRateTab from '../features/heart-rate/HeartRateTab'
+import CadenceTab from '../features/cadence/CadenceTab'
+import RecordsTab from '../features/records/RecordsTab'
 
 // ── Types ──────────────────────────────────────────────────────────
 
@@ -260,12 +260,12 @@ function Dashboard() {
 
         {/* Tab content */}
         <div className="p-7 flex flex-col gap-6 min-w-0">
-          {tab === 'overview' && <Overview runs={runs} unit={unit} />}
-          {tab === 'activities' && <Activities runs={runs} unit={unit} />}
-          {tab === 'pace' && <Pace runs={runs} unit={unit} />}
-          {tab === 'heart' && <HeartRate runs={runs} unit={unit} />}
-          {tab === 'cadence' && <Cadence runs={runs} unit={unit} />}
-          {tab === 'records' && <Records runs={runs} unit={unit} />}
+          {tab === 'overview' && <OverviewTab runs={runs} unit={unit} />}
+          {tab === 'activities' && <ActivitiesTab runs={runs} unit={unit} />}
+          {tab === 'pace' && <PaceTab runs={runs} unit={unit} />}
+          {tab === 'heart' && <HeartRateTab runs={runs} unit={unit} />}
+          {tab === 'cadence' && <CadenceTab runs={runs} unit={unit} />}
+          {tab === 'records' && <RecordsTab runs={runs} unit={unit} />}
         </div>
       </main>
     </div>

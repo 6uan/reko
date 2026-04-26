@@ -1,5 +1,5 @@
 import { createFileRoute, redirect, useNavigate } from '@tanstack/react-router'
-import { clearSessionFn } from '../lib/session'
+import { clearSessionFn } from '../features/auth/session'
 
 export const Route = createFileRoute('/profile')({
   beforeLoad: async ({ context }) => {

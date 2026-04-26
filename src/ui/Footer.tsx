@@ -15,10 +15,31 @@ export default function Footer() {
           <a href="#" className="text-[var(--ink-3)] no-underline transition-colors duration-150 ease-in-out hover:text-[var(--ink)]">Privacy</a>
           <a href="#" className="text-[var(--ink-3)] no-underline transition-colors duration-150 ease-in-out hover:text-[var(--ink)]">Changelog</a>
         </div>
-        <div className="inline-flex items-center gap-2.5 px-3.5 py-2 bg-[var(--card)] border border-[var(--line)] rounded-[10px] text-xs text-[var(--ink-2)]">
-          <span className="strava-dot w-3.5 h-3.5" />
-          Powered by <strong className="text-[var(--ink)] font-medium">Strava</strong>
-        </div>
+        <a
+          href="https://www.strava.com"
+          target="_blank"
+          rel="noreferrer"
+          aria-label="Powered by Strava"
+          className="inline-flex items-center px-3.5 py-2 bg-[var(--card)] border border-[var(--line)] rounded-[10px] no-underline transition-colors duration-150 ease-in-out hover:bg-[var(--card-2)]"
+        >
+          {/* Light mode: orange-on-cream lockup */}
+          <img
+            src="/strava/api_logo_pwrdBy_strava_horiz_orange.svg"
+            alt="Powered by Strava"
+            width={365}
+            height={37}
+            className="block h-[18px] w-auto dark:hidden"
+          />
+          {/* Dark mode: white lockup */}
+          <img
+            src="/strava/api_logo_pwrdBy_strava_horiz_white.svg"
+            alt=""
+            aria-hidden="true"
+            width={365}
+            height={37}
+            className="hidden h-[18px] w-auto dark:block"
+          />
+        </a>
       </div>
     </footer>
   )
