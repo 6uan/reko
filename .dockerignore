@@ -1,0 +1,41 @@
+# Don't ship local artifacts to the build context — speeds up `docker build`
+# and prevents leaking secrets / dev junk into the image.
+
+# Dep / build outputs (rebuilt inside the container)
+node_modules
+dist
+.output
+.vinxi
+.tanstack
+.vite
+*.tsbuildinfo
+
+# Env files (NEVER bake secrets into an image)
+.env
+.env.*
+!.env.example
+
+# Drizzle generated SQL (we use db:push, not committed migrations)
+drizzle
+
+# Git / OS / editor
+.git
+.gitignore
+.DS_Store
+.vscode
+.idea
+
+# Logs
+*.log
+logs
+
+# Tooling configs not needed inside the image
+.claude
+.cta.json
+README.md
+
+# Docker artifacts shouldn't recurse into themselves
+Dockerfile
+.dockerignore
+docker-compose.yml
+docker-compose.*.yml

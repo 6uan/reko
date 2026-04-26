@@ -1,0 +1,68 @@
+# Reko — full local stack.
+#
+#   docker compose up                  → postgres + migrate + app on :3000
+#   docker compose up postgres         → just postgres on 127.0.0.1:5432
+#                                        (use this if you want `pnpm dev`
+#                                        on the host with hot-reload)
+#   docker compose down                → stop everything (volume preserved)
+#   docker compose down -v             → stop + WIPE the database volume
+#
+# Required: a .env file with STRAVA_CLIENT_ID, STRAVA_CLIENT_SECRET,
+# SESSION_SECRET. See .env.example.
+
+services:
+  # ── Postgres ─────────────────────────────────────────────────────────
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: reko
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-reko_local_dev}
+      POSTGRES_DB: reko
+    # Bind to localhost only — never expose Postgres to the LAN.
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - reko_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U reko -d reko"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # ── One-shot migrations: runs db:push, exits ─────────────────────────
+  migrate:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: ["pnpm", "exec", "drizzle-kit", "push", "--force"]
+    environment:
+      # Override .env's DATABASE_URL — inside the compose network, the
+      # postgres service is reachable at hostname "postgres".
+      DATABASE_URL: postgres://reko:${POSTGRES_PASSWORD:-reko_local_dev}@postgres:5432/reko
+    env_file:
+      - .env
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+
+  # ── App ──────────────────────────────────────────────────────────────
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      DATABASE_URL: postgres://reko:${POSTGRES_PASSWORD:-reko_local_dev}@postgres:5432/reko
+      PORT: "3000"
+    env_file:
+      - .env
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+
+volumes:
+  reko_pgdata:

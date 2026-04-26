@@ -5,6 +5,7 @@
   "engines": {
     "node": ">=22.12.0"
   },
+  "packageManager": "pnpm@10.33.2",
   "imports": {
     "#/*": "./src/*"
   },
@@ -13,7 +14,10 @@
     "build": "vite build",
     "start": "srvx --prod -s ../client --port ${PORT:-3000} dist/server/server.js",
     "preview": "vite preview",
-    "test": "vitest run"
+    "test": "vitest run",
+    "db:push": "drizzle-kit push",
+    "db:generate": "drizzle-kit generate",
+    "db:studio": "drizzle-kit studio"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.1.18",
@@ -23,7 +27,9 @@
     "@tanstack/react-router-ssr-query": "latest",
     "@tanstack/react-start": "latest",
     "@tanstack/router-plugin": "^1.132.0",
+    "drizzle-orm": "^0.45.2",
     "lucide-react": "^0.545.0",
+    "pg": "^8.20.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "srvx": "^0.11.15",
@@ -35,9 +41,12 @@
     "@testing-library/dom": "^10.4.1",
     "@testing-library/react": "^16.3.0",
     "@types/node": "^22.10.2",
+    "@types/pg": "^8.20.0",
     "@types/react": "^19.2.0",
     "@types/react-dom": "^19.2.0",
     "@vitejs/plugin-react": "^6.0.1",
+    "dotenv": "^17.4.2",
+    "drizzle-kit": "^0.31.10",
     "jsdom": "^28.1.0",
     "typescript": "^5.7.2",
     "vite": "^8.0.0",
@@ -49,9 +58,17 @@
       "lightningcss"
     ],
     "supportedArchitectures": {
-      "os": ["darwin", "linux"],
-      "cpu": ["arm64", "x64"],
-      "libc": ["glibc"]
+      "os": [
+        "darwin",
+        "linux"
+      ],
+      "cpu": [
+        "arm64",
+        "x64"
+      ],
+      "libc": [
+        "glibc"
+      ]
     }
   }
 }
