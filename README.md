@@ -113,6 +113,63 @@ runs anywhere Docker does.
 
 ---
 
+## Live updates (Strava webhooks, prod only)
+
+By default Reko refreshes from Strava when you hit the **Resync** button
+in the sidebar. If you've deployed Reko to a public HTTPS URL, you can
+skip the manual sync entirely and have Strava push updates the moment
+you save a run.
+
+This is **prod-only** — Strava requires a publicly-reachable HTTPS
+callback URL and rejects `localhost`. On a local-only install, just keep
+using Resync.
+
+### Setup
+
+1. Add to your prod `.env` (see `.env.example` for details):
+
+   ```bash
+   WEBHOOK_VERIFY_TOKEN=<random-string>
+   WEBHOOK_CALLBACK_URL=https://your-domain.example.com/api/strava/webhook
+   ```
+
+2. Deploy so the new env vars + the `/api/strava/webhook` route are live.
+
+3. Register the subscription with Strava — runs once per environment,
+   not per user:
+
+   ```bash
+   pnpm exec tsx scripts/register-webhook.ts subscribe
+   ```
+
+   Strava immediately GETs your callback URL to verify the token. If
+   that succeeds you'll see `Subscribed. id=<n>`.
+
+### Other commands
+
+```bash
+pnpm exec tsx scripts/register-webhook.ts view        # inspect current sub
+pnpm exec tsx scripts/register-webhook.ts unsubscribe # remove (use before re-subscribing with a new URL)
+```
+
+Strava enforces **one subscription per API app**, so re-subscribing to
+a different URL means `unsubscribe` first.
+
+### What happens on an event
+
+Strava POSTs `{object_type, object_id, aspect_type, owner_id, …}` to
+`/api/strava/webhook`. Reko inserts the event into `webhook_events` (a
+durable, deduplicated queue), 200s within milliseconds, and dispatches
+the work asynchronously:
+
+- `activity / create` or `update` → re-fetch + upsert the activity;
+  the next detail-worker pass picks up its best efforts and streams.
+- `activity / delete` → drop the row (cascades to best_efforts + streams).
+- `athlete / update` with `authorized=false` → purge the user's tokens
+  and activities (they revoked the app).
+
+---
+
 ## Stack
 
 - **TanStack Start** — file-based routing, server functions, SSR

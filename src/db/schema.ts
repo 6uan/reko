@@ -206,6 +206,69 @@ export const bestEfforts = pgTable(
   ],
 );
 
+// ── Webhook events (Strava push subscription, idempotency log) ───────────
+//
+// Strava fires POST /webhook with `{object_type, object_id, aspect_type,
+// owner_id, event_time, updates}` whenever an activity is created /
+// updated / deleted, or an athlete deauthorizes the app. We acknowledge
+// fast (200 immediately) and process asynchronously — every event lands
+// here first as a durable queue so a crashed dispatch can be retried.
+//
+// Idempotency: Strava can (and does) re-fire the same event if we don't
+// 200 fast enough, or on retry from their side. The unique index on
+// (object_type, object_id, aspect_type, event_time) makes a duplicate
+// insert a no-op, so the POST handler can safely race with itself.
+//
+// `processedAt` IS NULL is the worker's "pending" filter; setting it
+// (with `error` NULL) marks success. On failure we set `error` and leave
+// `processedAt` NULL so a re-run picks it up.
+
+export const webhookEvents = pgTable(
+  "webhook_events",
+  {
+    id: serial("id").primaryKey(),
+
+    /** "activity" | "athlete" — kept text for forward-compat. */
+    objectType: text("object_type").notNull(),
+    /** Strava activity id (for activity events) or athlete id (for athlete events). */
+    objectId: bigint("object_id", { mode: "number" }).notNull(),
+    /** "create" | "update" | "delete". */
+    aspectType: text("aspect_type").notNull(),
+    /** Strava athlete id who owns the object (always present in payload). */
+    ownerId: bigint("owner_id", { mode: "number" }).notNull(),
+    /** Strava's `event_time` is unix seconds; we store as UTC timestamp. */
+    eventTime: timestamp("event_time", { withTimezone: true }).notNull(),
+
+    /**
+     * For aspect_type=update only: which fields changed (e.g. {title, type,
+     * private, authorized}). Strava doesn't send the new values — we re-fetch
+     * the activity to learn what changed. Stored for audit only.
+     */
+    updates: jsonb("updates").$type<Record<string, unknown>>(),
+
+    /** When our webhook handler INSERTed the row (i.e. event arrived). */
+    receivedAt: timestamp("received_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    /** Set on successful dispatch. NULL = pending or failed. */
+    processedAt: timestamp("processed_at", { withTimezone: true }),
+    /** Last dispatch error message (NULL on success or before first attempt). */
+    error: text("error"),
+  },
+  (t) => [
+    // Idempotency guard: same (object, aspect, event_time) tuple can only
+    // land once. Strava-issued retries become a no-op via ON CONFLICT.
+    uniqueIndex("webhook_events_dedupe_uidx").on(
+      t.objectType,
+      t.objectId,
+      t.aspectType,
+      t.eventTime,
+    ),
+    // Worker hot path: "give me the oldest unprocessed event."
+    index("webhook_events_pending_idx").on(t.processedAt, t.receivedAt),
+  ],
+);
+
 // ── Sync log (audit trail / rate-limit accounting) ───────────────────────
 
 export const syncLog = pgTable(
@@ -242,3 +305,5 @@ export type BestEffort = typeof bestEfforts.$inferSelect;
 export type NewBestEffort = typeof bestEfforts.$inferInsert;
 export type SyncLogRow = typeof syncLog.$inferSelect;
 export type NewSyncLogRow = typeof syncLog.$inferInsert;
+export type WebhookEvent = typeof webhookEvents.$inferSelect;
+export type NewWebhookEvent = typeof webhookEvents.$inferInsert;
