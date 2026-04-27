@@ -25,6 +25,7 @@ import { activities, syncLog } from '../../db/schema'
 import { fetchAthleteActivities } from '../../lib/strava'
 import { RESYNC_COOLDOWN_MS } from './constants'
 import { mapStravaActivity } from './mapStravaActivity'
+import { enqueueDetailFetch } from './runDetailFetchWorker'
 import { withFreshToken } from './withFreshToken'
 
 const PAGE_SIZE = 200 // Strava's max
@@ -46,25 +47,40 @@ export async function enqueueBackfill(
 ): Promise<EnqueueResult> {
   const db = getDb()
 
-  // Reuse an in-flight sync if one exists.
+  // Reuse an in-flight sync if one exists. Scoped to kind='backfill' so a
+  // long-running detail fetch (which sits in status='running' for a while)
+  // doesn't block the user from kicking off a fresh summary backfill.
   const [active] = await db
     .select({ id: syncLog.id })
     .from(syncLog)
-    .where(and(eq(syncLog.userId, userId), eq(syncLog.status, 'running')))
+    .where(
+      and(
+        eq(syncLog.userId, userId),
+        eq(syncLog.kind, 'backfill'),
+        eq(syncLog.status, 'running'),
+      ),
+    )
     .limit(1)
 
   if (active) {
     return { syncLogId: active.id, alreadyRunning: true, cooledDown: false }
   }
 
-  // Cooldown guard: if the most recent FINISHED sync is within the
+  // Cooldown guard: if the most recent FINISHED backfill is within the
   // cooldown window, refuse to fire a new one. Defense-in-depth — the
   // ResyncButton is visually disabled during this window, so this only
-  // trips for direct API hits (devtools, scripts).
+  // trips for direct API hits (devtools, scripts). Filtered to kind=
+  // 'backfill' so a recently-finished detail fetch doesn't gate this.
   const [recent] = await db
     .select({ finishedAt: syncLog.finishedAt })
     .from(syncLog)
-    .where(and(eq(syncLog.userId, userId), isNotNull(syncLog.finishedAt)))
+    .where(
+      and(
+        eq(syncLog.userId, userId),
+        eq(syncLog.kind, 'backfill'),
+        isNotNull(syncLog.finishedAt),
+      ),
+    )
     .orderBy(desc(syncLog.finishedAt))
     .limit(1)
 
@@ -165,6 +181,14 @@ async function runBackfillWorker(
         callsUsed: pagesFetched,
       })
       .where(eq(syncLog.id, syncLogId))
+
+    // Kick off the detail-fetch worker now that the summary cache is
+    // current. Fire-and-forget — this can take a long time (rate limits)
+    // and the user should already see their dashboard. The SyncBanner
+    // filters on kind='backfill' so this background work stays invisible.
+    enqueueDetailFetch(userId).catch((err) => {
+      console.error('[backfill worker] failed to enqueue detail fetch:', err)
+    })
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err)
     await db

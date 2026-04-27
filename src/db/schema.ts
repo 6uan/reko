@@ -129,10 +129,20 @@ export const activities = pgTable(
     syncedAt: timestamp("synced_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
+
+    /**
+     * Bumped by the detail-fetch worker after best_efforts + streams are
+     * stored for this activity. NULL = "needs detail." Worker filters on
+     * IS NULL to find work, so a Strava resync that adds new activities
+     * automatically gets them included in the next detail pass.
+     */
+    detailSyncedAt: timestamp("detail_synced_at", { withTimezone: true }),
   },
   (t) => [
     index("activities_user_start_date_idx").on(t.userId, t.startDate),
     index("activities_user_type_idx").on(t.userId, t.type),
+    // Hot path for the worker's "next activity needing detail" query.
+    index("activities_user_detail_synced_idx").on(t.userId, t.detailSyncedAt),
   ],
 );
 

@@ -51,10 +51,14 @@ export const getSyncStatus = createServerFn({ method: 'GET' }).handler(
 
     const db = getDb()
 
+    // Filtered to kind='backfill' so the SyncBanner only ever reflects
+    // summary backfills. The detail-fetch worker also writes sync_log
+    // rows (kind='detail') but runs invisibly in the background — its
+    // status would otherwise leak into the banner and confuse the user.
     const [latest] = await db
       .select()
       .from(syncLog)
-      .where(eq(syncLog.userId, userId))
+      .where(and(eq(syncLog.userId, userId), eq(syncLog.kind, 'backfill')))
       .orderBy(desc(syncLog.startedAt))
       .limit(1)
 
