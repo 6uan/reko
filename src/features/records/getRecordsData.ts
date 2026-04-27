@@ -1,5 +1,5 @@
 /**
- * Records-tab data loader.
+ * Records-tab data loader (SERVER ONLY).
  *
  * Reads from `best_efforts` (Strava's per-distance splits, populated by
  * the detail-fetch worker — Chunk 1.2.b) joined to `activities` so we can
@@ -16,69 +16,22 @@
  *
  * Not a server fn itself — designed to be called from inside the
  * dashboard's `loadDashboardData` handler, which already authenticates.
+ *
+ * IMPORTANT: this module imports `pg` (via `getDb`). Do NOT import it
+ * from any client component — that pulls Node-only modules into the
+ * browser bundle. Client code should import from `./distances` instead
+ * (constants + types only, no DB).
  */
 
 import { asc, eq } from 'drizzle-orm'
 import { getDb } from '../../db/client'
 import { activities, bestEfforts } from '../../db/schema'
-
-// ── Canonical distances ───────────────────────────────────────────────
-//
-// Strava precomputes best efforts at exactly six distances. The
-// `stravaName` literal must match the `name` field on the best_effort
-// payload byte-for-byte (case + hyphenation) — see the Strava API
-// reference: 1k, 1 mile, 5K, 10K, Half-Marathon, Marathon.
-
-export const DISTANCE_DEFS = [
-  { key: '1k', stravaName: '1k', label: '1 km', meters: 1000 },
-  { key: '1mi', stravaName: '1 mile', label: '1 mile', meters: 1609.34 },
-  { key: '5k', stravaName: '5K', label: '5K', meters: 5000 },
-  { key: '10k', stravaName: '10K', label: '10K', meters: 10000 },
-  {
-    key: 'half',
-    stravaName: 'Half-Marathon',
-    label: 'Half marathon',
-    meters: 21097.5,
-  },
-  { key: 'mar', stravaName: 'Marathon', label: 'Marathon', meters: 42195 },
-] as const
-
-export type DistanceKey = (typeof DISTANCE_DEFS)[number]['key']
-
-// ── Types ─────────────────────────────────────────────────────────────
-
-/** A single best-effort row, flattened for the UI. */
-export type RecordEffort = {
-  elapsedTime: number // seconds
-  movingTime: number // seconds
-  /** "YYYY-MM-DD HH:MM:SS" wall-clock — same convention as activities. */
-  startDateLocal: string
-  activityId: number
-  activityName: string
-}
-
-/** Per-distance summary the UI consumes. */
-export type DistanceRecord = {
-  key: DistanceKey
-  label: string
-  meters: number
-  /** Top by elapsed_time. null when no efforts at this distance. */
-  best: RecordEffort | null
-  runnerUp: RecordEffort | null
-  thirdBest: RecordEffort | null
-  /**
-   * Running-best over time (chronological, monotonically improving).
-   * One point per PR-setting effort. Used by the per-distance sparkline
-   * and the multi-distance progression chart.
-   */
-  trend: { date: string; time: number }[]
-}
-
-export type RecordsData = {
-  distances: DistanceRecord[]
-}
-
-// ── Loader ────────────────────────────────────────────────────────────
+import {
+  DISTANCE_DEFS,
+  type DistanceRecord,
+  type RecordEffort,
+  type RecordsData,
+} from './distances'
 
 export async function getRecordsData(userId: number): Promise<RecordsData> {
   const db = getDb()

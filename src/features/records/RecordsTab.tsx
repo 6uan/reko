@@ -22,13 +22,23 @@
 
 import { useMemo } from 'react'
 import { ChevronRight } from 'lucide-react'
+import {
+  CartesianGrid,
+  Line,
+  LineChart,
+  ResponsiveContainer,
+  Tooltip,
+  type TooltipContentProps,
+  XAxis,
+  YAxis,
+} from 'recharts'
 import { formatDuration } from '../../lib/strava'
-import type {
-  RecordsData,
-  DistanceRecord,
-  RecordEffort,
-} from './getRecordsData'
-import { DISTANCE_DEFS } from './getRecordsData'
+import {
+  DISTANCE_DEFS,
+  type RecordsData,
+  type DistanceRecord,
+  type RecordEffort,
+} from './distances'
 
 // ── Types ─────────────────────────────────────────────────────────
 
@@ -163,15 +173,14 @@ function DistanceRow({
 
   if (!rec.best) {
     return (
-      <div className="grid grid-cols-[110px_1fr_1fr_1fr_24px] items-center px-5 py-4 border-b border-[var(--line)] last:border-b-0">
+      <div className="grid grid-cols-[110px_1fr_auto_24px] items-center gap-4 px-5 py-4 border-b border-[var(--line)] last:border-b-0">
         <span className="font-mono text-[11px] uppercase tracking-[0.1em] text-[var(--ink-3)]">
           {rec.label}
         </span>
         <span className="font-mono text-[14px] text-[var(--ink-4)]">
           no PR yet
         </span>
-        <span className="text-[var(--ink-4)]">—</span>
-        <span className="font-mono text-[11px] text-[var(--ink-4)] text-right">
+        <span className="font-mono text-[11px] text-[var(--ink-4)] text-right whitespace-nowrap">
           awaiting first effort
         </span>
         <span />
@@ -184,18 +193,26 @@ function DistanceRow({
 
   return (
     <details className="group border-b border-[var(--line)] last:border-b-0 [&[open]]:bg-[var(--card-2)]">
-      <summary className="grid grid-cols-[110px_1fr_1fr_1fr_24px] items-center px-5 py-4 cursor-pointer list-none hover:bg-[var(--card-2)] transition-colors [&::-webkit-details-marker]:hidden">
+      <summary className="grid grid-cols-[110px_1fr_auto_24px] items-center gap-4 px-5 py-4 cursor-pointer list-none hover:bg-[var(--card-2)] transition-colors [&::-webkit-details-marker]:hidden">
         <span className="font-mono text-[11px] uppercase tracking-[0.1em] text-[var(--ink-3)]">
           {rec.label}
         </span>
-        <span className="font-mono text-[18px] font-medium tabular-nums text-[var(--ink)] tracking-tight">
-          {formatDuration(rec.best.elapsedTime)}
-        </span>
-        <span className="font-mono text-[12px] tabular-nums text-[var(--ink-3)]">
-          {formatPace(pace)}
-          <span className="ml-0.5">{unitLabel}</span>
-        </span>
-        <span className="font-mono text-[11px] text-[var(--ink-4)] text-right">
+        {/* Time + pace stacked. Pace explicitly carries the /mi or /km
+            suffix so the unit toggle isn't ambiguous, and a 'pace' word
+            reinforces what the second number means at a glance. */}
+        <div className="flex items-baseline gap-3 flex-wrap min-w-0">
+          <span className="font-mono text-[18px] font-medium tabular-nums text-[var(--ink)] tracking-tight">
+            {formatDuration(rec.best.elapsedTime)}
+          </span>
+          <span className="font-mono text-[12px] tabular-nums text-[var(--ink-3)] whitespace-nowrap">
+            {formatPace(pace)}
+            <span className="text-[var(--ink-2)] font-medium ml-0.5">
+              {unitLabel}
+            </span>
+            <span className="text-[var(--ink-4)] ml-1.5">pace</span>
+          </span>
+        </div>
+        <span className="font-mono text-[11px] text-[var(--ink-4)] text-right whitespace-nowrap">
           {relTime(rec.best.startDateLocal, now)}
         </span>
         <ChevronRight
@@ -444,15 +461,36 @@ const DISTANCE_COLORS: Record<string, string> = {
   mar: '#ef8944',
 }
 
-function ProgressionChart({
-  distances,
-  now,
-}: {
-  distances: DistanceRecord[]
-  now: Date
-}) {
-  const distancesWithTrend = distances.filter((d) => d.trend.length > 0)
-  if (distancesWithTrend.length === 0) {
+function ProgressionChart({ distances }: { distances: DistanceRecord[] }) {
+  // Pivot to one row per (sorted) timestamp, columns keyed by distance.
+  // Value is "% above the all-time best for that distance" — lets every
+  // distance share one Y scale (0 = current PR, larger = slower attempts
+  // that were the running-best at the time but have since been beaten).
+  // Recharts' `connectNulls` bridges gaps where a distance has no PR
+  // event on a given date.
+  const { chartData, bestByKey, withTrend } = useMemo(() => {
+    const filtered = distances.filter((d) => d.trend.length > 0)
+    const dateMap = new Map<number, Record<string, number> & { ts: number }>()
+    const bests = new Map<string, number>()
+    for (const d of filtered) {
+      const best = Math.min(...d.trend.map((p) => p.time))
+      bests.set(d.key, best)
+      for (const point of d.trend) {
+        const ts = parseLocalDate(point.date).getTime()
+        const pct = (point.time / best - 1) * 100
+        const row = dateMap.get(ts) ?? ({ ts } as Record<string, number> & { ts: number })
+        row[d.key] = pct
+        dateMap.set(ts, row)
+      }
+    }
+    return {
+      chartData: [...dateMap.values()].sort((a, b) => a.ts - b.ts),
+      bestByKey: bests,
+      withTrend: filtered,
+    }
+  }, [distances])
+
+  if (withTrend.length === 0) {
     return (
       <div className="p-10 text-center font-mono text-[12px] text-[var(--ink-3)]">
         No PR history yet — keep running and the chart will fill in.
@@ -460,157 +498,147 @@ function ProgressionChart({
     )
   }
 
-  const W = 920
-  const H = 240
-  const pad = 28
-  const allDates = distancesWithTrend.flatMap((d) =>
-    d.trend.map((p) => parseLocalDate(p.date).getTime()),
-  )
-  const xMin = Math.min(...allDates)
-  const xMax = now.getTime()
-  const xRange = xMax - xMin || 1
-  const xPos = (t: number) => pad + ((t - xMin) / xRange) * (W - pad * 2)
+  const labelByKey = Object.fromEntries(
+    withTrend.map((d) => [d.key, d.label]),
+  ) as Record<string, string>
 
-  const series = distancesWithTrend.map((d) => {
-    const tr = d.trend
-    const best = Math.min(...tr.map((p) => p.time))
-    const worst = Math.max(...tr.map((p) => p.time))
-    const fullRange = Math.max(worst / best - 1, 0.05)
-    const yPos = (t: number) =>
-      pad + ((t / best - 1) / fullRange) * (H - pad * 2)
-    const points = tr.map(
-      (p) => [xPos(parseLocalDate(p.date).getTime()), yPos(p.time)] as const,
+  // Recharts feeds the active row to `payload[i].payload`. We render one
+  // line per series the cursor is hovering over, with absolute time
+  // recovered from `best * (1 + pct/100)` so the user sees their
+  // wall-clock PR time, not just a percentage.
+  const renderTooltip = ({
+    active,
+    payload,
+    label,
+  }: TooltipContentProps) => {
+    if (!active || !payload || payload.length === 0 || label == null) return null
+    const date = new Date(Number(label)).toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+    })
+    return (
+      <div className="bg-[var(--card)] border border-[var(--line)] rounded-lg shadow-md px-3 py-2 font-mono text-[11px] min-w-[180px]">
+        <div className="text-[var(--ink-3)] mb-1.5">{date}</div>
+        <div className="flex flex-col gap-1">
+          {payload.map((p) => {
+            const k = String(p.dataKey ?? '')
+            const best = bestByKey.get(k)
+            const pct = typeof p.value === 'number' ? p.value : 0
+            const absTime = best !== undefined ? best * (1 + pct / 100) : null
+            return (
+              <div key={k} className="flex items-center gap-2">
+                <span
+                  className="inline-block w-2 h-2 rounded-full shrink-0"
+                  style={{ background: p.color }}
+                />
+                <span className="text-[var(--ink-2)]">{labelByKey[k]}</span>
+                <span className="text-[var(--ink)] tabular-nums ml-auto">
+                  {absTime !== null ? formatDuration(absTime) : '—'}
+                </span>
+                <span className="text-[var(--ink-4)] tabular-nums">
+                  {pct < 0.05 ? 'PR' : `+${pct.toFixed(1)}%`}
+                </span>
+              </div>
+            )
+          })}
+        </div>
+      </div>
     )
-    const path = points
-      .map(
-        (p, i) => (i ? 'L' : 'M') + p[0].toFixed(1) + ',' + p[1].toFixed(1),
-      )
-      .join(' ')
-    return {
-      key: d.key,
-      path,
-      points,
-      color: DISTANCE_COLORS[d.key] ?? 'var(--ink-3)',
-      label: d.label,
-    }
-  })
-
-  // Quarterly x-axis ticks.
-  const ticks: number[] = []
-  const monthMs = 30 * 86400000
-  let t = xMin
-  while (t <= xMax) {
-    ticks.push(t)
-    t += monthMs * 3
   }
 
   return (
     <div className="p-5">
       <div className="flex justify-between items-center mb-3">
         <h4 className="text-[14px] font-medium text-[var(--ink)]">
-          PR progression · % above best
+          PR progression
         </h4>
         <span className="font-mono text-[11px] text-[var(--ink-3)]">
-          all-time PRs across distances
+          % above all-time best per distance
         </span>
       </div>
-      <svg
-        viewBox={`0 0 ${W} ${H}`}
-        preserveAspectRatio="none"
-        className="w-full"
-        style={{ height: 240, overflow: 'visible' }}
-      >
-        {ticks.map((tt) => {
-          const d = new Date(tt)
-          return (
-            <g key={tt}>
-              <line
-                x1={xPos(tt)}
-                x2={xPos(tt)}
-                y1={pad}
-                y2={H - pad}
-                stroke="var(--line)"
-                strokeDasharray="2 4"
-              />
-              <text
-                x={xPos(tt)}
-                y={H - 8}
-                fontFamily="var(--font-mono)"
-                fontSize={9}
-                fill="var(--ink-4)"
-                textAnchor="middle"
-              >
-                {d.toLocaleDateString('en', { month: 'short' })} '
-                {String(d.getFullYear()).slice(2)}
-              </text>
-            </g>
-          )
-        })}
-        {[0, 0.25, 0.5, 0.75, 1].map((p) => (
-          <line
-            key={p}
-            x1={pad}
-            x2={W - pad}
-            y1={pad + p * (H - pad * 2)}
-            y2={pad + p * (H - pad * 2)}
-            stroke="var(--line-2)"
-          />
-        ))}
-        <text
-          x={pad - 6}
-          y={pad + 4}
-          fontFamily="var(--font-mono)"
-          fontSize={9}
-          fill="var(--ink-4)"
-          textAnchor="end"
-        >
-          PR
-        </text>
-        <text
-          x={pad - 6}
-          y={H - pad + 3}
-          fontFamily="var(--font-mono)"
-          fontSize={9}
-          fill="var(--ink-4)"
-          textAnchor="end"
-        >
-          slower
-        </text>
-        {series.map((s) => (
-          <g key={s.key}>
-            <path
-              d={s.path}
-              fill="none"
-              stroke={s.color}
-              strokeWidth={1.8}
-              strokeLinejoin="round"
-              strokeLinecap="round"
+      <div style={{ width: '100%', height: 280 }}>
+        <ResponsiveContainer width="100%" height="100%">
+          <LineChart
+            data={chartData}
+            margin={{ top: 8, right: 16, bottom: 8, left: 4 }}
+          >
+            <CartesianGrid
+              stroke="var(--line-2)"
+              strokeDasharray="2 4"
+              vertical={false}
             />
-            {s.points.map((p, i) => (
-              <circle
-                key={i}
-                cx={p[0]}
-                cy={p[1]}
-                r={3}
-                fill="var(--card)"
-                stroke={s.color}
+            <XAxis
+              dataKey="ts"
+              type="number"
+              domain={['dataMin', 'dataMax']}
+              scale="time"
+              tickFormatter={(t: number) => {
+                const d = new Date(t)
+                return `${d.toLocaleDateString('en', {
+                  month: 'short',
+                })} '${String(d.getFullYear()).slice(2)}`
+              }}
+              stroke="var(--line)"
+              tickLine={false}
+              tick={{
+                fontFamily: 'var(--font-mono)',
+                fontSize: 10,
+                fill: 'var(--ink-4)',
+              }}
+              minTickGap={48}
+            />
+            <YAxis
+              tickFormatter={(v: number) =>
+                v < 0.05 ? 'PR' : `+${v.toFixed(0)}%`
+              }
+              stroke="var(--line)"
+              tickLine={false}
+              reversed
+              tick={{
+                fontFamily: 'var(--font-mono)',
+                fontSize: 10,
+                fill: 'var(--ink-4)',
+              }}
+              width={42}
+            />
+            <Tooltip
+              content={renderTooltip}
+              cursor={{ stroke: 'var(--line)', strokeDasharray: '2 4' }}
+            />
+            {withTrend.map((d) => (
+              <Line
+                key={d.key}
+                type="monotone"
+                dataKey={d.key}
+                name={d.label}
+                stroke={DISTANCE_COLORS[d.key] ?? 'var(--ink-3)'}
                 strokeWidth={1.8}
+                dot={{
+                  r: 3,
+                  fill: 'var(--card)',
+                  strokeWidth: 1.8,
+                  stroke: DISTANCE_COLORS[d.key] ?? 'var(--ink-3)',
+                }}
+                activeDot={{ r: 5 }}
+                connectNulls
+                isAnimationActive={false}
               />
             ))}
-          </g>
-        ))}
-      </svg>
+          </LineChart>
+        </ResponsiveContainer>
+      </div>
       <div className="flex gap-3.5 flex-wrap font-mono text-[11px] text-[var(--ink-3)] mt-3">
-        {series.map((s) => (
+        {withTrend.map((d) => (
           <span
-            key={s.key}
+            key={d.key}
             className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md"
           >
             <span
               className="inline-block w-2.5 h-0.5 rounded-sm"
-              style={{ background: s.color }}
+              style={{ background: DISTANCE_COLORS[d.key] ?? 'var(--ink-3)' }}
             />
-            {s.label}
+            {d.label}
           </span>
         ))}
       </div>
@@ -993,7 +1021,7 @@ export default function Records({ data, runs, unit }: Props) {
         title="Progression over time"
         meta={`${totalPrs} distance${totalPrs === 1 ? '' : 's'} tracked`}
       >
-        <ProgressionChart distances={orderedDistances} now={now} />
+        <ProgressionChart distances={orderedDistances} />
       </Disclosure>
 
       <Disclosure

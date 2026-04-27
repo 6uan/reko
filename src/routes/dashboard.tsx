@@ -154,9 +154,9 @@ function Dashboard() {
   const [tab, setTab] = useState<TabId>('overview')
   const [unit, setUnit] = useState<'km' | 'mi'>(() => {
     if (typeof window !== 'undefined') {
-      return (localStorage.getItem('reko-unit') as 'km' | 'mi') || 'km'
+      return (localStorage.getItem('reko-unit') as 'km' | 'mi') || 'mi'
     }
-    return 'km'
+    return 'mi'
   })
 
   // Bumped on every Resync click → forces SyncBanner to remount and
