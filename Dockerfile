@@ -44,11 +44,15 @@ COPY package.json pnpm-lock.yaml ./
 COPY --from=deps /app/node_modules ./node_modules
 COPY --from=build /app/dist ./dist
 
-# Drizzle config + schema needed for `drizzle-kit push` from the migrate
-# service. Cheap to copy; keeps the image self-contained.
+# Drizzle config + schema. Required at runtime because `start:prod` runs
+# `drizzle-kit push --force` against the live DB before starting the
+# server — keeps the schema in sync on every deploy without manual steps.
 COPY drizzle.config.ts ./
 COPY src/db ./src/db
 
 EXPOSE 3000
 
-CMD ["pnpm", "start"]
+# `start:prod` = migrate-then-serve. If the migration fails, the server
+# never starts and Coolify keeps the previous container running, so a
+# bad schema change can't take down prod.
+CMD ["pnpm", "start:prod"]

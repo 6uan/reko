@@ -13,6 +13,7 @@
     "dev": "vite dev --port 3000",
     "build": "vite build && bash scripts/fix-css-hash.sh",
     "start": "srvx --prod -s ../client --port ${PORT:-3000} dist/server/server.js",
+    "start:prod": "drizzle-kit push --force && srvx --prod -s ../client --port ${PORT:-3000} dist/server/server.js",
     "preview": "vite preview",
     "test": "vitest run",
     "db:push": "drizzle-kit push",
