@@ -25,6 +25,7 @@ import PaceTab from '../features/pace/PaceTab'
 import HeartRateTab from '../features/heart-rate/HeartRateTab'
 import CadenceTab from '../features/cadence/CadenceTab'
 import RecordsTab from '../features/records/RecordsTab'
+import { getRecordsData } from '../features/records/getRecordsData'
 
 // ── Types ──────────────────────────────────────────────────────────
 
@@ -104,8 +105,14 @@ const loadDashboardData = createServerFn({ method: 'GET' }).handler(
       .orderBy(desc(syncLog.startedAt))
       .limit(1)
 
+    // Best-efforts-derived per-distance PR data for the Records tab.
+    // Cheap (one indexed query joined to activities); keeping it in the
+    // single loader so client doesn't waterfall on tab switch.
+    const records = await getRecordsData(d.userId)
+
     return {
       runs,
+      records,
       athlete: {
         firstname: d.firstname,
         lastname: d.lastname,
@@ -142,7 +149,7 @@ const TABS: { id: TabId; icon: typeof LayoutDashboard; label: string }[] = [
 // ── Dashboard component ────────────────────────────────────────────
 
 function Dashboard() {
-  const { runs, athlete, lastSyncFinishedAt: initialFinishedAt } =
+  const { runs, records, athlete, lastSyncFinishedAt: initialFinishedAt } =
     Route.useLoaderData()
   const [tab, setTab] = useState<TabId>('overview')
   const [unit, setUnit] = useState<'km' | 'mi'>(() => {
@@ -307,7 +314,9 @@ function Dashboard() {
           {tab === 'pace' && <PaceTab runs={runs} unit={unit} />}
           {tab === 'heart' && <HeartRateTab runs={runs} unit={unit} />}
           {tab === 'cadence' && <CadenceTab runs={runs} unit={unit} />}
-          {tab === 'records' && <RecordsTab runs={runs} unit={unit} />}
+          {tab === 'records' && (
+            <RecordsTab data={records} runs={runs} unit={unit} />
+          )}
         </div>
       </main>
     </div>

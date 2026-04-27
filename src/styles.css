@@ -383,3 +383,18 @@ nav.site.scrolled {
   margin-left: 2px;
   animation: blink 1s step-end infinite;
 }
+
+/* ─── Pulse ring (Records hero "Latest PR" indicator) ─── */
+@keyframes pulse-ring {
+  0% {
+    transform: scale(0.7);
+    opacity: 0.8;
+  }
+  70% {
+    transform: scale(1.6);
+    opacity: 0;
+  }
+  100% {
+    opacity: 0;
+  }
+}
