@@ -393,7 +393,7 @@ export default function Activities({ activities, unit }: Props) {
               onClick={() => setActiveFilter(f.key)}
               className={`px-3 py-1.5 text-[12px] rounded-full transition-colors ${
                 isActive
-                  ? "bg-[var(--ink)] text-white"
+                  ? "bg-[var(--ink)] text-[var(--bg)]"
                   : "bg-[var(--card)] border border-[var(--line)] text-[var(--ink-3)] hover:text-[var(--ink)]"
               }`}
             >

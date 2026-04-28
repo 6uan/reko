@@ -10,6 +10,7 @@ import { enqueueBackfill } from '../features/sync/backfillActivities'
 import ResyncButton from '../features/sync/ResyncButton'
 import { useLiveUpdates } from '../features/sync/useLiveUpdates'
 import { Avatar } from '../ui/Avatar'
+import IconButton from '../ui/IconButton'
 import SyncBanner from '../features/sync/SyncBanner'
 import {
   LayoutDashboard,
@@ -274,41 +275,39 @@ function Dashboard() {
     <div className="min-h-screen bg-[var(--bg)]">
       {/* Sidebar */}
       <aside className="fixed left-0 top-0 bottom-0 w-[240px] bg-[var(--bg-2)] border-r border-[var(--line)] flex flex-col z-40 max-lg:hidden">
-        {/* Brand */}
+        {/* Brand — Tilt Warp wordmark, identical to the home Header so
+            the brand identity travels between marketing and app surfaces.
+            Same `font-display text-[32px] leading-none` recipe as
+            `src/ui/Header.tsx`; if you tweak one, update the other. */}
         <div className="px-5 py-5">
           <Link
             to="/"
-            className="inline-flex items-center gap-2.5 no-underline"
+            className="font-display text-[32px] leading-none text-[var(--ink)] no-underline"
           >
-            <span className="brand-mark">
-              <span>R</span>
-            </span>
-            <span className="font-semibold text-xl tracking-tight text-[var(--ink)]">
-              Reko
-            </span>
+            Reko
           </Link>
         </div>
 
         {/* Nav */}
-        <nav className="flex-1 px-3.5 mt-1">
-          <p className="px-2.5 mb-2 font-mono text-[10px] uppercase tracking-[0.1em] text-[var(--ink-4)]">
+        <nav className="flex-1 px-3 mt-2">
+          <p className="px-3 mb-3 font-mono text-[11px] uppercase tracking-[0.1em] text-[var(--ink-4)]">
             Training
           </p>
-          <div className="flex flex-col gap-0.5">
+          <div className="flex flex-col gap-1">
             {TABS.map(({ id, icon: Icon, label }) => (
               <button
                 key={id}
                 onClick={() => selectTab(id)}
-                className={`w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-[13px] transition-colors cursor-pointer ${
+                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-[15px] transition-colors cursor-pointer ${
                   tab === id
                     ? 'bg-[var(--card)] text-[var(--ink)] font-medium shadow-[0_1px_2px_rgba(0,0,0,0.04)] border border-[var(--line)]'
                     : 'text-[var(--ink-2)] hover:bg-[rgba(0,0,0,0.04)] hover:text-[var(--ink)] border border-transparent'
                 }`}
               >
                 <Icon
-                  size={14}
+                  size={18}
                   className={
-                    tab === id ? 'text-[var(--accent)]' : 'opacity-80'
+                    tab === id ? 'text-[var(--accent)]' : 'opacity-60'
                   }
                 />
                 {label}
@@ -319,17 +318,17 @@ function Dashboard() {
 
         {/* Profile + Resync button (button is a sibling of the link to
             avoid nesting interactive elements, which is invalid HTML). */}
-        <div className="relative mx-3.5 mb-3.5">
+        <div className="relative mx-3 mb-3.5">
           <Link
             to="/profile"
-            className="flex items-center gap-2.5 px-3 py-2.5 border border-[var(--line)] rounded-[10px] bg-[var(--card)] no-underline hover:bg-[var(--card-2)] transition-colors"
+            className="flex items-center gap-3 px-3.5 py-3 border border-[var(--line)] rounded-[10px] bg-[var(--card)] no-underline hover:bg-[var(--card-2)] transition-colors"
           >
             <Avatar name={athlete.firstname} size="md" />
             <div>
-              <div className="text-[13px] font-medium text-[var(--ink)]">
+              <div className="text-[14px] font-medium text-[var(--ink)]">
                 {athlete.firstname} {athlete.lastname}
               </div>
-              <div className="font-mono text-[10px] text-[var(--ink-4)]">
+              <div className="font-mono text-[11px] text-[var(--ink-4)]">
                 {dashboardActivities.length} activities loaded
               </div>
             </div>
@@ -357,14 +356,13 @@ function Dashboard() {
           <div className="flex items-center gap-3 font-mono text-[12px] text-[var(--ink-3)]">
             {/* Mobile nav trigger — only visible below lg, where the
                 desktop sidebar is hidden. Sits at top-left as requested. */}
-            <button
-              type="button"
+            <IconButton
               onClick={() => setMobileNavOpen(true)}
               aria-label="Open navigation"
-              className="lg:hidden -ml-1 inline-flex items-center justify-center w-9 h-9 rounded-lg text-[var(--ink-2)] hover:text-[var(--ink)] hover:bg-[var(--card)] transition-colors"
+              className="lg:hidden"
             >
-              <HiViewGridAdd size={20} />
-            </button>
+              <HiViewGridAdd size={18} />
+            </IconButton>
             <strong className="text-[var(--ink)] font-medium">
               {activeTab.label}
             </strong>
@@ -433,28 +431,15 @@ function Dashboard() {
           so familiarity carries between viewports. */}
       {mobileNavOpen && (
         <div className="lg:hidden fixed inset-0 z-50 bg-[var(--bg)] flex flex-col">
-          {/* Drawer header */}
-          <div className="flex items-center justify-between px-4 py-3.5 border-b border-[var(--line)]">
-            <Link
-              to="/"
-              onClick={() => setMobileNavOpen(false)}
-              className="inline-flex items-center gap-2.5 no-underline"
-            >
-              <span className="brand-mark">
-                <span>R</span>
-              </span>
-              <span className="font-semibold text-xl tracking-tight text-[var(--ink)]">
-                Reko
-              </span>
-            </Link>
-            <button
-              type="button"
+          {/* Drawer header — close button sits in the same spot as the
+              grid icon that opened the drawer so the tap target stays put. */}
+          <div className="flex items-center px-4 py-3.5 border-b border-[var(--line)]">
+            <IconButton
               onClick={() => setMobileNavOpen(false)}
               aria-label="Close navigation"
-              className="inline-flex items-center justify-center w-9 h-9 rounded-lg text-[var(--ink-2)] hover:text-[var(--ink)] hover:bg-[var(--card)] transition-colors"
             >
-              <X size={20} />
-            </button>
+              <X size={18} />
+            </IconButton>
           </div>
 
           {/* Tab grid — 2 columns, bold labels per the user's spec.
@@ -492,10 +477,20 @@ function Dashboard() {
             </div>
           </nav>
 
-          {/* User card — same shape as the desktop sidebar footer.
-              Profile link + Resync button are siblings (nesting buttons
-              inside an anchor would be invalid HTML). Activity count
-              shown explicitly per the user's request. */}
+          {/* Bottom actions — Home link + user card */}
+          <div className="mx-4 mb-2">
+            <Link
+              to="/"
+              onClick={() => setMobileNavOpen(false)}
+              className="flex items-center gap-2.5 px-3 py-2.5 rounded-[10px] text-[13px] font-medium text-[var(--ink-2)] no-underline hover:bg-[var(--card)] hover:text-[var(--ink)] transition-colors"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+                <polyline points="9 22 9 12 15 12 15 22" />
+              </svg>
+              Back to home
+            </Link>
+          </div>
           <div className="relative mx-4 mb-4">
             <Link
               to="/profile"

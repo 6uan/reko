@@ -1,4 +1,5 @@
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute, Link } from '@tanstack/react-router'
+import { LayoutDashboard } from 'lucide-react'
 import DashboardMockup from '../features/landing/DashboardMockup'
 import StatsStrip from '../features/landing/StatsStrip'
 import OpenSourceSection from '../features/landing/OpenSourceSection'
@@ -6,44 +7,55 @@ import OpenSourceSection from '../features/landing/OpenSourceSection'
 export const Route = createFileRoute('/')({ component: Home })
 
 function Home() {
+  // Pull session from the root route's context so the hero CTA can
+  // adapt to auth state. Logged-out → "Connect with Strava". Logged-in
+  // → "Go to dashboard" (otherwise mobile users have nowhere to click,
+  // since the header's Dashboard link is hidden below the mobile
+  // breakpoint via `hide-m`).
+  const { session } = Route.useRouteContext()
+
   return (
     <>
       <section className="pt-[72px] pb-10 max-sm:pt-10 relative overflow-x-hidden">
         <div className="wrap">
-          <div className="inline-flex items-center gap-2.5 px-3 py-1.5 pl-2 bg-[var(--card)] border border-[var(--line)] rounded-full font-mono text-xs font-medium text-[var(--ink-2)] shadow-[var(--shadow-s)]">
-            <span className="w-1.5 h-1.5 rounded-full bg-[var(--accent)] shadow-[0_0_0_3px_rgba(var(--accent-glow),0.18)]" />
-            <span>v0.1 &middot; open-source</span>
-            <span className="text-[var(--ink-4)]">&middot;</span>
-            <span>self-hosted</span>
-          </div>
-
-          <h1 className="text-[clamp(44px,7.5vw,92px)] leading-[0.98] tracking-[-0.035em] font-medium mt-[22px] text-[var(--ink)] max-w-[14ch]">
+          <h1 className="text-[clamp(56px,7.5vw,92px)] leading-[0.98] tracking-[-0.035em] font-medium mt-[22px] text-[var(--ink)] max-w-[14ch]">
             Every run,<br />
             <em className="not-italic text-[var(--accent)] font-medium">measured.</em>
           </h1>
 
           <p className="text-[19px] leading-normal text-[var(--ink-2)] mt-6 max-w-[52ch] tracking-tight">
-            Reko plugs into your Strava and shows the progress Strava doesn't.{' '}
+            Reko syncs with your Strava and goes deeper into your data.{' '}
             <strong className="text-[var(--ink)] font-medium">Personal records across every distance,</strong> leaderboards
             of your own efforts, and pace trends you can actually read.
             Self-hosted. Your data stays yours.
           </p>
 
           <div className="flex gap-2.5 mt-8 flex-wrap items-center max-sm:[&_.btn]:flex-1">
-            <a
-              href="/auth/strava"
-              aria-label="Connect with Strava"
-              className="inline-block transition-transform duration-150 ease-out hover:-translate-y-0.5 max-sm:flex-1"
-            >
-              <img
-                src="/strava/btn_strava_connect_with_orange@2x.png"
-                srcSet="/strava/btn_strava_connect_with_orange.png 1x, /strava/btn_strava_connect_with_orange@2x.png 2x"
-                alt="Connect with Strava"
-                width={237}
-                height={48}
-                className="block h-12 w-auto max-sm:w-full max-sm:h-auto"
-              />
-            </a>
+            {session ? (
+              <Link
+                to="/dashboard"
+                aria-label="Go to dashboard"
+                className="btn btn-primary max-sm:flex-1"
+              >
+                <LayoutDashboard size={16} />
+                Go to dashboard
+              </Link>
+            ) : (
+              <a
+                href="/auth/strava"
+                aria-label="Connect with Strava"
+                className="inline-block transition-transform duration-150 ease-out hover:-translate-y-0.5 max-sm:flex-1"
+              >
+                <img
+                  src="/strava/btn_strava_connect_with_orange@2x.png"
+                  srcSet="/strava/btn_strava_connect_with_orange.png 1x, /strava/btn_strava_connect_with_orange@2x.png 2x"
+                  alt="Connect with Strava"
+                  width={237}
+                  height={48}
+                  className="block h-12 w-auto max-sm:w-full max-sm:h-auto"
+                />
+              </a>
+            )}
             <a
               href="https://github.com/6uan/reko"
               target="_blank"
@@ -59,7 +71,7 @@ function Home() {
 
           <div className="mt-[22px] flex items-center gap-3.5 font-mono text-xs text-[var(--ink-3)]">
             <span className="px-2 py-1 rounded-md bg-[var(--card-2)] border border-[var(--line-2)]">MIT</span>
-            <span>self-hosted &middot; Docker or Coolify</span>
+            <span>v0.1 &middot; open-source &middot; self-hosted</span>
           </div>
 
           <DashboardMockup />

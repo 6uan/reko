@@ -1,4 +1,4 @@
-@import url("https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&family=Tilt+Warp&display=swap");
 @import "tailwindcss";
 @plugin "@tailwindcss/typography";
 
@@ -12,6 +12,11 @@
     Arial, sans-serif;
   --font-mono:
     "Geist Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  /* Display face reserved for the brand mark / hero accents — never use
+     for body or UI chrome. Tilt Warp is a variable display sans-serif
+     with built-in chunkiness; only ships in 400 weight, the variable
+     axes (XROT/YROT) are unused for now. */
+  --font-display: "Tilt Warp", ui-sans-serif, system-ui, sans-serif;
 }
 
 /* ─── Light mode (default) ─── */
@@ -58,6 +63,7 @@
     Arial, sans-serif;
   --font-mono:
     "Geist Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --font-display: "Tilt Warp", ui-sans-serif, system-ui, sans-serif;
 }
 
 /* ─── Dark mode: explicit class ─── */

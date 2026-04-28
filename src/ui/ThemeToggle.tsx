@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Sun, Moon } from 'lucide-react'
+import IconButton from './IconButton'
 
 type ThemeMode = 'light' | 'dark'
 
@@ -45,14 +46,8 @@ export default function ThemeToggle() {
   const label = mode === 'light' ? 'Switch to dark mode' : 'Switch to light mode'
 
   return (
-    <button
-      type="button"
-      onClick={toggle}
-      aria-label={label}
-      title={label}
-      className="inline-flex items-center justify-center w-9 h-9 rounded-[var(--radius-s)] border border-[var(--line)] bg-[var(--card)] text-[var(--ink-2)] cursor-pointer transition-[background,border-color,color] duration-[180ms] ease-in-out hover:border-[var(--ink-4)] hover:text-[var(--ink)]"
-    >
+    <IconButton onClick={toggle} aria-label={label} title={label}>
       <Icon size={18} strokeWidth={1.8} />
-    </button>
+    </IconButton>
   )
 }

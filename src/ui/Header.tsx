@@ -1,7 +1,8 @@
 import { useEffect, useRef } from 'react'
-import { Link } from '@tanstack/react-router'
+import { Link, useNavigate } from '@tanstack/react-router'
 import ThemeToggle from './ThemeToggle'
 import { Avatar } from './Avatar'
+import IconButton from './IconButton'
 import type { SessionData } from '../features/auth/session'
 
 export default function Header({
@@ -10,6 +11,11 @@ export default function Header({
   session: SessionData | null
 }) {
   const navRef = useRef<HTMLElement>(null)
+  // Imperative navigate for the profile IconButton — links can't be
+  // nested in <button>, and we want the profile entry to literally
+  // reuse the IconButton component (matching the ThemeToggle's chrome)
+  // rather than re-styling a Link.
+  const navigate = useNavigate()
 
   useEffect(() => {
     function onScroll() {
@@ -26,14 +32,16 @@ export default function Header({
       ref={navRef}
     >
       <div className="flex items-center justify-between max-w-[1240px] mx-auto py-3.5 sm:py-[18px]">
+        {/* Brand mark — Tilt Warp display sans, sized to feel
+            substantial alongside the 36px IconButtons on the right so it
+            reads as a logo rather than a nav link. `leading-none` keeps
+            it visually centred in the header row without padding the
+            line-height. */}
         <Link
           to="/"
-          className="inline-flex items-center gap-2.5 font-semibold text-lg tracking-tight text-[var(--ink)] no-underline"
+          className="font-display text-[32px] leading-none text-[var(--ink)] no-underline"
         >
-          <span className="brand-mark">
-            <span>R</span>
-          </span>
-          <span>Reko</span>
+          Reko
         </Link>
 
         <div className="flex items-center gap-1 sm:gap-1.5">
@@ -77,13 +85,21 @@ export default function Header({
           <ThemeToggle />
 
           {session ? (
-            <Link
-              to="/profile"
-              className="inline-flex items-center gap-2 text-sm font-medium text-[var(--ink-2)] no-underline px-2 py-1.5 rounded-[10px] transition-[background,color] duration-150 ease-in-out hover:bg-[rgba(20,20,20,0.05)] hover:text-[var(--ink)]"
+            // Profile entry: one IconButton holding the avatar and the
+            // name side by side. IconButton's `min-w-9 sm:px-2 gap-2`
+            // lets it grow into a pill once a label child is present.
+            // Name shows at every breakpoint — if the header ever gets
+            // crowded on tiny viewports we can re-introduce a responsive
+            // hide on the span (e.g. `max-[360px]:hidden`).
+            <IconButton
+              aria-label="Profile"
+              onClick={() => navigate({ to: '/profile' })}
             >
-              <Avatar name={session.firstname} size="sm" />
-              <span className="hide-m">{session.firstname}</span>
-            </Link>
+              <Avatar name={session.firstname} size="xs" />
+              <span className="text-sm font-medium pr-1">
+                {session.firstname}
+              </span>
+            </IconButton>
           ) : (
             <Link
               to="/auth/strava"
