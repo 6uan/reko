@@ -98,7 +98,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
         <HeadContent />
       </head>
-      <body className="font-sans antialiased [overflow-wrap:anywhere] selection:bg-[var(--accent-soft)]">
+      <body className="font-sans antialiased wrap-anywhere selection:bg-(--accent-soft)">
         {children}
         <Scripts />
       </body>

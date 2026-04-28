@@ -3,31 +3,16 @@ import {
   speedToPaceSeconds,
   formatPace,
 } from '../../lib/strava'
-
-// ── Types ─────────────────────────────────────────────────────────
-
-export type DashboardRun = {
-  id: number
-  name: string
-  date: string
-  distanceMeters: number
-  movingTime: number
-  avgSpeed: number
-  avgHr: number | null
-  maxHr: number | null
-  cadence: number | null
-  elevation: number
-  prCount: number
-}
+import { type DashboardRun, type Unit } from '../../lib/activities'
 
 type Props = {
   runs: DashboardRun[]
-  unit: 'km' | 'mi'
+  unit: Unit
 }
 
 // ── Helpers ───────────────────────────────────────────────────────
 
-function paceForUnit(speedMs: number, unit: 'km' | 'mi'): number {
+function paceForUnit(speedMs: number, unit: Unit): number {
   const paceSec = speedToPaceSeconds(speedMs)
   return unit === 'mi' ? paceSec * 1.60934 : paceSec
 }
@@ -50,11 +35,11 @@ function linearRegression(pts: { x: number; y: number }[]) {
 
 const CADENCE_RANGES = [
   { label: '185+', min: 185, max: Infinity },
-  { label: '180–184', min: 180, max: 185 },
-  { label: '175–179', min: 175, max: 180 },
-  { label: '170–174', min: 170, max: 175 },
-  { label: '165–169', min: 165, max: 170 },
-  { label: '160–164', min: 160, max: 165 },
+  { label: '180-184', min: 180, max: 185 },
+  { label: '175-179', min: 175, max: 180 },
+  { label: '170-174', min: 170, max: 175 },
+  { label: '165-169', min: 165, max: 170 },
+  { label: '160-164', min: 160, max: 165 },
   { label: '<160', min: 0, max: 160 },
 ]
 
@@ -153,90 +138,90 @@ export default function Cadence({ runs, unit }: Props) {
     <div className="flex flex-col gap-4">
       {/* KPI Row */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5">
-        <div className="bg-[var(--card)] border border-[var(--line)] rounded-[14px] p-4">
-          <div className="font-mono text-[10px] uppercase tracking-widest text-[var(--ink-4)]">
+        <div className="bg-(--card) border border-(--line) rounded-[14px] p-4">
+          <div className="font-mono text-[10px] uppercase tracking-widest text-(--ink-4)">
             Highest cadence
           </div>
           <div className="font-mono text-[26px] font-medium tracking-tight tabular-nums mt-1.5">
             {highestCadence ? highestCadence.cadence : '—'}
-            <span className="text-[13px] text-[var(--ink-3)] ml-0.5 font-normal">spm</span>
+            <span className="text-[13px] text-(--ink-3) ml-0.5 font-normal">spm</span>
           </div>
-          <div className="font-mono text-[11px] mt-1.5 text-[var(--ink-3)]">
+          <div className="font-mono text-[11px] mt-1.5 text-(--ink-3)">
             {highestCadence ? highestCadence.name : 'No data'}
           </div>
         </div>
 
-        <div className="bg-[var(--card)] border border-[var(--line)] rounded-[14px] p-4">
-          <div className="font-mono text-[10px] uppercase tracking-widest text-[var(--ink-4)]">
+        <div className="bg-(--card) border border-(--line) rounded-[14px] p-4">
+          <div className="font-mono text-[10px] uppercase tracking-widest text-(--ink-4)">
             Average cadence
           </div>
           <div className="font-mono text-[26px] font-medium tracking-tight tabular-nums mt-1.5">
             {avgCadence > 0 ? avgCadence : '—'}
-            <span className="text-[13px] text-[var(--ink-3)] ml-0.5 font-normal">spm</span>
+            <span className="text-[13px] text-(--ink-3) ml-0.5 font-normal">spm</span>
           </div>
-          <div className="font-mono text-[11px] mt-1.5 text-[var(--ink-3)]">
+          <div className="font-mono text-[11px] mt-1.5 text-(--ink-3)">
             {withCadence.length} runs with cadence
           </div>
         </div>
 
-        <div className="bg-[var(--card)] border border-[var(--line)] rounded-[14px] p-4">
-          <div className="font-mono text-[10px] uppercase tracking-widest text-[var(--ink-4)]">
+        <div className="bg-(--card) border border-(--line) rounded-[14px] p-4">
+          <div className="font-mono text-[10px] uppercase tracking-widest text-(--ink-4)">
             Best pace at 180+ spm
           </div>
           <div className="font-mono text-[26px] font-medium tracking-tight tabular-nums mt-1.5">
             {fastestAtHighCadence
               ? formatPace(paceForUnit(fastestAtHighCadence.avgSpeed, unit))
               : '—'}
-            <span className="text-[13px] text-[var(--ink-3)] ml-0.5 font-normal">{unitLabel}</span>
+            <span className="text-[13px] text-(--ink-3) ml-0.5 font-normal">{unitLabel}</span>
           </div>
-          <div className="font-mono text-[11px] mt-1.5 text-[var(--ink-3)]">
+          <div className="font-mono text-[11px] mt-1.5 text-(--ink-3)">
             {fastestAtHighCadence ? fastestAtHighCadence.name : 'No runs at 180+'}
           </div>
         </div>
 
-        <div className="bg-[var(--card)] border border-[var(--line)] rounded-[14px] p-4">
-          <div className="font-mono text-[10px] uppercase tracking-widest text-[var(--ink-4)]">
+        <div className="bg-(--card) border border-(--line) rounded-[14px] p-4">
+          <div className="font-mono text-[10px] uppercase tracking-widest text-(--ink-4)">
             Cadence ranges hit
           </div>
           <div className="font-mono text-[26px] font-medium tracking-tight tabular-nums mt-1.5">
             {bestByRange.filter((r) => r.bestRun !== null).length}
-            <span className="text-[13px] text-[var(--ink-3)] ml-0.5 font-normal">
+            <span className="text-[13px] text-(--ink-3) ml-0.5 font-normal">
               / {CADENCE_RANGES.length}
             </span>
           </div>
-          <div className="font-mono text-[11px] mt-1.5 text-[var(--ink-3)]">
+          <div className="font-mono text-[11px] mt-1.5 text-(--ink-3)">
             Ranges with data
           </div>
         </div>
       </div>
 
       {/* Best pace per cadence range */}
-      <div className="bg-[var(--card)] border border-[var(--line)] rounded-[14px] overflow-hidden">
-        <div className="px-4 py-3 border-b border-[var(--line)]">
-          <h3 className="text-[15px] font-medium text-[var(--ink)]">
+      <div className="bg-(--card) border border-(--line) rounded-[14px] overflow-hidden">
+        <div className="px-4 py-3 border-b border-(--line)">
+          <h3 className="text-[15px] font-medium text-(--ink)">
             Best pace at each cadence range
           </h3>
-          <p className="font-mono text-[11px] text-[var(--ink-4)] mt-0.5">
+          <p className="font-mono text-[11px] text-(--ink-4) mt-0.5">
             Highest cadence first
           </p>
         </div>
         <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse min-w-[600px]">
+          <table className="w-full text-left border-collapse min-w-150">
             <thead>
               <tr>
-                <th className="bg-[var(--card-2)] font-mono text-[10px] uppercase tracking-widest text-[var(--ink-4)] px-3 py-2.5 text-left font-medium">
+                <th className="bg-(--card-2) font-mono text-[10px] uppercase tracking-widest text-(--ink-4) px-3 py-2.5 text-left font-medium">
                   Cadence range
                 </th>
-                <th className="bg-[var(--card-2)] font-mono text-[10px] uppercase tracking-widest text-[var(--ink-4)] px-3 py-2.5 text-left font-medium">
+                <th className="bg-(--card-2) font-mono text-[10px] uppercase tracking-widest text-(--ink-4) px-3 py-2.5 text-left font-medium">
                   Best pace
                 </th>
-                <th className="bg-[var(--card-2)] font-mono text-[10px] uppercase tracking-widest text-[var(--ink-4)] px-3 py-2.5 text-left font-medium">
+                <th className="bg-(--card-2) font-mono text-[10px] uppercase tracking-widest text-(--ink-4) px-3 py-2.5 text-left font-medium">
                   Activity
                 </th>
-                <th className="bg-[var(--card-2)] font-mono text-[10px] uppercase tracking-widest text-[var(--ink-4)] px-3 py-2.5 text-left font-medium">
+                <th className="bg-(--card-2) font-mono text-[10px] uppercase tracking-widest text-(--ink-4) px-3 py-2.5 text-left font-medium">
                   Date
                 </th>
-                <th className="bg-[var(--card-2)] font-mono text-[10px] uppercase tracking-widest text-[var(--ink-4)] px-3 py-2.5 text-right font-medium">
+                <th className="bg-(--card-2) font-mono text-[10px] uppercase tracking-widest text-(--ink-4) px-3 py-2.5 text-right font-medium">
                   Runs
                 </th>
               </tr>
@@ -244,26 +229,26 @@ export default function Cadence({ runs, unit }: Props) {
             <tbody>
               {bestByRange.map((range) => (
                 <tr key={range.label}>
-                  <td className="px-3 py-3 border-b border-[var(--line-2)] text-[13px] font-medium text-[var(--ink)]">
+                  <td className="px-3 py-3 border-b border-(--line-2) text-[13px] font-medium text-(--ink)">
                     {range.label}
-                    <span className="text-[var(--ink-3)] ml-0.5">spm</span>
+                    <span className="text-(--ink-3) ml-0.5">spm</span>
                   </td>
-                  <td className="px-3 py-3 border-b border-[var(--line-2)] text-[13px] font-mono tabular-nums">
+                  <td className="px-3 py-3 border-b border-(--line-2) text-[13px] font-mono tabular-nums">
                     {range.bestRun ? (
-                      <span className="text-[var(--accent)] font-medium">
+                      <span className="text-(--accent) font-medium">
                         {formatPace(paceForUnit(range.bestRun.avgSpeed, unit))}
-                        <span className="text-[var(--ink-3)] font-normal ml-0.5">
+                        <span className="text-(--ink-3) font-normal ml-0.5">
                           {unitLabel}
                         </span>
                       </span>
                     ) : (
-                      <span className="text-[var(--ink-4)]">—</span>
+                      <span className="text-(--ink-4)">—</span>
                     )}
                   </td>
-                  <td className="px-3 py-3 border-b border-[var(--line-2)] text-[13px] text-[var(--ink-3)]">
+                  <td className="px-3 py-3 border-b border-(--line-2) text-[13px] text-(--ink-3)">
                     {range.bestRun?.name ?? '—'}
                   </td>
-                  <td className="px-3 py-3 border-b border-[var(--line-2)] text-[13px] font-mono tabular-nums text-[var(--ink-3)]">
+                  <td className="px-3 py-3 border-b border-(--line-2) text-[13px] font-mono tabular-nums text-(--ink-3)">
                     {range.bestRun
                       ? new Date(range.bestRun.date).toLocaleDateString('en-GB', {
                           day: 'numeric',
@@ -272,7 +257,7 @@ export default function Cadence({ runs, unit }: Props) {
                         })
                       : '—'}
                   </td>
-                  <td className="px-3 py-3 border-b border-[var(--line-2)] text-[13px] font-mono tabular-nums text-[var(--ink-3)] text-right">
+                  <td className="px-3 py-3 border-b border-(--line-2) text-[13px] font-mono tabular-nums text-(--ink-3) text-right">
                     {range.count}
                   </td>
                 </tr>
@@ -283,8 +268,8 @@ export default function Cadence({ runs, unit }: Props) {
       </div>
 
       {/* Scatter plot */}
-      <div className="bg-[var(--card)] border border-[var(--line)] rounded-[14px] p-4">
-        <div className="font-mono text-[10px] uppercase tracking-widest text-[var(--ink-4)] mb-3">
+      <div className="bg-(--card) border border-(--line) rounded-[14px] p-4">
+        <div className="font-mono text-[10px] uppercase tracking-widest text-(--ink-4) mb-3">
           Cadence vs pace
         </div>
         <svg viewBox="0 0 560 200" className="w-full" role="img">
@@ -341,32 +326,32 @@ export default function Cadence({ runs, unit }: Props) {
       </div>
 
       {/* All runs table sorted by cadence */}
-      <div className="bg-[var(--card)] border border-[var(--line)] rounded-[14px] overflow-hidden">
-        <div className="px-4 py-3 border-b border-[var(--line)]">
-          <h3 className="text-[15px] font-medium text-[var(--ink)]">
+      <div className="bg-(--card) border border-(--line) rounded-[14px] overflow-hidden">
+        <div className="px-4 py-3 border-b border-(--line)">
+          <h3 className="text-[15px] font-medium text-(--ink)">
             All runs by cadence
           </h3>
-          <p className="font-mono text-[11px] text-[var(--ink-4)] mt-0.5">
+          <p className="font-mono text-[11px] text-(--ink-4) mt-0.5">
             Highest first
           </p>
         </div>
         <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse min-w-[600px]">
+          <table className="w-full text-left border-collapse min-w-150">
             <thead>
               <tr>
-                <th className="bg-[var(--card-2)] font-mono text-[10px] uppercase tracking-widest text-[var(--ink-4)] px-3 py-2.5 text-left font-medium">
+                <th className="bg-(--card-2) font-mono text-[10px] uppercase tracking-widest text-(--ink-4) px-3 py-2.5 text-left font-medium">
                   Activity
                 </th>
-                <th className="bg-[var(--card-2)] font-mono text-[10px] uppercase tracking-widest text-[var(--ink-4)] px-3 py-2.5 text-left font-medium">
+                <th className="bg-(--card-2) font-mono text-[10px] uppercase tracking-widest text-(--ink-4) px-3 py-2.5 text-left font-medium">
                   Cadence
                 </th>
-                <th className="bg-[var(--card-2)] font-mono text-[10px] uppercase tracking-widest text-[var(--ink-4)] px-3 py-2.5 text-left font-medium">
+                <th className="bg-(--card-2) font-mono text-[10px] uppercase tracking-widest text-(--ink-4) px-3 py-2.5 text-left font-medium">
                   Pace
                 </th>
-                <th className="bg-[var(--card-2)] font-mono text-[10px] uppercase tracking-widest text-[var(--ink-4)] px-3 py-2.5 text-left font-medium">
+                <th className="bg-(--card-2) font-mono text-[10px] uppercase tracking-widest text-(--ink-4) px-3 py-2.5 text-left font-medium">
                   Stride
                 </th>
-                <th className="bg-[var(--card-2)] font-mono text-[10px] uppercase tracking-widest text-[var(--ink-4)] px-3 py-2.5 text-left font-medium">
+                <th className="bg-(--card-2) font-mono text-[10px] uppercase tracking-widest text-(--ink-4) px-3 py-2.5 text-left font-medium">
                   Date
                 </th>
               </tr>
@@ -377,21 +362,21 @@ export default function Cadence({ runs, unit }: Props) {
                 const stride = run.avgSpeed / (run.cadence! / 60)
                 return (
                   <tr key={run.id}>
-                    <td className="px-3 py-3 border-b border-[var(--line-2)] text-[13px] font-medium text-[var(--ink)]">
+                    <td className="px-3 py-3 border-b border-(--line-2) text-[13px] font-medium text-(--ink)">
                       {run.name}
                     </td>
-                    <td className="px-3 py-3 border-b border-[var(--line-2)] text-[13px] font-mono tabular-nums text-[var(--ink)]">
+                    <td className="px-3 py-3 border-b border-(--line-2) text-[13px] font-mono tabular-nums text-(--ink)">
                       {run.cadence}
-                      <span className="text-[var(--ink-3)] ml-0.5">spm</span>
+                      <span className="text-(--ink-3) ml-0.5">spm</span>
                     </td>
-                    <td className="px-3 py-3 border-b border-[var(--line-2)] text-[13px] font-mono tabular-nums text-[var(--ink)]">
+                    <td className="px-3 py-3 border-b border-(--line-2) text-[13px] font-mono tabular-nums text-(--ink)">
                       {formatPace(pace)}{unitLabel}
                     </td>
-                    <td className="px-3 py-3 border-b border-[var(--line-2)] text-[13px] font-mono tabular-nums text-[var(--ink)]">
+                    <td className="px-3 py-3 border-b border-(--line-2) text-[13px] font-mono tabular-nums text-(--ink)">
                       {stride.toFixed(2)}
-                      <span className="text-[var(--ink-3)] ml-0.5">m</span>
+                      <span className="text-(--ink-3) ml-0.5">m</span>
                     </td>
-                    <td className="px-3 py-3 border-b border-[var(--line-2)] text-[13px] font-mono tabular-nums text-[var(--ink-3)]">
+                    <td className="px-3 py-3 border-b border-(--line-2) text-[13px] font-mono tabular-nums text-(--ink-3)">
                       {new Date(run.date).toLocaleDateString('en-GB', {
                         day: 'numeric',
                         month: 'short',
@@ -405,7 +390,7 @@ export default function Cadence({ runs, unit }: Props) {
                 <tr>
                   <td
                     colSpan={5}
-                    className="px-3 py-6 text-center text-[13px] text-[var(--ink-3)]"
+                    className="px-3 py-6 text-center text-[13px] text-(--ink-3)"
                   >
                     No runs with cadence data
                   </td>

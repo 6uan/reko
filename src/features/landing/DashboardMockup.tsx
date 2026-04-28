@@ -163,10 +163,10 @@ export default function DashboardMockup() {
 
   const sortIndicator = (key: SortKey) => {
     if (sortKey !== key) return null
-    return <span className="ml-0.5 text-[var(--accent)]">{sortDir === 'asc' ? '\u2191' : '\u2193'}</span>
+    return <span className="ml-0.5 text-(--accent)">{sortDir === 'asc' ? '\u2191' : '\u2193'}</span>
   }
 
-  const colHeaderClass = "cursor-pointer select-none hover:text-[var(--ink-2)] transition-colors duration-150"
+  const colHeaderClass = "cursor-pointer select-none hover:text-(--ink-2) transition-colors duration-150"
 
   const NAV_ITEMS = [
     { label: 'Overview', icon: <IconOverview />, active: true },
@@ -182,58 +182,58 @@ export default function DashboardMockup() {
       <div className="mockup-glow" />
 
       {/* Browser chrome frame */}
-      <div className="relative z-10 rounded-[var(--radius-xl)] border border-[var(--line)] shadow-[var(--shadow-xl)] bg-[var(--card)] overflow-hidden">
+      <div className="relative z-10 rounded-xl border border-(--line) shadow-(--shadow-xl) bg-(--card) overflow-hidden">
         {/* Chrome top bar */}
-        <div className="flex items-center px-4 py-2.5 bg-[var(--card-2)] border-b border-[var(--line)]">
+        <div className="flex items-center px-4 py-2.5 bg-(--card-2) border-b border-(--line)">
           {/* Traffic lights */}
-          <div className="flex gap-[7px]">
-            <span className="w-[11px] h-[11px] rounded-full" style={{ background: '#f2baa5' }} />
-            <span className="w-[11px] h-[11px] rounded-full" style={{ background: '#f3dca1' }} />
-            <span className="w-[11px] h-[11px] rounded-full" style={{ background: '#b7d9a8' }} />
+          <div className="flex gap-1.75">
+            <span className="w-2.75 h-2.75 rounded-full" style={{ background: '#f2baa5' }} />
+            <span className="w-2.75 h-2.75 rounded-full" style={{ background: '#f3dca1' }} />
+            <span className="w-2.75 h-2.75 rounded-full" style={{ background: '#b7d9a8' }} />
           </div>
           {/* Address bar */}
           <div className="flex-1 flex justify-center">
-            <div className="inline-flex items-center gap-1.5 px-3.5 py-1 bg-[var(--bg)] border border-[var(--line-2)] rounded-full font-mono text-[11px] text-[var(--ink-3)]">
+            <div className="inline-flex items-center gap-1.5 px-3.5 py-1 bg-(--bg) border border-(--line-2) rounded-full font-mono text-[11px] text-(--ink-3)">
               <svg width="10" height="10" viewBox="0 0 16 16" fill="currentColor" className="opacity-50">
                 <path d="M8 1a4 4 0 0 0-4 4v3H3a1 1 0 0 0-1 1v5a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1V9a1 1 0 0 0-1-1h-1V5a4 4 0 0 0-4-4zm2 7H6V5a2 2 0 1 1 4 0v3z" />
               </svg>
               reko.run/dashboard
             </div>
           </div>
-          <div className="w-[54px]" />
+          <div className="w-13.5" />
         </div>
 
         {/* Dashboard content */}
-        <div className="flex min-h-[420px] max-sm:min-h-[320px]">
+        <div className="flex min-h-105 max-sm:min-h-80">
           {/* Sidebar */}
-          <aside className="hidden lg:flex flex-col w-[200px] shrink-0 bg-[var(--card-2)] border-r border-[var(--line)] py-4 px-2.5">
-            <div className="px-2.5 mb-3 font-mono text-[10px] font-semibold uppercase tracking-[0.08em] text-[var(--ink-4)]">
+          <aside className="hidden lg:flex flex-col w-50 shrink-0 bg-(--card-2) border-r border-(--line) py-4 px-2.5">
+            <div className="px-2.5 mb-3 font-mono text-[10px] font-semibold uppercase tracking-[0.08em] text-(--ink-4)">
               Reko
             </div>
             <div className="flex flex-col gap-0.5">
               {NAV_ITEMS.map(item => (
                 <div
                   key={item.label}
-                  className={`flex items-center gap-2.5 px-2.5 py-[7px] rounded-[var(--radius-s)] text-[13px] font-medium transition-colors duration-150 ${
+                  className={`flex items-center gap-2.5 px-2.5 py-1.75 rounded-(--radius-s) text-[13px] font-medium transition-colors duration-150 ${
                     item.active
-                      ? 'bg-[var(--card)] shadow-[var(--shadow-s)] border border-[var(--line)] text-[var(--ink)]'
-                      : 'text-[var(--ink-3)] hover:text-[var(--ink-2)] hover:bg-[var(--card)]'
+                      ? 'bg-(--card) shadow-(--shadow-s) border border-(--line) text-(--ink)'
+                      : 'text-(--ink-3) hover:text-(--ink-2) hover:bg-(--card)'
                   }`}
                 >
-                  <span className={item.active ? 'text-[var(--accent)]' : ''}>{item.icon}</span>
+                  <span className={item.active ? 'text-(--accent)' : ''}>{item.icon}</span>
                   {item.label}
                 </div>
               ))}
             </div>
             <div className="flex-1" />
             {/* Profile */}
-            <div className="flex items-center gap-2.5 px-2.5 py-2 mt-2 border-t border-[var(--line-2)] pt-3.5">
-              <div className="w-7 h-7 rounded-full bg-[var(--accent-soft)] text-[var(--accent)] flex items-center justify-center font-mono text-[11px] font-semibold">
+            <div className="flex items-center gap-2.5 px-2.5 py-2 mt-2 border-t border-(--line-2) pt-3.5">
+              <div className="w-7 h-7 rounded-full bg-(--accent-soft) text-(--accent) flex items-center justify-center font-mono text-[11px] font-semibold">
                 M
               </div>
               <div className="flex flex-col">
-                <span className="text-[12px] font-medium text-[var(--ink)] leading-tight">mxv</span>
-                <span className="text-[10px] text-[var(--ink-4)] font-mono leading-tight">synced 2m ago</span>
+                <span className="text-[12px] font-medium text-(--ink) leading-tight">mxv</span>
+                <span className="text-[10px] text-(--ink-4) font-mono leading-tight">synced 2m ago</span>
               </div>
             </div>
           </aside>
@@ -243,20 +243,20 @@ export default function DashboardMockup() {
             {/* Header row */}
             <div className="flex items-start justify-between gap-4 mb-4 flex-wrap">
               <div>
-                <h2 className="text-[17px] font-semibold text-[var(--ink)] tracking-tight leading-tight">Overview</h2>
-                <p className="font-mono text-[11px] text-[var(--ink-4)] mt-0.5">April 2026 &middot; 14 activities</p>
+                <h2 className="text-[17px] font-semibold text-(--ink) tracking-tight leading-tight">Overview</h2>
+                <p className="font-mono text-[11px] text-(--ink-4) mt-0.5">April 2026 &middot; 14 activities</p>
               </div>
               {/* Unit toggle */}
-              <div className="flex rounded-[var(--radius-s)] border border-[var(--line)] overflow-hidden text-[12px] font-mono font-medium">
+              <div className="flex rounded-(--radius-s) border border-(--line) overflow-hidden text-[12px] font-mono font-medium">
                 <button
                   onClick={() => setUnit('km')}
-                  className={`px-3 py-1.5 transition-colors duration-150 ${unit === 'km' ? 'bg-[var(--ink)] text-[var(--bg)]' : 'bg-[var(--card)] text-[var(--ink-3)] hover:text-[var(--ink-2)]'}`}
+                  className={`px-3 py-1.5 transition-colors duration-150 ${unit === 'km' ? 'bg-(--ink) text-(--bg)' : 'bg-(--card) text-(--ink-3) hover:text-(--ink-2)'}`}
                 >
                   km
                 </button>
                 <button
                   onClick={() => setUnit('mi')}
-                  className={`px-3 py-1.5 transition-colors duration-150 ${unit === 'mi' ? 'bg-[var(--ink)] text-[var(--bg)]' : 'bg-[var(--card)] text-[var(--ink-3)] hover:text-[var(--ink-2)]'}`}
+                  className={`px-3 py-1.5 transition-colors duration-150 ${unit === 'mi' ? 'bg-(--ink) text-(--bg)' : 'bg-(--card) text-(--ink-3) hover:text-(--ink-2)'}`}
                 >
                   mi
                 </button>
@@ -266,45 +266,45 @@ export default function DashboardMockup() {
             {/* KPI Row */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 mb-4">
               {/* This week */}
-              <div className="bg-[var(--card-2)] border border-[var(--line-2)] rounded-[var(--radius-m)] p-3.5">
-                <div className="font-mono text-[10px] uppercase tracking-[0.06em] text-[var(--ink-4)]">This week</div>
-                <div className="font-mono text-[22px] font-medium text-[var(--ink)] mt-1 leading-none">
+              <div className="bg-(--card-2) border border-(--line-2) rounded-(--radius-m) p-3.5">
+                <div className="font-mono text-[10px] uppercase tracking-[0.06em] text-(--ink-4)">This week</div>
+                <div className="font-mono text-[22px] font-medium text-(--ink) mt-1 leading-none">
                   {fmtDist(weekKm, unit)}
-                  <span className="text-[12px] text-[var(--ink-4)] ml-1">{unit}</span>
+                  <span className="text-[12px] text-(--ink-4) ml-1">{unit}</span>
                 </div>
                 <div className="font-mono text-[11px] text-green-600 mt-1.5">&uarr; 12% vs last week</div>
               </div>
               {/* Avg pace */}
-              <div className="bg-[var(--card-2)] border border-[var(--line-2)] rounded-[var(--radius-m)] p-3.5">
-                <div className="font-mono text-[10px] uppercase tracking-[0.06em] text-[var(--ink-4)]">Avg pace</div>
-                <div className="font-mono text-[22px] font-medium text-[var(--ink)] mt-1 leading-none">
+              <div className="bg-(--card-2) border border-(--line-2) rounded-(--radius-m) p-3.5">
+                <div className="font-mono text-[10px] uppercase tracking-[0.06em] text-(--ink-4)">Avg pace</div>
+                <div className="font-mono text-[22px] font-medium text-(--ink) mt-1 leading-none">
                   {fmtPace(unit === 'km' ? avgPaceKpi : avgPaceKpi / 0.621371)}
-                  <span className="text-[12px] text-[var(--ink-4)] ml-1">/{unit}</span>
+                  <span className="text-[12px] text-(--ink-4) ml-1">/{unit}</span>
                 </div>
                 <div className="font-mono text-[11px] text-green-600 mt-1.5">&darr; 0:08 vs April</div>
               </div>
               {/* Longest run */}
-              <div className="bg-[var(--card-2)] border border-[var(--line-2)] rounded-[var(--radius-m)] p-3.5">
-                <div className="font-mono text-[10px] uppercase tracking-[0.06em] text-[var(--ink-4)]">Longest run</div>
-                <div className="font-mono text-[22px] font-medium text-[var(--ink)] mt-1 leading-none">
+              <div className="bg-(--card-2) border border-(--line-2) rounded-(--radius-m) p-3.5">
+                <div className="font-mono text-[10px] uppercase tracking-[0.06em] text-(--ink-4)">Longest run</div>
+                <div className="font-mono text-[22px] font-medium text-(--ink) mt-1 leading-none">
                   {fmtDist(longestKm, unit)}
-                  <span className="text-[12px] text-[var(--ink-4)] ml-1">{unit}</span>
+                  <span className="text-[12px] text-(--ink-4) ml-1">{unit}</span>
                 </div>
-                <div className="font-mono text-[11px] text-[var(--ink-4)] mt-1.5">Sun &middot; easy</div>
+                <div className="font-mono text-[11px] text-(--ink-4) mt-1.5">Sun &middot; easy</div>
               </div>
               {/* New PRs */}
-              <div className="bg-[var(--card-2)] border border-[var(--line-2)] rounded-[var(--radius-m)] p-3.5">
-                <div className="font-mono text-[10px] uppercase tracking-[0.06em] text-[var(--ink-4)]">New PRs</div>
-                <div className="font-mono text-[22px] font-medium text-[var(--accent)] mt-1 leading-none">2</div>
-                <div className="font-mono text-[11px] text-[var(--ink-4)] mt-1.5">5K &middot; 10K</div>
+              <div className="bg-(--card-2) border border-(--line-2) rounded-(--radius-m) p-3.5">
+                <div className="font-mono text-[10px] uppercase tracking-[0.06em] text-(--ink-4)">New PRs</div>
+                <div className="font-mono text-[22px] font-medium text-(--accent) mt-1 leading-none">2</div>
+                <div className="font-mono text-[11px] text-(--ink-4) mt-1.5">5K &middot; 10K</div>
               </div>
             </div>
 
             {/* Activity table */}
-            <div className="border border-[var(--line)] rounded-[var(--radius-m)] bg-[var(--card)] overflow-x-auto">
-              <table className="w-full text-left border-collapse min-w-[480px]">
+            <div className="border border-(--line) rounded-(--radius-m) bg-(--card) overflow-x-auto">
+              <table className="w-full text-left border-collapse min-w-120">
                 <thead>
-                  <tr className="bg-[var(--card-2)] font-mono text-[10px] uppercase tracking-[0.06em] text-[var(--ink-4)]">
+                  <tr className="bg-(--card-2) font-mono text-[10px] uppercase tracking-[0.06em] text-(--ink-4)">
                     <th className={`py-2.5 px-3.5 font-medium ${colHeaderClass}`} onClick={() => toggleSort('name')}>
                       Activity{sortIndicator('name')}
                     </th>
@@ -327,29 +327,29 @@ export default function DashboardMockup() {
                   {sortedRuns.map((run, i) => (
                     <tr
                       key={run.ts}
-                      className={`hover:bg-[var(--card-2)] transition-colors duration-100 ${i < sortedRuns.length - 1 ? 'border-b border-[var(--line-2)]' : ''}`}
+                      className={`hover:bg-(--card-2) transition-colors duration-100 ${i < sortedRuns.length - 1 ? 'border-b border-(--line-2)' : ''}`}
                     >
                       <td className="py-2.5 px-3.5">
                         <div className="flex items-center gap-2.5">
-                          <div className="w-[22px] h-[22px] rounded-md bg-[var(--card-2)] border border-[var(--line-2)] flex items-center justify-center text-[var(--ink-3)] shrink-0">
+                          <div className="w-5.5 h-5.5 rounded-md bg-(--card-2) border border-(--line-2) flex items-center justify-center text-(--ink-3) shrink-0">
                             <RunIcon />
                           </div>
-                          <span className="text-[var(--ink)] font-medium truncate max-w-[180px]">{run.name}</span>
+                          <span className="text-(--ink) font-medium truncate max-w-45">{run.name}</span>
                         </div>
                       </td>
-                      <td className="py-2.5 px-3 font-mono text-[12px] text-[var(--ink-3)]">{run.date}</td>
-                      <td className="py-2.5 px-3 font-mono text-[12px] text-[var(--ink-2)]">
+                      <td className="py-2.5 px-3 font-mono text-[12px] text-(--ink-3)">{run.date}</td>
+                      <td className="py-2.5 px-3 font-mono text-[12px] text-(--ink-2)">
                         {fmtDist(run.km, unit)} {unit}
                       </td>
-                      <td className="py-2.5 px-3 font-mono text-[12px] text-[var(--ink-2)] hidden sm:table-cell">
+                      <td className="py-2.5 px-3 font-mono text-[12px] text-(--ink-2) hidden sm:table-cell">
                         {fmtTime(run.sec)}
                       </td>
-                      <td className="py-2.5 px-3 font-mono text-[12px] text-[var(--ink-2)] hidden sm:table-cell">
+                      <td className="py-2.5 px-3 font-mono text-[12px] text-(--ink-2) hidden sm:table-cell">
                         {fmtPace(unit === 'km' ? run.sec / run.km : (run.sec / run.km) / 0.621371)}/{unit}
                       </td>
                       <td className="py-2.5 px-3">
                         {run.pr && (
-                          <span className="pb-chip inline-flex items-center gap-1.5 bg-[var(--accent-soft)] text-[var(--accent)] text-[11px] font-mono font-medium px-2 py-0.5 rounded-full">
+                          <span className="pb-chip inline-flex items-center gap-1.5 bg-(--accent-soft) text-(--accent) text-[11px] font-mono font-medium px-2 py-0.5 rounded-full">
                             {run.pr}
                           </span>
                         )}
@@ -364,18 +364,18 @@ export default function DashboardMockup() {
       </div>
 
       {/* Floating PB card */}
-      <div className="pb-float hidden md:block absolute right-[-28px] top-[130px] lg:right-[-28px] lg:top-[130px] md:right-[-8px] md:top-[90px] md:scale-90 lg:scale-100 z-20" style={{ transform: 'rotate(1.5deg)' }}>
-        <div className="pb-float-glow relative bg-[var(--card)] border border-[var(--line)] rounded-[var(--radius-m)] shadow-[var(--shadow-l)] p-4 w-[210px] overflow-hidden">
+      <div className="pb-float hidden md:block absolute -right-7 top-32.5 lg:-right-7 lg:top-32.5 md:-right-2 md:top-22.5 md:scale-90 lg:scale-100 z-20" style={{ transform: 'rotate(1.5deg)' }}>
+        <div className="pb-float-glow relative bg-(--card) border border-(--line) rounded-(--radius-m) shadow-(--shadow-l) p-4 w-52.5 overflow-hidden">
           {/* Ribbon */}
-          <div className="absolute top-[-1px] left-4 bg-[var(--accent)] text-[var(--accent-ink)] text-[10px] font-mono font-semibold uppercase tracking-wider px-2.5 py-1 rounded-b-md shadow-[0_4px_12px_rgba(var(--accent-glow),0.3)]">
+          <div className="absolute -top-px left-4 bg-(--accent) text-(--accent-ink) text-[10px] font-mono font-semibold uppercase tracking-wider px-2.5 py-1 rounded-b-md shadow-[0_4px_12px_rgba(var(--accent-glow),0.3)]">
             New PR
           </div>
           <div className="mt-5">
-            <div className="text-[13px] font-semibold text-[var(--ink)] leading-tight">5 kilometers</div>
-            <div className="text-[11px] text-[var(--ink-4)] font-mono mt-0.5">Tempo &middot; Regent&rsquo;s Park</div>
-            <div className="font-mono text-[28px] font-medium text-[var(--ink)] mt-2 leading-none">19:48</div>
-            <div className="border-t border-dashed border-[var(--line)] mt-3 pt-2.5 flex items-center justify-between">
-              <span className="font-mono text-[10px] text-[var(--ink-4)]">Apr 12, 2026</span>
+            <div className="text-[13px] font-semibold text-(--ink) leading-tight">5 kilometers</div>
+            <div className="text-[11px] text-(--ink-4) font-mono mt-0.5">Tempo &middot; Regent&rsquo;s Park</div>
+            <div className="font-mono text-[28px] font-medium text-(--ink) mt-2 leading-none">19:48</div>
+            <div className="border-t border-dashed border-(--line) mt-3 pt-2.5 flex items-center justify-between">
+              <span className="font-mono text-[10px] text-(--ink-4)">Apr 12, 2026</span>
               <span className="font-mono text-[11px] text-green-600 font-medium">&minus;0:23</span>
             </div>
           </div>
@@ -383,14 +383,14 @@ export default function DashboardMockup() {
       </div>
 
       {/* Floating chart card */}
-      <div className="chart-float hidden md:block absolute left-[-36px] bottom-[36px] lg:left-[-36px] md:left-[-8px] md:scale-90 lg:scale-100 z-20" style={{ transform: 'rotate(-1.2deg)' }}>
-        <div className="relative bg-[var(--card)] border border-[var(--line)] rounded-[var(--radius-m)] shadow-[var(--shadow-l)] p-4 w-[296px]">
+      <div className="chart-float hidden md:block absolute -left-9 bottom-9 lg:-left-9 md:-left-2 md:scale-90 lg:scale-100 z-20" style={{ transform: 'rotate(-1.2deg)' }}>
+        <div className="relative bg-(--card) border border-(--line) rounded-(--radius-m) shadow-(--shadow-l) p-4 w-74">
           <div className="flex items-start justify-between mb-3">
             <div>
-              <div className="font-mono text-[10px] uppercase tracking-[0.06em] text-[var(--ink-4)]">Avg pace &middot; 90d</div>
-              <div className="font-mono text-[22px] font-medium text-[var(--ink)] mt-0.5 leading-none">
+              <div className="font-mono text-[10px] uppercase tracking-[0.06em] text-(--ink-4)">Avg pace &middot; 90d</div>
+              <div className="font-mono text-[22px] font-medium text-(--ink) mt-0.5 leading-none">
                 {fmtPace(avgPaceConverted)}
-                <span className="text-[12px] text-[var(--ink-4)] ml-1">/{unit}</span>
+                <span className="text-[12px] text-(--ink-4) ml-1">/{unit}</span>
               </div>
             </div>
             <span className="inline-flex items-center gap-1 bg-green-100 text-green-700 text-[11px] font-mono font-medium px-2 py-0.5 rounded-full mt-1">
@@ -398,7 +398,7 @@ export default function DashboardMockup() {
             </span>
           </div>
           {/* Sparkline SVG */}
-          <svg viewBox="0 0 260 60" className="w-full h-[60px]" preserveAspectRatio="none">
+          <svg viewBox="0 0 260 60" className="w-full h-15" preserveAspectRatio="none">
             <defs>
               <linearGradient id="spark-fill" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="0%" stopColor="var(--accent)" stopOpacity="0.15" />

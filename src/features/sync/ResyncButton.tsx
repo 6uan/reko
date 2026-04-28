@@ -108,7 +108,7 @@ export default function ResyncButton({
       // Explicit w/h forces a square hover area — without them the button
       // defaults to inline-block and its height grows with line-height
       // while width hugs the icon, giving a portrait rectangle.
-      className="absolute top-1.5 right-1.5 w-7 h-7 inline-flex items-center justify-center rounded-md text-[var(--ink-3)] hover:text-[var(--ink)] hover:bg-[var(--card-2)] transition-colors disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-[var(--ink-3)]"
+      className="absolute top-1.5 right-1.5 w-7 h-7 inline-flex items-center justify-center rounded-md text-(--ink-3) hover:text-(--ink) hover:bg-(--card-2) transition-colors disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-(--ink-3)"
     >
       {inCooldown ? (
         <svg

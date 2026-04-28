@@ -2,56 +2,26 @@ import { useState, useMemo } from "react";
 import {
   speedToPaceSeconds,
   formatPace,
-  formatDistanceKm,
   formatDuration,
 } from "../../lib/strava";
-
-// ── Types ──────────────────────────────────────────────────────────
-
-export type DashboardRun = {
-  id: number;
-  name: string;
-  /** Strava's legacy sport field — always populated. */
-  type: string;
-  /** Strava's modern, more granular sport_type — nullable for older activities. */
-  sportType: string | null;
-  date: string;
-  distanceMeters: number;
-  movingTime: number;
-  avgSpeed: number;
-  avgHr: number | null;
-  maxHr: number | null;
-  cadence: number | null;
-  elevation: number;
-  prCount: number;
-};
+import {
+  activityKind,
+  KM_PER_MI,
+  toDisplayDistance,
+  type DashboardRun,
+  type Unit,
+} from "../../lib/activities";
 
 type Props = {
   /** Full list — runs + walks. The sport-type toggle below filters
    *  this down before the intensity chips apply. */
   activities: DashboardRun[];
-  unit: "km" | "mi";
+  unit: Unit;
 };
-
-/** Mirror of dashboard.tsx#activityKind — duplicated to avoid a
- *  feature → route import (route imports go one way). */
-function kindOf(a: DashboardRun): "run" | "walk" | "other" {
-  const sport = a.sportType ?? a.type;
-  if (sport === "Run" || sport === "TrailRun" || sport === "VirtualRun") return "run";
-  if (sport === "Walk" || sport === "NordicWalk") return "walk";
-  return "other";
-}
 
 // ── Helpers ────────────────────────────────────────────────────────
 
-const KM_PER_MI = 1609.34;
-
-function toDisplayDistance(meters: number, unit: "km" | "mi"): string {
-  if (unit === "mi") return (meters / KM_PER_MI).toFixed(2);
-  return formatDistanceKm(meters);
-}
-
-function paceForUnit(speedMs: number, unit: "km" | "mi"): number {
+function paceForUnit(speedMs: number, unit: Unit): number {
   if (speedMs <= 0) return 0;
   if (unit === "mi") return KM_PER_MI / speedMs;
   return speedToPaceSeconds(speedMs);
@@ -72,7 +42,7 @@ function applySportFilter(
   sport: SportFilter,
 ): DashboardRun[] {
   if (sport === "all") return activities;
-  return activities.filter((a) => kindOf(a) === sport);
+  return activities.filter((a) => activityKind(a) === sport);
 }
 
 type FilterKey = "all" | "has_pr" | "10km" | "tempo" | "easy";
@@ -120,7 +90,7 @@ function sortRuns(
   runs: DashboardRun[],
   col: SortCol,
   dir: SortDir,
-  unit: "km" | "mi",
+  unit: Unit,
 ): DashboardRun[] {
   const sorted = [...runs];
   const mult = dir === "asc" ? 1 : -1;
@@ -243,7 +213,7 @@ export default function Activities({ activities, unit }: Props) {
         // Color-code the dot so walks are distinguishable at a glance
         // without introducing a whole extra column. Accent = run, muted
         // = walk, keeps the table dense.
-        const k = kindOf(run);
+        const k = activityKind(run);
         const dotClass =
           k === "run"
             ? "bg-[var(--accent)]"
@@ -256,13 +226,13 @@ export default function Activities({ activities, unit }: Props) {
               className={`inline-block w-2 h-2 rounded-full shrink-0 ${dotClass}`}
               title={k === "walk" ? "Walk" : k === "run" ? "Run" : "Other"}
             />
-            <span className="truncate max-w-[200px]">{run.name}</span>
+            <span className="truncate max-w-50">{run.name}</span>
           </span>
         );
       }
       case "date":
         return (
-          <span className="text-[var(--ink-3)] whitespace-nowrap">
+          <span className="text-(--ink-3) whitespace-nowrap">
             {new Date(run.date).toLocaleDateString("en-US", {
               month: "short",
               day: "numeric",
@@ -271,53 +241,53 @@ export default function Activities({ activities, unit }: Props) {
         );
       case "distance":
         return (
-          <span className="font-[family-name:var(--font-mono)] tabular-nums">
+          <span className="font-mono tabular-nums">
             {toDisplayDistance(run.distanceMeters, unit)} {unitLabel}
           </span>
         );
       case "time":
         return (
-          <span className="font-[family-name:var(--font-mono)] tabular-nums">
+          <span className="font-mono tabular-nums">
             {formatDuration(run.movingTime)}
           </span>
         );
       case "pace":
         return (
-          <span className="font-[family-name:var(--font-mono)] tabular-nums">
+          <span className="font-mono tabular-nums">
             {formatPace(paceForUnit(run.avgSpeed, unit))} {paceLabel}
           </span>
         );
       case "avgHr":
         return (
-          <span className="font-[family-name:var(--font-mono)] tabular-nums">
+          <span className="font-mono tabular-nums">
             {run.avgHr !== null ? run.avgHr : "\u2014"}
           </span>
         );
       case "maxHr":
         return (
-          <span className="font-[family-name:var(--font-mono)] tabular-nums">
+          <span className="font-mono tabular-nums">
             {run.maxHr !== null ? run.maxHr : "\u2014"}
           </span>
         );
       case "cadence":
         return (
-          <span className="font-[family-name:var(--font-mono)] tabular-nums">
+          <span className="font-mono tabular-nums">
             {run.cadence !== null ? run.cadence : "\u2014"}
           </span>
         );
       case "elevation":
         return (
-          <span className="font-[family-name:var(--font-mono)] tabular-nums">
+          <span className="font-mono tabular-nums">
             {Math.round(run.elevation)}m
           </span>
         );
       case "pr":
         return run.prCount > 0 ? (
-          <span className="inline-block px-2 py-0.5 rounded-full bg-[var(--accent-soft)] text-[var(--accent)] text-[11px] font-medium">
+          <span className="inline-block px-2 py-0.5 rounded-full bg-(--accent-soft) text-(--accent) text-[11px] font-medium">
             {run.prCount} PR
           </span>
         ) : (
-          <span className="text-[var(--ink-4)]">{"\u2014"}</span>
+          <span className="text-(--ink-4)">{"\u2014"}</span>
         );
       default:
         return null;
@@ -336,23 +306,23 @@ export default function Activities({ activities, unit }: Props) {
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
         <div>
-          <h2 className="font-[family-name:var(--font-head)] text-[24px] font-semibold text-[var(--ink)]">
+          <h2 className="font-(family-name:--font-head) text-[24px] font-semibold text-(--ink)">
             Activities
           </h2>
-          <p className="text-[13px] text-[var(--ink-3)] mt-1">
+          <p className="text-[13px] text-(--ink-3) mt-1">
             {last30.length} {countWord} &middot; last 30 days
           </p>
         </div>
         <div className="flex gap-2">
           <button
             type="button"
-            className="px-3 py-1.5 text-[12px] rounded-lg border border-[var(--line)] bg-[var(--card)] text-[var(--ink-3)] hover:text-[var(--ink)] transition-colors"
+            className="px-3 py-1.5 text-[12px] rounded-lg border border-(--line) bg-(--card) text-(--ink-3) hover:text-(--ink) transition-colors"
           >
             Filter
           </button>
           <button
             type="button"
-            className="px-3 py-1.5 text-[12px] rounded-lg border border-[var(--line)] bg-[var(--card)] text-[var(--ink-3)] hover:text-[var(--ink)] transition-colors"
+            className="px-3 py-1.5 text-[12px] rounded-lg border border-(--line) bg-(--card) text-(--ink-3) hover:text-(--ink) transition-colors"
           >
             Export
           </button>
@@ -362,7 +332,7 @@ export default function Activities({ activities, unit }: Props) {
       {/* Sport-type toggle (segmented). Separate from the intensity
           chips below because it's a different filter axis: this picks
           which sport to show, the chips refine within that sport. */}
-      <div className="inline-flex p-[3px] bg-[var(--card-2)] border border-[var(--line)] rounded-[9px] font-mono text-[11px] font-medium self-start">
+      <div className="inline-flex p-0.75 bg-(--card-2) border border-(--line) rounded-[9px] font-mono text-[11px] font-medium self-start">
         {SPORT_FILTERS.map((s) => {
           const isActive = s.key === sportFilter;
           return (
@@ -370,10 +340,10 @@ export default function Activities({ activities, unit }: Props) {
               key={s.key}
               type="button"
               onClick={() => setSportFilter(s.key)}
-              className={`px-2.5 py-[5px] rounded-[6px] cursor-pointer transition-colors ${
+              className={`px-2.5 py-1.25 rounded-md cursor-pointer transition-colors ${
                 isActive
-                  ? "bg-[var(--ink)] text-[var(--bg)]"
-                  : "text-[var(--ink-3)] bg-transparent"
+                  ? "bg-(--ink) text-(--bg)"
+                  : "text-(--ink-3) bg-transparent"
               }`}
             >
               {s.label}
@@ -393,8 +363,8 @@ export default function Activities({ activities, unit }: Props) {
               onClick={() => setActiveFilter(f.key)}
               className={`px-3 py-1.5 text-[12px] rounded-full transition-colors ${
                 isActive
-                  ? "bg-[var(--ink)] text-[var(--bg)]"
-                  : "bg-[var(--card)] border border-[var(--line)] text-[var(--ink-3)] hover:text-[var(--ink)]"
+                  ? "bg-(--ink) text-(--bg)"
+                  : "bg-(--card) border border-(--line) text-(--ink-3) hover:text-(--ink)"
               }`}
             >
               {f.label}
@@ -404,20 +374,20 @@ export default function Activities({ activities, unit }: Props) {
       </div>
 
       {/* Sortable Table */}
-      <div className="bg-[var(--card)] border border-[var(--line)] rounded-[14px] overflow-hidden">
+      <div className="bg-(--card) border border-(--line) rounded-[14px] overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-[13px]">
             <thead>
-              <tr className="bg-[var(--card-2)] text-[var(--ink-4)] text-left">
+              <tr className="bg-(--card-2) text-(--ink-4) text-left">
                 {COLUMNS.map((col) => (
                   <th
                     key={col.key}
                     onClick={() => handleSort(col.key)}
-                    className={`px-4 py-2 font-medium cursor-pointer select-none hover:text-[var(--ink-2)] transition-colors whitespace-nowrap ${alignClass(col.align)}`}
+                    className={`px-4 py-2 font-medium cursor-pointer select-none hover:text-(--ink-2) transition-colors whitespace-nowrap ${alignClass(col.align)}`}
                   >
                     {col.label}
                     {sortCol === col.key && (
-                      <span className="ml-1 text-[var(--accent)]">
+                      <span className="ml-1 text-(--accent)">
                         {sortDir === "asc" ? "\u2191" : "\u2193"}
                       </span>
                     )}
@@ -429,7 +399,7 @@ export default function Activities({ activities, unit }: Props) {
               {sorted.map((run) => (
                 <tr
                   key={run.id}
-                  className="border-t border-[var(--line)] hover:bg-[var(--bg-2)] transition-colors"
+                  className="border-t border-(--line) hover:bg-(--bg-2) transition-colors"
                 >
                   {COLUMNS.map((col) => (
                     <td
@@ -445,7 +415,7 @@ export default function Activities({ activities, unit }: Props) {
                 <tr>
                   <td
                     colSpan={COLUMNS.length}
-                    className="px-4 py-8 text-center text-[var(--ink-4)]"
+                    className="px-4 py-8 text-center text-(--ink-4)"
                   >
                     No activities match this filter
                   </td>

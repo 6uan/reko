@@ -22,7 +22,7 @@ export function Avatar({
   return (
     <div
       aria-hidden
-      className={`${sizes[size]} rounded-full bg-[var(--accent-soft)] text-[var(--accent)] flex items-center justify-center font-mono font-semibold select-none ${className}`}
+      className={`${sizes[size]} rounded-full bg-(--accent-soft) text-(--accent) flex items-center justify-center font-mono font-semibold select-none ${className}`}
     >
       {initial}
     </div>

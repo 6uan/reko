@@ -2,24 +2,24 @@ const TECH_CHIPS = ['TanStack Start', 'TypeScript', 'Tailwind', 'Postgres', 'Doc
 
 export default function OpenSourceSection() {
   return (
-    <section id="open-source" className="border-t border-[var(--line)] py-24">
+    <section id="open-source" className="border-t border-(--line) py-24">
       <div className="wrap">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 lg:gap-20">
           {/* Left column — text + CTAs */}
           <div className="flex flex-col justify-center">
-            <h2 className="text-[clamp(32px,4vw,52px)] font-medium tracking-tight leading-[1.08] text-[var(--ink)]">
+            <h2 className="text-[clamp(32px,4vw,52px)] font-medium tracking-tight leading-[1.08] text-(--ink)">
               Plug it in,
               <br />
               host it yourself.
             </h2>
 
-            <p className="text-[17px] leading-relaxed text-[var(--ink-2)] mt-6 max-w-[52ch]">
+            <p className="text-[17px] leading-relaxed text-(--ink-2) mt-6 max-w-[52ch]">
               Reko is a single TanStack Start app. Clone, add your Strava client
               ID, and deploy. Your activity history never leaves a box you
               control.
             </p>
 
-            <p className="text-[17px] leading-relaxed text-[var(--ink-2)] mt-4 max-w-[52ch]">
+            <p className="text-[17px] leading-relaxed text-(--ink-2) mt-4 max-w-[52ch]">
               No accounts to make. No plan to upgrade. No analytics pixels
               watching your splits.
             </p>
@@ -29,7 +29,7 @@ export default function OpenSourceSection() {
               {TECH_CHIPS.map((chip) => (
                 <span
                   key={chip}
-                  className="font-mono text-xs text-[var(--ink-2)] px-2.5 py-1.5 bg-[var(--card)] border border-[var(--line)] rounded-[var(--radius-s)]"
+                  className="font-mono text-xs text-(--ink-2) px-2.5 py-1.5 bg-(--card) border border-(--line) rounded-(--radius-s)"
                 >
                   {chip}
                 </span>
@@ -47,7 +47,7 @@ export default function OpenSourceSection() {
                 <svg
                   viewBox="0 0 16 16"
                   fill="currentColor"
-                  className="w-[15px] h-[15px]"
+                  className="w-3.75 h-3.75"
                 >
                   <path d="M8 .25a7.75 7.75 0 0 0-2.45 15.1c.39.07.53-.17.53-.38v-1.3c-2.15.47-2.6-1.04-2.6-1.04-.36-.9-.87-1.14-.87-1.14-.71-.49.05-.48.05-.48.78.06 1.2.8 1.2.8.7 1.2 1.83.85 2.28.65.07-.5.27-.85.5-1.04-1.72-.2-3.53-.86-3.53-3.83 0-.85.3-1.54.8-2.08-.08-.2-.35-1 .08-2.08 0 0 .65-.21 2.15.8a7.4 7.4 0 0 1 3.9 0c1.5-1.01 2.15-.8 2.15-.8.43 1.08.16 1.88.08 2.08.5.54.8 1.23.8 2.08 0 2.98-1.81 3.63-3.54 3.82.28.24.53.72.53 1.45v2.15c0 .21.14.46.54.38A7.75 7.75 0 0 0 8 .25Z" />
                 </svg>
@@ -61,18 +61,18 @@ export default function OpenSourceSection() {
 
           {/* Right column — Terminal mockup */}
           <div className="flex items-center">
-            <div className="w-full rounded-[var(--radius-l)] border border-[#1e1d1a] overflow-hidden bg-[#0f0f0e]">
+            <div className="w-full rounded-(--radius-l) border border-[#1e1d1a] overflow-hidden bg-[#0f0f0e]">
               {/* Terminal head */}
               <div className="flex items-center px-4 py-3 bg-[#0a0a09] border-b border-[#1e1d1a]">
-                <div className="flex gap-[7px]">
-                  <span className="w-[11px] h-[11px] rounded-full bg-[#2a2a26]" />
-                  <span className="w-[11px] h-[11px] rounded-full bg-[#2a2a26]" />
-                  <span className="w-[11px] h-[11px] rounded-full bg-[#2a2a26]" />
+                <div className="flex gap-1.75">
+                  <span className="w-2.75 h-2.75 rounded-full bg-[#2a2a26]" />
+                  <span className="w-2.75 h-2.75 rounded-full bg-[#2a2a26]" />
+                  <span className="w-2.75 h-2.75 rounded-full bg-[#2a2a26]" />
                 </div>
                 <div className="flex-1 text-center font-mono text-[12px] text-[#5c5952]">
                   ~/reko
                 </div>
-                <div className="w-[54px]" />
+                <div className="w-13.5" />
               </div>
 
               {/* Terminal body */}
@@ -111,7 +111,7 @@ export default function OpenSourceSection() {
                 </div>
                 <div className="text-[#8a8679]">
                   reko{'  '}&brvbar; synced{' '}
-                  <span className="text-[var(--accent)]">412</span> activities
+                  <span className="text-(--accent)">412</span> activities
                 </div>
                 <div>
                   <span className="text-[#7a7669]">$ </span>

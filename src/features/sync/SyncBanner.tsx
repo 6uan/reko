@@ -140,7 +140,7 @@ export default function SyncBanner({
         <Spinner />
         <span>
           Importing your runs from Strava…{' '}
-          <strong className="text-[var(--ink)] font-medium">
+          <strong className="text-(--ink) font-medium">
             {status.runCount}
           </strong>{' '}
           so far
@@ -159,7 +159,7 @@ export default function SyncBanner({
         <Check />
         <span>
           {isNew ? 'Imported ' : 'Up to date · '}
-          <strong className="text-[var(--ink)] font-medium">{count}</strong>
+          <strong className="text-(--ink) font-medium">{count}</strong>
           {isNew ? ` new ${noun}` : ` ${noun}`}
         </span>
       </Banner>
@@ -198,7 +198,7 @@ function Banner({
 
   return (
     <div
-      className={`flex items-center gap-2.5 px-7 py-2.5 border-b text-[13px] text-[var(--ink-2)] ${toneClass}`}
+      className={`flex items-center gap-2.5 px-7 py-2.5 border-b text-[13px] text-(--ink-2) ${toneClass}`}
     >
       {children}
     </div>
@@ -230,7 +230,7 @@ function Check() {
       fill="none"
       stroke="currentColor"
       strokeWidth="2.5"
-      className="text-[var(--accent)]"
+      className="text-(--accent)"
     >
       <path d="M5 12l5 5L20 7" strokeLinecap="round" strokeLinejoin="round" />
     </svg>

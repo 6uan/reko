@@ -67,22 +67,22 @@ export default function StatsStrip() {
   }, [animate]);
 
   return (
-    <section ref={sectionRef} className="border-t py-4 border-[var(--line)]">
+    <section ref={sectionRef} className="border-t py-4 border-(--line)">
       <div className="wrap py-8">
         <div className="grid grid-cols-2 lg:grid-cols-4">
           {STATS.map((stat, i) => (
             <div
               key={stat.label}
               className={`flex flex-col items-center text-center py-4 lg:py-0 ${
-                i > 0 ? "lg:border-l lg:border-[var(--line)]" : ""
+                i > 0 ? "lg:border-l lg:border-(--line)" : ""
               }`}
             >
-              <span className="font-mono text-[28px] font-medium tabular-nums text-[var(--ink)]">
+              <span className="font-mono text-[28px] font-medium tabular-nums text-(--ink)">
                 {stat.isNumeric
                   ? animatedValues[i].toLocaleString()
                   : (stat.value as string)}
               </span>
-              <span className="text-[13px] text-[var(--ink-3)] mt-1">
+              <span className="text-[13px] text-(--ink-3) mt-1">
                 {stat.label}
               </span>
             </div>

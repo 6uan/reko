@@ -2,37 +2,21 @@ import { useMemo } from 'react'
 import {
   formatPace,
   formatDuration,
-  formatDistanceKm,
   getMonday,
 } from '../../lib/strava'
+import {
+  KM_PER_MI,
+  toDisplayDistance,
+  type DashboardRun,
+  type Unit,
+} from '../../lib/activities'
 
-// ── Types ─────────────────────────────────────────────────────────
-
-export type DashboardRun = {
-  id: number
-  name: string
-  date: string
-  distanceMeters: number
-  movingTime: number
-  avgSpeed: number
-  avgHr: number | null
-  maxHr: number | null
-  cadence: number | null
-  elevation: number
-  prCount: number
-}
-
-type Props = { runs: DashboardRun[]; unit: 'km' | 'mi' }
+type Props = { runs: DashboardRun[]; unit: Unit }
 
 // ── Helpers ───────────────────────────────────────────────────────
 
-function distInUnit(meters: number, unit: 'km' | 'mi') {
-  return unit === 'mi' ? meters / 1609.34 : meters / 1000
-}
-
-function formatDistForUnit(meters: number, unit: 'km' | 'mi'): string {
-  if (unit === 'mi') return (meters / 1609.34).toFixed(2)
-  return formatDistanceKm(meters)
+function distInUnit(meters: number, unit: Unit) {
+  return unit === 'mi' ? meters / KM_PER_MI : meters / 1000
 }
 
 function paceForRun(run: DashboardRun, unit: 'km' | 'mi') {
@@ -175,10 +159,10 @@ export default function Pace({ runs, unit }: Props) {
       {/* Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-2.5">
         {/* Histogram */}
-        <div className="bg-[var(--card)] border border-[var(--line)] rounded-[14px] p-[18px]">
+        <div className="bg-(--card) border border-(--line) rounded-[14px] p-4.5">
           <div className="flex justify-between items-baseline mb-3">
             <h3 className="text-[15px] font-medium">Pace distribution · all runs</h3>
-            <span className="font-mono text-[11px] text-[var(--ink-3)]">
+            <span className="font-mono text-[11px] text-(--ink-3)">
               {runs.length} runs
             </span>
           </div>
@@ -191,10 +175,10 @@ export default function Pace({ runs, unit }: Props) {
         </div>
 
         {/* Trend line */}
-        <div className="bg-[var(--card)] border border-[var(--line)] rounded-[14px] p-[18px]">
+        <div className="bg-(--card) border border-(--line) rounded-[14px] p-4.5">
           <div className="flex justify-between items-baseline mb-3">
             <h3 className="text-[15px] font-medium">Avg pace · 90d trend</h3>
-            <span className="font-mono text-[11px] text-[var(--ink-3)]">
+            <span className="font-mono text-[11px] text-(--ink-3)">
               {trendData.length} weeks
             </span>
           </div>
@@ -203,23 +187,23 @@ export default function Pace({ runs, unit }: Props) {
       </div>
 
       {/* Fastest runs table */}
-      <div className="bg-[var(--card)] border border-[var(--line)] rounded-[14px] overflow-hidden">
-        <div className="px-4 py-3 border-b border-[var(--line)]">
-          <h3 className="text-[15px] font-medium text-[var(--ink)]">
+      <div className="bg-(--card) border border-(--line) rounded-[14px] overflow-hidden">
+        <div className="px-4 py-3 border-b border-(--line)">
+          <h3 className="text-[15px] font-medium text-(--ink)">
             Fastest runs
           </h3>
-          <p className="font-mono text-[11px] text-[var(--ink-4)] mt-0.5">
+          <p className="font-mono text-[11px] text-(--ink-4)] mt-0.5">
             Sorted by pace, fastest first
           </p>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="bg-[var(--card-2)]">
+              <tr className="bg-(--card-2)">
                 {['#', 'Activity', 'Pace', 'Distance', 'Time', 'Avg HR', 'Date'].map((h) => (
                   <th
                     key={h}
-                    className="font-mono text-[10px] uppercase tracking-widest text-[var(--ink-4)] px-3 py-2.5 text-left font-medium"
+                    className="font-mono text-[10px] uppercase tracking-widest text-(--ink-4)] px-3 py-2.5 text-left font-medium"
                   >
                     {h}
                   </th>
@@ -231,28 +215,28 @@ export default function Pace({ runs, unit }: Props) {
                 const pace = paceForRun(run, unit)
                 return (
                   <tr key={run.id}>
-                    <td className="px-3 py-3 border-b border-[var(--line-2)] text-[13px] font-mono tabular-nums text-[var(--ink-3)]">
+                    <td className="px-3 py-3 border-b border-(--line-2) text-[13px] font-mono tabular-nums text-(--ink-3)">
                       {i + 1}
                     </td>
-                    <td className="px-3 py-3 border-b border-[var(--line-2)] font-medium text-[var(--ink)]">
+                    <td className="px-3 py-3 border-b border-(--line-2) font-medium text-(--ink)">
                       {run.name}
                     </td>
-                    <td className="px-3 py-3 border-b border-[var(--line-2)] font-mono tabular-nums">
-                      <span className={i === 0 ? 'text-[var(--accent)] font-medium' : 'text-[var(--ink)]'}>
+                    <td className="px-3 py-3 border-b border-(--line-2) font-mono tabular-nums">
+                      <span className={i === 0 ? 'text-(--accent) font-medium' : 'text-(--ink)'}>
                         {formatPace(pace)}
                       </span>
-                      <span className="text-[var(--ink-3)] text-xs ml-0.5">{unitLabel}</span>
+                      <span className="text-(--ink-3) text-xs ml-0.5">{unitLabel}</span>
                     </td>
-                    <td className="px-3 py-3 border-b border-[var(--line-2)] font-mono tabular-nums text-[var(--ink-3)]">
-                      {formatDistForUnit(run.distanceMeters, unit)} {unit}
+                    <td className="px-3 py-3 border-b border-(--line-2) font-mono tabular-nums text-(--ink-3)">
+                      {toDisplayDistance(run.distanceMeters, unit)} {unit}
                     </td>
-                    <td className="px-3 py-3 border-b border-[var(--line-2)] font-mono tabular-nums text-[var(--ink-3)]">
+                    <td className="px-3 py-3 border-b border-(--line-2) font-mono tabular-nums text-(--ink-3)">
                       {formatDuration(run.movingTime)}
                     </td>
-                    <td className="px-3 py-3 border-b border-[var(--line-2)] font-mono tabular-nums text-[var(--ink-3)]">
+                    <td className="px-3 py-3 border-b border-(--line-2) font-mono tabular-nums text-(--ink-3)">
                       {run.avgHr !== null ? `${Math.round(run.avgHr)} bpm` : '—'}
                     </td>
-                    <td className="px-3 py-3 border-b border-[var(--line-2)] font-mono tabular-nums text-[var(--ink-3)]">
+                    <td className="px-3 py-3 border-b border-(--line-2) font-mono tabular-nums text-(--ink-3)">
                       {new Date(run.date).toLocaleDateString('en-GB', {
                         day: 'numeric',
                         month: 'short',
@@ -264,7 +248,7 @@ export default function Pace({ runs, unit }: Props) {
               })}
               {fastestRuns.length === 0 && (
                 <tr>
-                  <td colSpan={7} className="px-3 py-6 text-center text-[13px] text-[var(--ink-3)]">
+                  <td colSpan={7} className="px-3 py-6 text-center text-[13px] text-(--ink-3)">
                     No pace data yet
                   </td>
                 </tr>
@@ -291,15 +275,15 @@ function KpiCard({
   detail: string
 }) {
   return (
-    <div className="bg-[var(--card)] border border-[var(--line)] rounded-[14px] p-4">
-      <div className="font-mono text-[10px] uppercase tracking-widest text-[var(--ink-4)]">
+    <div className="bg-(--card) border border-(--line) rounded-[14px] p-4">
+      <div className="font-mono text-[10px] uppercase tracking-widest text-(--ink-4)">
         {label}
       </div>
       <div className="font-mono text-[26px] font-medium tracking-tight tabular-nums mt-1.5">
         {value}
-        <span className="text-[13px] text-[var(--ink-3)] ml-0.5 font-normal">{unit}</span>
+        <span className="text-[13px] text-(--ink-3) ml-0.5 font-normal">{unit}</span>
       </div>
-      <div className="font-mono text-[11px] mt-1.5 text-[var(--ink-3)]">{detail}</div>
+      <div className="font-mono text-[11px] mt-1.5 text-(--ink-3)">{detail}</div>
     </div>
   )
 }

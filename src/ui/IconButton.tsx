@@ -54,7 +54,7 @@ const IconButton = forwardRef<HTMLButtonElement, ButtonHTMLAttributes<HTMLButton
         ref={ref}
         type={type}
         className={cn(
-          'inline-flex items-center justify-center min-w-9 h-9 px-2 gap-2 rounded-[var(--radius-s)] border border-[var(--line)] bg-[var(--card)] text-[var(--ink-2)] cursor-pointer transition-[background,border-color,color] duration-[180ms] ease-in-out hover:border-[var(--ink-4)] hover:text-[var(--ink)]',
+          'inline-flex items-center justify-center min-w-9 h-9 px-2 gap-2 rounded-(--radius-s) border border-(--line) bg-(--card) text-(--ink-2) cursor-pointer transition-[background,border-color,color] duration-180 ease-in-out hover:border-(--ink-4) hover:text-(--ink)',
           className,
         )}
         {...rest}

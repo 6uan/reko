@@ -2,42 +2,24 @@ import { useMemo } from "react";
 import {
   speedToPaceSeconds,
   formatPace,
-  formatDistanceKm,
   formatDuration,
   getMonday,
 } from "../../lib/strava";
-
-// ── Types ──────────────────────────────────────────────────────────
-
-export type DashboardRun = {
-  id: number;
-  name: string;
-  date: string;
-  distanceMeters: number;
-  movingTime: number;
-  avgSpeed: number;
-  avgHr: number | null;
-  maxHr: number | null;
-  cadence: number | null;
-  elevation: number;
-  prCount: number;
-};
+import {
+  KM_PER_MI,
+  toDisplayDistance,
+  type DashboardRun,
+  type Unit,
+} from "../../lib/activities";
 
 type Props = {
   runs: DashboardRun[];
-  unit: "km" | "mi";
+  unit: Unit;
 };
 
 // ── Helpers ────────────────────────────────────────────────────────
 
-const KM_PER_MI = 1609.34;
-
-function toDisplayDistance(meters: number, unit: "km" | "mi"): string {
-  if (unit === "mi") return (meters / KM_PER_MI).toFixed(2);
-  return formatDistanceKm(meters);
-}
-
-function paceForUnit(speedMs: number, unit: "km" | "mi"): number {
+function paceForUnit(speedMs: number, unit: Unit): number {
   if (speedMs <= 0) return 0;
   if (unit === "mi") return KM_PER_MI / speedMs;
   return speedToPaceSeconds(speedMs);
@@ -185,29 +167,29 @@ export default function Overview({ runs, unit }: Props) {
       {/* KPI Row */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {/* This Week */}
-        <div className="bg-[var(--card)] border border-[var(--line)] rounded-[14px] p-4">
-          <span className="font-[family-name:var(--font-mono)] text-[10px] uppercase tracking-widest text-[var(--ink-4)]">
+        <div className="bg-(--card) border border-(--line) rounded-[14px] p-4">
+          <span className="font-mono text-[10px] uppercase tracking-widest text-(--ink-4)">
             This Week
           </span>
-          <div className="mt-2 font-[family-name:var(--font-mono)] text-[26px] font-medium tracking-tight tabular-nums text-[var(--ink)]">
+          <div className="mt-2 font-mono text-[26px] font-medium tracking-tight tabular-nums text-(--ink)">
             {toDisplayDistance(thisWeekDist, unit)}{" "}
-            <span className="text-[14px] text-[var(--ink-3)]">{unitLabel}</span>
+            <span className="text-[14px] text-(--ink-3)">{unitLabel}</span>
           </div>
-          <span className="text-[12px] text-[var(--ink-3)]">
+          <span className="text-[12px] text-(--ink-3)">
             {pctChange(thisWeekDist, lastWeekDist)} vs last week
           </span>
         </div>
 
         {/* Avg Pace */}
-        <div className="bg-[var(--card)] border border-[var(--line)] rounded-[14px] p-4">
-          <span className="font-[family-name:var(--font-mono)] text-[10px] uppercase tracking-widest text-[var(--ink-4)]">
+        <div className="bg-(--card) border border-(--line) rounded-[14px] p-4">
+          <span className="font-mono text-[10px] uppercase tracking-widest text-(--ink-4)">
             Avg Pace
           </span>
-          <div className="mt-2 font-[family-name:var(--font-mono)] text-[26px] font-medium tracking-tight tabular-nums text-[var(--ink)]">
+          <div className="mt-2 font-mono text-[26px] font-medium tracking-tight tabular-nums text-(--ink) ">
             {formatPace(avgPaceThis)}{" "}
-            <span className="text-[14px] text-[var(--ink-3)]">{paceLabel}</span>
+            <span className="text-[14px] text-(--ink-3)">{paceLabel}</span>
           </div>
-          <span className="text-[12px] text-[var(--ink-3)]">
+          <span className="text-[12px] text-(--ink-3)">
             {avgPaceLast > 0
               ? pctChange(avgPaceThis, avgPaceLast) + " vs last month"
               : "no data last month"}
@@ -215,37 +197,37 @@ export default function Overview({ runs, unit }: Props) {
         </div>
 
         {/* Monthly Distance */}
-        <div className="bg-[var(--card)] border border-[var(--line)] rounded-[14px] p-4">
-          <span className="font-[family-name:var(--font-mono)] text-[10px] uppercase tracking-widest text-[var(--ink-4)]">
+        <div className="bg-(--card) border border-(--line) rounded-[14px] p-4">
+          <span className="font-mono text-[10px] uppercase tracking-widest text-(--ink-4)">
             This Month
           </span>
-          <div className="mt-2 font-[family-name:var(--font-mono)] text-[26px] font-medium tracking-tight tabular-nums text-[var(--ink)]">
+          <div className="mt-2 font-mono text-[26px] font-medium tracking-tight tabular-nums text-(--ink)">
             {toDisplayDistance(thisMonthDist, unit)}{" "}
-            <span className="text-[14px] text-[var(--ink-3)]">{unitLabel}</span>
+            <span className="text-[14px] text-(--ink-3)">{unitLabel}</span>
           </div>
-          <span className="text-[12px] text-[var(--ink-3)]">
+          <span className="text-[12px] text-(--ink-3)">
             {pctChange(thisMonthDist, lastMonthDist)} vs last month
             {" · "}{thisMonthRuns.length} run{thisMonthRuns.length !== 1 ? "s" : ""}
           </span>
         </div>
 
         {/* New PRs */}
-        <div className="bg-[var(--card)] border border-[var(--line)] rounded-[14px] p-4">
-          <span className="font-[family-name:var(--font-mono)] text-[10px] uppercase tracking-widest text-[var(--ink-4)]">
+        <div className="bg-(--card) border border-(--line) rounded-[14px] p-4">
+          <span className="font-mono text-[10px] uppercase tracking-widest text-(--ink-4)">
             New PRs
           </span>
-          <div className="mt-2 font-[family-name:var(--font-mono)] text-[26px] font-medium tracking-tight tabular-nums text-[var(--accent)]">
+          <div className="mt-2 font-mono text-[26px] font-medium tracking-tight tabular-nums text-(--accent)">
             {prCountMonth}
           </div>
-          <span className="text-[12px] text-[var(--ink-3)]">this month</span>
+          <span className="text-[12px] text-(--ink-3)">this month</span>
         </div>
       </div>
 
       {/* Charts Row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Weekly Distance Bar Chart */}
-        <div className="bg-[var(--card)] border border-[var(--line)] rounded-[14px] p-4">
-          <span className="font-[family-name:var(--font-mono)] text-[10px] uppercase tracking-widest text-[var(--ink-4)]">
+        <div className="bg-(--card) border border-(--line) rounded-[14px] p-4">
+          <span className="font-mono text-[10px] uppercase tracking-widest text-(--ink-4)">
             Weekly distance &middot; 12w
           </span>
           <svg
@@ -295,8 +277,8 @@ export default function Overview({ runs, unit }: Props) {
         </div>
 
         {/* Avg Pace Line Chart */}
-        <div className="bg-[var(--card)] border border-[var(--line)] rounded-[14px] p-4">
-          <span className="font-[family-name:var(--font-mono)] text-[10px] uppercase tracking-widest text-[var(--ink-4)]">
+        <div className="bg-(--card) border border-(--line) rounded-[14px] p-4">
+          <span className="font-mono text-[10px] uppercase tracking-widest text-(--ink-4)">
             Avg pace &middot; 90d
           </span>
           <svg
@@ -397,19 +379,19 @@ export default function Overview({ runs, unit }: Props) {
       </div>
 
       {/* Recent Runs Table */}
-      <div className="bg-[var(--card)] border border-[var(--line)] rounded-[14px] overflow-hidden">
-        <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--line)]">
-          <span className="font-[family-name:var(--font-mono)] text-[10px] uppercase tracking-widest text-[var(--ink-4)]">
+      <div className="bg-(--card) border border-(--line) rounded-[14px] overflow-hidden">
+        <div className="flex items-center justify-between px-4 py-3 border-b border-(--line)">
+          <span className="font-mono text-[10px] uppercase tracking-widest text-(--ink-4)">
             Recent Runs
           </span>
-          <span className="text-[12px] text-[var(--accent)] cursor-pointer hover:underline">
+          <span className="text-[12px] text-(--accent) cursor-pointer hover:underline">
             View all &rarr;
           </span>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-[13px]">
             <thead>
-              <tr className="bg-[var(--card-2)] text-[var(--ink-4)] text-left">
+              <tr className="bg-(--card-2) text-(--ink-4) text-left">
                 <th className="px-4 py-2 font-medium">Activity</th>
                 <th className="px-4 py-2 font-medium">Date</th>
                 <th className="px-4 py-2 font-medium text-right">Distance</th>
@@ -424,40 +406,40 @@ export default function Overview({ runs, unit }: Props) {
               {recentRuns.map((run) => (
                 <tr
                   key={run.id}
-                  className="border-t border-[var(--line)] hover:bg-[var(--bg-2)] transition-colors"
+                  className="border-t border-(--line) hover:bg-(--bg-2) transition-colors"
                 >
                   <td className="px-4 py-2.5 flex items-center gap-2">
-                    <span className="inline-block w-2 h-2 rounded-full bg-[var(--accent)] shrink-0" />
-                    <span className="truncate max-w-[180px]">{run.name}</span>
+                    <span className="inline-block w-2 h-2 rounded-full bg-(--accent) shrink-0" />
+                    <span className="truncate max-w-45">{run.name}</span>
                   </td>
-                  <td className="px-4 py-2.5 text-[var(--ink-3)] whitespace-nowrap">
+                  <td className="px-4 py-2.5 text-(--ink-3) whitespace-nowrap">
                     {new Date(run.date).toLocaleDateString("en-US", {
                       month: "short",
                       day: "numeric",
                     })}
                   </td>
-                  <td className="px-4 py-2.5 text-right font-[family-name:var(--font-mono)] tabular-nums">
+                  <td className="px-4 py-2.5 text-right font-mono tabular-nums">
                     {toDisplayDistance(run.distanceMeters, unit)} {unitLabel}
                   </td>
-                  <td className="px-4 py-2.5 text-right font-[family-name:var(--font-mono)] tabular-nums">
+                  <td className="px-4 py-2.5 text-right font-mono tabular-nums">
                     {formatDuration(run.movingTime)}
                   </td>
-                  <td className="px-4 py-2.5 text-right font-[family-name:var(--font-mono)] tabular-nums">
+                  <td className="px-4 py-2.5 text-right font-mono tabular-nums">
                     {formatPace(paceForUnit(run.avgSpeed, unit))} {paceLabel}
                   </td>
-                  <td className="px-4 py-2.5 text-right font-[family-name:var(--font-mono)] tabular-nums">
+                  <td className="px-4 py-2.5 text-right font-mono tabular-nums">
                     {run.avgHr !== null ? run.avgHr : "—"}
                   </td>
-                  <td className="px-4 py-2.5 text-right font-[family-name:var(--font-mono)] tabular-nums">
+                  <td className="px-4 py-2.5 text-right font-mono tabular-nums">
                     {run.elevation > 0 ? `${Math.round(run.elevation)}m` : "—"}
                   </td>
                   <td className="px-4 py-2.5 text-center">
                     {run.prCount > 0 ? (
-                      <span className="inline-block px-2 py-0.5 rounded-full bg-[var(--accent-soft)] text-[var(--accent)] text-[11px] font-medium">
+                      <span className="inline-block px-2 py-0.5 rounded-full bg-(--accent-soft) text-(--accent) text-[11px] font-medium">
                         {run.prCount} PR
                       </span>
                     ) : (
-                      <span className="text-[var(--ink-4)]">—</span>
+                      <span className="text-(--ink-4)">—</span>
                     )}
                   </td>
                 </tr>
@@ -466,7 +448,7 @@ export default function Overview({ runs, unit }: Props) {
                 <tr>
                   <td
                     colSpan={8}
-                    className="px-4 py-8 text-center text-[var(--ink-4)]"
+                    className="px-4 py-8 text-center text-(--ink-4)"
                   >
                     No runs this month
                   </td>

@@ -34,7 +34,7 @@ function StravaRedirect() {
 
   return (
     <section className="flex items-center justify-center min-h-[50vh]">
-      <p className="text-[var(--ink-2)] text-sm">Redirecting to Strava…</p>
+      <p className="text-(--ink-2) text-sm">Redirecting to Strava…</p>
     </section>
   )
 }

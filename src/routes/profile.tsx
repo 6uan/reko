@@ -23,22 +23,22 @@ function Profile() {
   return (
     <section className="pt-12 pb-20">
       <div className="wrap max-w-2xl">
-        <h1 className="text-2xl font-semibold text-[var(--ink)] mb-8">
+        <h1 className="text-2xl font-semibold text-(--ink) mb-8">
           Profile
         </h1>
 
         {/* Strava Connection */}
-        <div className="p-6 rounded-xl bg-[var(--card)] border border-[var(--line)] shadow-[var(--shadow-s)] mb-6">
-          <h2 className="text-sm font-medium text-[var(--ink-3)] uppercase tracking-wider mb-4">
+        <div className="p-6 rounded-xl bg-(--card) border border-(--line) shadow-(--shadow-s) mb-6">
+          <h2 className="text-sm font-medium text-(--ink-3) uppercase tracking-wider mb-4">
             Strava Connection
           </h2>
           <div className="flex items-center gap-4">
             <Avatar name={session?.firstname} size="lg" />
             <div>
-              <p className="font-semibold text-[var(--ink)]">
+              <p className="font-semibold text-(--ink)">
                 {session?.firstname} {session?.lastname}
               </p>
-              <p className="text-sm text-[var(--ink-3)]">
+              <p className="text-sm text-(--ink-3)">
                 Athlete ID: {session?.athleteId}
               </p>
             </div>
@@ -50,11 +50,11 @@ function Profile() {
         </div>
 
         {/* Preferences */}
-        <div className="p-6 rounded-xl bg-[var(--card)] border border-[var(--line)] shadow-[var(--shadow-s)] mb-6">
-          <h2 className="text-sm font-medium text-[var(--ink-3)] uppercase tracking-wider mb-4">
+        <div className="p-6 rounded-xl bg-(--card) border border-(--line) shadow-(--shadow-s) mb-6">
+          <h2 className="text-sm font-medium text-(--ink-3) uppercase tracking-wider mb-4">
             Preferences
           </h2>
-          <p className="text-sm text-[var(--ink-2)]">
+          <p className="text-sm text-(--ink-2)">
             Unit and display preferences coming soon.
           </p>
         </div>
@@ -64,7 +64,7 @@ function Profile() {
           <h2 className="text-sm font-medium text-red-600 dark:text-red-400 uppercase tracking-wider mb-2">
             Danger Zone
           </h2>
-          <p className="text-sm text-[var(--ink-2)] mb-4">
+          <p className="text-sm text-(--ink-2) mb-4">
             Disconnect your Strava account and delete all local data.
           </p>
           <button

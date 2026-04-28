@@ -40,29 +40,13 @@ import {
   type RecordEffort,
 } from './distances'
 
-// ── Types ─────────────────────────────────────────────────────────
-
-export type DashboardRun = {
-  id: number
-  name: string
-  date: string
-  distanceMeters: number
-  movingTime: number
-  avgSpeed: number
-  avgHr: number | null
-  maxHr: number | null
-  cadence: number | null
-  elevation: number
-  prCount: number
-}
+import { KM_PER_MI, type DashboardRun, type Unit } from '../../lib/activities'
 
 type Props = {
   data: RecordsData
   runs: DashboardRun[]
-  unit: 'km' | 'mi'
+  unit: Unit
 }
-
-const KM_PER_MI = 1609.34
 
 // ── Format helpers ────────────────────────────────────────────────
 
@@ -97,7 +81,7 @@ function relTime(s: string, now: Date): string {
   return `${y} year${y > 1 ? 's' : ''} ago`
 }
 
-function paceForDist(seconds: number, meters: number, unit: 'km' | 'mi') {
+function paceForDist(seconds: number, meters: number, unit: Unit) {
   const dist = unit === 'km' ? meters / 1000 : meters / KM_PER_MI
   return seconds / dist
 }
@@ -166,21 +150,21 @@ function DistanceRow({
   now,
 }: {
   rec: DistanceRecord
-  unit: 'km' | 'mi'
+  unit: Unit
   now: Date
 }) {
   const unitLabel = unit === 'km' ? '/km' : '/mi'
 
   if (!rec.best) {
     return (
-      <div className="grid grid-cols-[110px_1fr_auto_24px] items-center gap-4 px-5 py-4 border-b border-[var(--line)] last:border-b-0">
-        <span className="font-mono text-[11px] uppercase tracking-[0.1em] text-[var(--ink-3)]">
+      <div className="grid grid-cols-[110px_1fr_auto_24px] items-center gap-4 px-5 py-4 border-b border-(--line) last:border-b-0">
+        <span className="font-mono text-[11px] uppercase tracking-widest text-(--ink-3)">
           {rec.label}
         </span>
-        <span className="font-mono text-[14px] text-[var(--ink-4)]">
+        <span className="font-mono text-[14px] text-(--ink-4)">
           no PR yet
         </span>
-        <span className="font-mono text-[11px] text-[var(--ink-4)] text-right whitespace-nowrap">
+        <span className="font-mono text-[11px] text-(--ink-4)] text-right whitespace-nowrap">
           awaiting first effort
         </span>
         <span />
@@ -192,51 +176,51 @@ function DistanceRow({
   const recent = isRecent(rec.best.startDateLocal, now, 30)
 
   return (
-    <details className="group border-b border-[var(--line)] last:border-b-0 [&[open]]:bg-[var(--card-2)]">
-      <summary className="grid grid-cols-[110px_1fr_auto_24px] items-center gap-4 px-5 py-4 cursor-pointer list-none hover:bg-[var(--card-2)] transition-colors [&::-webkit-details-marker]:hidden">
-        <span className="font-mono text-[11px] uppercase tracking-[0.1em] text-[var(--ink-3)]">
+    <details className="group border-b border-(--line) last:border-b-0 [[open]]:bg-(--card-2)">
+      <summary className="grid grid-cols-[110px_1fr_auto_24px] items-center gap-4 px-5 py-4 cursor-pointer list-none hover:bg-(--card-2) transition-colors [&::-webkit-details-marker]:hidden">
+        <span className="font-mono text-[11px] uppercase tracking-widest text-(--ink-3)">
           {rec.label}
         </span>
         {/* Time + pace stacked. Pace explicitly carries the /mi or /km
             suffix so the unit toggle isn't ambiguous, and a 'pace' word
             reinforces what the second number means at a glance. */}
         <div className="flex items-baseline gap-3 flex-wrap min-w-0">
-          <span className="font-mono text-[18px] font-medium tabular-nums text-[var(--ink)] tracking-tight">
+          <span className="font-mono text-[18px] font-medium tabular-nums text-(--ink) tracking-tight">
             {formatDuration(rec.best.elapsedTime)}
           </span>
-          <span className="font-mono text-[12px] tabular-nums text-[var(--ink-3)] whitespace-nowrap">
+          <span className="font-mono text-[12px] tabular-nums text-(--ink-3) whitespace-nowrap">
             {formatPace(pace)}
-            <span className="text-[var(--ink-2)] font-medium ml-0.5">
+            <span className="text-(--ink-2) font-medium ml-0.5">
               {unitLabel}
             </span>
-            <span className="text-[var(--ink-4)] ml-1.5">pace</span>
+            <span className="text-(--ink-4) ml-1.5">pace</span>
           </span>
         </div>
-        <span className="font-mono text-[11px] text-[var(--ink-4)] text-right whitespace-nowrap">
+        <span className="font-mono text-[11px] text-(--ink-4)] text-right whitespace-nowrap">
           {relTime(rec.best.startDateLocal, now)}
         </span>
         <ChevronRight
           size={14}
-          className="text-[var(--ink-3)] transition-transform duration-150 group-open:rotate-90 justify-self-end"
+          className="text-(--ink-3) transition-transform duration-150 group-open:rotate-90 justify-self-end"
         />
       </summary>
 
       {/* Expanded body */}
-      <div className="px-5 pb-5 pt-1 grid grid-cols-1 md:grid-cols-[1.4fr_1fr] gap-6 border-t border-[var(--line)]">
+      <div className="px-5 pb-5 pt-1 grid grid-cols-1 md:grid-cols-[1.4fr_1fr] gap-6 border-t border-(--line)">
         {/* Left: PR detail */}
         <div className="flex flex-col gap-3 pt-4">
           <div>
-            <div className="font-mono text-[10px] uppercase tracking-[0.1em] text-[var(--ink-4)]">
+            <div className="font-mono text-[10px] uppercase tracking-widest text-(--ink-4)">
               Set on
             </div>
-            <div className="font-mono text-[13px] text-[var(--ink-2)] mt-1">
+            <div className="font-mono text-[13px] text-(--ink-2) mt-1">
               {formatDate(rec.best.startDateLocal)}
             </div>
             <a
               href={`https://www.strava.com/activities/${rec.best.activityId}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="font-mono text-[12px] text-[var(--ink-3)] hover:text-[var(--accent)] no-underline mt-1 inline-block"
+              className="font-mono text-[12px] text-(--ink-3) hover:text-(--accent) no-underline mt-1 inline-block"
             >
               {rec.best.activityName} ↗
             </a>
@@ -261,25 +245,25 @@ function DistanceRow({
         </div>
 
         {/* Right: progression sparkline + improvement summary */}
-        <div className="flex flex-col gap-3 pt-4 md:border-l md:border-[var(--line)] md:pl-5">
-          <div className="font-mono text-[10px] uppercase tracking-[0.1em] text-[var(--ink-4)]">
+        <div className="flex flex-col gap-3 pt-4 md:border-l md:border-(--line) md:pl-5">
+          <div className="font-mono text-[10px] uppercase tracking-widest text-(--ink-4)">
             Progression · {rec.trend.length} PR{rec.trend.length === 1 ? '' : 's'}
           </div>
           <div className="flex items-end gap-3">
             <Sparkline trend={rec.trend} recent={recent} />
             {rec.runnerUp && (
-              <div className="font-mono text-[11px] text-[var(--ink-3)] tabular-nums">
-                <span className="text-[var(--accent)]">
+              <div className="font-mono text-[11px] text-(--ink-3) tabular-nums">
+                <span className="text-(--accent)">
                   −{formatDuration(rec.runnerUp.elapsedTime - rec.best.elapsedTime)}
                 </span>
-                <span className="text-[var(--ink-4)] ml-1">
+                <span className="text-(--ink-4) ml-1">
                   vs prev
                 </span>
               </div>
             )}
           </div>
           {rec.trend.length === 1 && (
-            <div className="font-mono text-[11px] text-[var(--ink-4)]">
+            <div className="font-mono text-[11px] text-(--ink-4)">
               First effort at this distance — set the bar.
             </div>
           )}
@@ -302,12 +286,12 @@ function RunnerRow({
 }) {
   return (
     <div className={`flex items-baseline justify-between gap-3 ${cls}`}>
-      <span className="font-mono text-[10px] uppercase tracking-[0.1em] text-[var(--ink-4)]">
+      <span className="font-mono text-[10px] uppercase tracking-widest text-(--ink-4)">
         {label}
       </span>
       <span className="font-mono text-[13px] tabular-nums">
         {formatDuration(effort.elapsedTime)}
-        <span className="text-[var(--ink-4)] ml-2">
+        <span className="text-(--ink-4) ml-2">
           {relTime(effort.startDateLocal, now)}
         </span>
       </span>
@@ -323,7 +307,7 @@ function HeroPR({
   now,
 }: {
   rec: DistanceRecord
-  unit: 'km' | 'mi'
+  unit: Unit
   now: Date
 }) {
   if (!rec.best) return null
@@ -334,35 +318,35 @@ function HeroPR({
   const pct = prev !== null && prev > 0 ? (delta / prev) * 100 : 0
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-[1fr_1.4fr] bg-[var(--card)] border border-[var(--line)] rounded-2xl overflow-hidden">
+    <div className="grid grid-cols-1 md:grid-cols-[1fr_1.4fr] bg-(--card) border border-(--line) rounded-2xl overflow-hidden">
       {/* Left: distance + big time */}
       <div className="px-9 py-8 flex flex-col justify-between gap-6">
         <div>
-          <span className="inline-flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.12em] text-[var(--accent)]">
-            <span className="relative inline-block w-[7px] h-[7px] rounded-full bg-[var(--accent)]">
-              <span className="absolute inset-[-3px] rounded-full border-[1.5px] border-[var(--accent)] opacity-0 animate-[pulse-ring_2s_ease-out_infinite]" />
+          <span className="inline-flex items-center gap-2 font-mono text-[11px] uppercase tracking-widest text-(--accent)">
+            <span className="relative inline-block w-1.75 h-1.75 rounded-full bg-(--accent)">
+              <span className="absolute -inset-0.75 rounded-full border-[1.5px] border-(--accent) opacity-0 animate-[pulse-ring_2s_ease-out_infinite]" />
             </span>
             Latest PR · {relTime(rec.best.startDateLocal, now)}
           </span>
-          <div className="mt-3.5 text-[18px] font-medium text-[var(--ink-2)] tracking-tight">
+          <div className="mt-3.5 text-[18px] font-medium text-(--ink-2) tracking-tight">
             {rec.label}
           </div>
-          <div className="mt-1.5 font-mono text-[64px] md:text-[76px] font-medium tabular-nums tracking-[-0.035em] text-[var(--ink)] leading-none">
+          <div className="mt-1.5 font-mono text-[64px] md:text-[76px] font-medium tabular-nums tracking-[-0.035em] text-(--ink) leading-none">
             {formatDuration(rec.best.elapsedTime)}
           </div>
-          <div className="mt-3 font-mono text-[14px] tabular-nums text-[var(--ink-3)]">
+          <div className="mt-3 font-mono text-[14px] tabular-nums text-(--ink-3)">
             {formatPace(pace)} {unitLabel}
           </div>
         </div>
         <div className="flex flex-col gap-1 font-mono text-[11px]">
-          <span className="text-[var(--ink-2)]">
+          <span className="text-(--ink-2)">
             {formatDate(rec.best.startDateLocal)}
           </span>
           <a
             href={`https://www.strava.com/activities/${rec.best.activityId}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-[var(--ink-3)] hover:text-[var(--accent)] no-underline"
+            className="text-(--ink-3) hover:text-(--accent) no-underline"
           >
             {rec.best.activityName} ↗
           </a>
@@ -370,34 +354,34 @@ function HeroPR({
       </div>
 
       {/* Right: improvement breakdown */}
-      <div className="px-9 py-8 border-t md:border-t-0 md:border-l border-[var(--line)] bg-[var(--card-2)]">
-        <h4 className="font-mono text-[10px] uppercase tracking-[0.12em] text-[var(--ink-4)] mb-4 font-medium">
+      <div className="px-9 py-8 border-t md:border-t-0 md:border-l border-(--line) bg-(--card-2)">
+        <h4 className="font-mono text-[10px] uppercase tracking-[0.12em] text-(--ink-4) mb-4 font-medium">
           Improvement
         </h4>
         {prev !== null ? (
           <>
             <div className="flex items-baseline gap-2.5 mb-6">
-              <span className="font-mono text-[28px] font-medium text-[var(--accent)] tabular-nums tracking-[-0.02em]">
+              <span className="font-mono text-[28px] font-medium text-(--accent) tabular-nums tracking-[-0.02em]">
                 −{formatDuration(delta)}
               </span>
-              <span className="font-mono text-[13px] text-[var(--ink-3)]">
+              <span className="font-mono text-[13px] text-(--ink-3)">
                 {pct.toFixed(1)}% faster
               </span>
             </div>
-            <div className="flex justify-between items-baseline py-2.5 border-t border-[var(--line)] font-mono text-[12px]">
-              <span className="text-[var(--ink-4)] uppercase text-[10px] tracking-[0.1em]">
+            <div className="flex justify-between items-baseline py-2.5 border-t border-(--line) font-mono text-[12px]">
+              <span className="text-(--ink-4) uppercase text-[10px] tracking-widest">
                 Previous best
               </span>
-              <span className="text-[var(--ink-2)] tabular-nums">
+              <span className="text-(--ink-2) tabular-nums">
                 {formatDuration(prev)}
               </span>
             </div>
             {rec.thirdBest && (
-              <div className="flex justify-between items-baseline py-2.5 border-t border-[var(--line)] font-mono text-[12px]">
-                <span className="text-[var(--ink-4)] uppercase text-[10px] tracking-[0.1em]">
+              <div className="flex justify-between items-baseline py-2.5 border-t border-(--line) font-mono text-[12px]">
+                <span className="text-(--ink-4) uppercase text-[10px] tracking-widest">
                   3rd best
                 </span>
-                <span className="text-[var(--ink-2)] tabular-nums">
+                <span className="text-(--ink-2) tabular-nums">
                   {formatDuration(rec.thirdBest.elapsedTime)} ·{' '}
                   {relTime(rec.thirdBest.startDateLocal, now)}
                 </span>
@@ -405,7 +389,7 @@ function HeroPR({
             )}
           </>
         ) : (
-          <div className="font-mono text-[12px] text-[var(--ink-3)] leading-relaxed">
+          <div className="font-mono text-[12px] text-(--ink-3)] leading-relaxed">
             First effort at this distance. Run it again and we'll track
             your improvement here.
           </div>
@@ -427,20 +411,20 @@ function Disclosure({
   children: React.ReactNode
 }) {
   return (
-    <details className="group bg-[var(--card)] border border-[var(--line)] rounded-2xl overflow-hidden [&[open]]:border-[rgba(252,76,2,0.18)] transition-colors">
-      <summary className="flex justify-between items-center px-5 py-4 cursor-pointer list-none hover:bg-[var(--card-2)] transition-colors [&::-webkit-details-marker]:hidden">
-        <span className="text-[14px] font-medium text-[var(--ink)] tracking-tight">
+    <details className="group bg-(--card) border border-(--line) rounded-2xl overflow-hidden [[open]]:border-[rgba(252,76,2,0.18)] transition-colors">
+      <summary className="flex justify-between items-center px-5 py-4 cursor-pointer list-none hover:bg-(--card-2) transition-colors [&::-webkit-details-marker]:hidden">
+        <span className="text-[14px] font-medium text-(--ink) tracking-tight">
           {title}
         </span>
-        <span className="flex items-center gap-3 font-mono text-[11px] text-[var(--ink-4)]">
+        <span className="flex items-center gap-3 font-mono text-[11px] text-(--ink-4)">
           {meta}
           <ChevronRight
             size={12}
-            className="text-[var(--ink-3)] transition-transform duration-150 group-open:rotate-90"
+            className="text-(--ink-3) transition-transform duration-150 group-open:rotate-90"
           />
         </span>
       </summary>
-      <div className="border-t border-[var(--line)]">{children}</div>
+      <div className="border-t border-(--line)">{children}</div>
     </details>
   )
 }
@@ -492,7 +476,7 @@ function ProgressionChart({ distances }: { distances: DistanceRecord[] }) {
 
   if (withTrend.length === 0) {
     return (
-      <div className="p-10 text-center font-mono text-[12px] text-[var(--ink-3)]">
+      <div className="p-10 text-center font-mono text-[12px] text-(--ink-3)]">
         No PR history yet — keep running and the chart will fill in.
       </div>
     )
@@ -518,8 +502,8 @@ function ProgressionChart({ distances }: { distances: DistanceRecord[] }) {
       year: 'numeric',
     })
     return (
-      <div className="bg-[var(--card)] border border-[var(--line)] rounded-lg shadow-md px-3 py-2 font-mono text-[11px] min-w-[180px]">
-        <div className="text-[var(--ink-3)] mb-1.5">{date}</div>
+      <div className="bg-(--card) border border-(--line) rounded-lg shadow-md px-3 py-2 font-mono text-[11px] min-w-45">
+        <div className="text-(--ink-3) mb-1.5">{date}</div>
         <div className="flex flex-col gap-1">
           {payload.map((p) => {
             const k = String(p.dataKey ?? '')
@@ -532,11 +516,11 @@ function ProgressionChart({ distances }: { distances: DistanceRecord[] }) {
                   className="inline-block w-2 h-2 rounded-full shrink-0"
                   style={{ background: p.color }}
                 />
-                <span className="text-[var(--ink-2)]">{labelByKey[k]}</span>
-                <span className="text-[var(--ink)] tabular-nums ml-auto">
+                <span className="text-(--ink-2)">{labelByKey[k]}</span>
+                <span className="text-(--ink) tabular-nums ml-auto">
                   {absTime !== null ? formatDuration(absTime) : '—'}
                 </span>
-                <span className="text-[var(--ink-4)] tabular-nums">
+                <span className="text-(--ink-4) tabular-nums">
                   {pct < 0.05 ? 'PR' : `+${pct.toFixed(1)}%`}
                 </span>
               </div>
@@ -550,10 +534,10 @@ function ProgressionChart({ distances }: { distances: DistanceRecord[] }) {
   return (
     <div className="p-5">
       <div className="flex justify-between items-center mb-3">
-        <h4 className="text-[14px] font-medium text-[var(--ink)]">
+        <h4 className="text-[14px] font-medium text-(--ink)">
           PR progression
         </h4>
-        <span className="font-mono text-[11px] text-[var(--ink-3)]">
+        <span className="font-mono text-[11px] text-(--ink-3)">
           % above all-time best per distance
         </span>
       </div>
@@ -628,7 +612,7 @@ function ProgressionChart({ distances }: { distances: DistanceRecord[] }) {
           </LineChart>
         </ResponsiveContainer>
       </div>
-      <div className="flex gap-3.5 flex-wrap font-mono text-[11px] text-[var(--ink-3)] mt-3">
+      <div className="flex gap-3.5 flex-wrap font-mono text-[11px] text-(--ink-3) mt-3">
         {withTrend.map((d) => (
           <span
             key={d.key}
@@ -665,7 +649,7 @@ function PaceByRange({
 }: {
   distances: DistanceRecord[]
   runs: DashboardRun[]
-  unit: 'km' | 'mi'
+  unit: Unit
 }) {
   const unitLabel = unit === 'km' ? '/km' : '/mi'
   const distMap = useMemo(() => {
@@ -707,7 +691,7 @@ function PaceByRange({
 
   return (
     <div className="overflow-x-auto">
-      <table className="w-full text-left border-collapse min-w-[640px]">
+      <table className="w-full text-left border-collapse min-w-160">
         <thead>
           <tr>
             <Th>Distance range</Th>
@@ -724,14 +708,14 @@ function PaceByRange({
             if (!pace || !best || !dist) {
               return (
                 <tr key={bucket.key}>
-                  <Td className="text-[var(--ink)] font-medium">
+                  <Td className="text-(--ink) font-medium">
                     {bucket.key}
                   </Td>
-                  <Td className="text-[var(--ink-4)]">—</Td>
+                  <Td className="text-(--ink-4)">—</Td>
                   <Td />
-                  <Td className="text-[var(--ink-4)]">—</Td>
-                  <Td className="text-[var(--ink-4)]">—</Td>
-                  <Td align="right" className="text-[var(--ink-4)] tabular-nums">
+                  <Td className="text-(--ink-4)">—</Td>
+                  <Td className="text-(--ink-4)">—</Td>
+                  <Td align="right" className="text-(--ink-4) tabular-nums">
                     {counts[idx]}
                   </Td>
                 </tr>
@@ -742,22 +726,22 @@ function PaceByRange({
               fastest !== null ? 100 * (1 - (pace - fastest) / range) : 0
             return (
               <tr key={bucket.key}>
-                <Td className="text-[var(--ink)] font-medium">{bucket.key}</Td>
+                <Td className="text-(--ink) font-medium">{bucket.key}</Td>
                 <Td className="font-mono tabular-nums">
                   <span
                     className={
                       isFastest
-                        ? 'text-[var(--accent)] font-medium'
-                        : 'text-[var(--ink-2)]'
+                        ? 'text-(--accent) font-medium'
+                        : 'text-(--ink-2)'
                     }
                   >
                     {formatPace(pace)}
                   </span>
-                  <span className="text-[var(--ink-4)] ml-1">{unitLabel}</span>
+                  <span className="text-(--ink-4) ml-1">{unitLabel}</span>
                 </Td>
                 <Td>
-                  <div className="inline-flex items-center min-w-[120px]">
-                    <div className="h-1 rounded-sm bg-[var(--line-2)] flex-1 overflow-hidden">
+                  <div className="inline-flex items-center min-w-30">
+                    <div className="h-1 rounded-sm bg-(--line-2) flex-1 overflow-hidden">
                       <div
                         className="h-full rounded-sm"
                         style={{
@@ -770,20 +754,20 @@ function PaceByRange({
                     </div>
                   </div>
                 </Td>
-                <Td className="font-mono tabular-nums text-[var(--ink-2)]">
+                <Td className="font-mono tabular-nums text-(--ink-2)">
                   {formatDuration(best.elapsedTime)}
                 </Td>
-                <Td className="text-[var(--ink-3)] truncate max-w-[200px]">
+                <Td className="text-(--ink-3) truncate max-w-50">
                   <a
                     href={`https://www.strava.com/activities/${best.activityId}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-[var(--ink-2)] no-underline hover:text-[var(--accent)]"
+                    className="text-(--ink-2) no-underline hover:text-(--accent)"
                   >
                     {best.activityName}
                   </a>
                 </Td>
-                <Td align="right" className="font-mono tabular-nums text-[var(--ink-3)]">
+                <Td align="right" className="font-mono tabular-nums text-(--ink-3)">
                   {counts[idx]}
                 </Td>
               </tr>
@@ -802,7 +786,7 @@ function PRHistory({
   unit,
 }: {
   distances: DistanceRecord[]
-  unit: 'km' | 'mi'
+  unit: Unit
 }) {
   const unitLabel = unit === 'km' ? '/km' : '/mi'
   const rows = distances
@@ -815,7 +799,7 @@ function PRHistory({
 
   if (rows.length === 0) {
     return (
-      <div className="p-10 text-center font-mono text-[12px] text-[var(--ink-3)]">
+      <div className="p-10 text-center font-mono text-[12px] text-(--ink-3)">
         No personal records yet.
       </div>
     )
@@ -823,7 +807,7 @@ function PRHistory({
 
   return (
     <div className="overflow-x-auto">
-      <table className="w-full text-left border-collapse min-w-[720px]">
+      <table className="w-full text-left border-collapse min-w-180">
         <thead>
           <tr>
             <Th>Date</Th>
@@ -844,31 +828,31 @@ function PRHistory({
             const pct = prev !== null && prev > 0 ? (delta / prev) * 100 : 0
             return (
               <tr key={r.key}>
-                <Td className="font-mono text-[11px] text-[var(--ink-3)] tabular-nums">
+                <Td className="font-mono text-[11px] text-(--ink-3) tabular-nums">
                   {formatDate(best.startDateLocal)}
                 </Td>
-                <Td className="text-[var(--ink)] font-medium">{r.label}</Td>
-                <Td className="font-mono tabular-nums text-[var(--ink)]">
+                <Td className="text-(--ink) font-medium">{r.label}</Td>
+                <Td className="font-mono tabular-nums text-(--ink)">
                   {formatDuration(best.elapsedTime)}
                 </Td>
-                <Td className="font-mono tabular-nums text-[var(--ink)]">
+                <Td className="font-mono tabular-nums text-(--ink)">
                   {formatPace(pace)}
-                  <span className="text-[var(--ink-3)] ml-0.5">{unitLabel}</span>
+                  <span className="text-(--ink-3) ml-0.5">{unitLabel}</span>
                 </Td>
                 <Td>
                   <a
                     href={`https://www.strava.com/activities/${best.activityId}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-[var(--ink-2)] no-underline hover:text-[var(--accent)]"
+                    className="text-(--ink-2) no-underline hover:text-(--accent)"
                   >
                     {best.activityName}
                   </a>
                 </Td>
-                <Td className="font-mono tabular-nums text-[var(--ink-3)]">
+                <Td className="font-mono tabular-nums text-(--ink-3)">
                   {prev !== null ? formatDuration(prev) : '—'}
                 </Td>
-                <Td className="font-mono tabular-nums text-[var(--accent)]">
+                <Td className="font-mono tabular-nums text-(--accent)">
                   {prev !== null
                     ? `−${formatDuration(delta)} · ${pct.toFixed(1)}%`
                     : '—'}
@@ -893,7 +877,7 @@ function Th({
 }) {
   return (
     <th
-      className={`bg-[var(--card-2)] font-mono text-[10px] uppercase tracking-[0.08em] text-[var(--ink-4)] px-3 py-2.5 font-medium border-b border-[var(--line)] ${
+      className={`bg-(--card-2) font-mono text-[10px] uppercase tracking-[0.08em] text-(--ink-4) px-3 py-2.5 font-medium border-b border-(--line) ${
         align === 'right' ? 'text-right' : 'text-left'
       }`}
     >
@@ -913,7 +897,7 @@ function Td({
 }) {
   return (
     <td
-      className={`px-3 py-3 border-b border-[var(--line-2)] text-[13px] ${
+      className={`px-3 py-3 border-b border-(--line-2) text-[13px] ${
         align === 'right' ? 'text-right' : ''
       } ${className}`}
     >
@@ -926,8 +910,8 @@ function Td({
 
 function EmptyTab() {
   return (
-    <div className="py-20 px-10 text-center border border-dashed border-[var(--line)] rounded-2xl bg-[var(--card-2)]">
-      <div className="w-[60px] h-[60px] mx-auto mb-5 rounded-full bg-[var(--accent-soft)] grid place-items-center text-[var(--accent)]">
+    <div className="py-20 px-10 text-center border border-dashed border-(--line) rounded-2xl bg-(--card-2)">
+      <div className="w-15 h-15 mx-auto mb-5 rounded-full bg-(--accent-soft) grid place-items-center text-(--accent)">
         <svg
           width="28"
           height="28"
@@ -944,10 +928,10 @@ function EmptyTab() {
           <path d="M12 14v7" />
         </svg>
       </div>
-      <h2 className="text-[22px] font-medium m-0 mb-2 text-[var(--ink)] tracking-tight">
+      <h2 className="text-[22px] font-medium m-0 mb-2 text-(--ink) tracking-tight">
         Your records will live here.
       </h2>
-      <p className="text-[14px] text-[var(--ink-3)] mx-auto max-w-[42ch] leading-relaxed">
+      <p className="text-[14px] text-(--ink-3) mx-auto max-w-[42ch] leading-relaxed">
         Run any of the standard distances — 1K, 1 mile, 5K, 10K, half, or
         marathon — and Reko will surface your fastest effort across every
         activity automatically.
@@ -1010,7 +994,7 @@ export default function Records({ data, runs, unit }: Props) {
       {heroDistance && <HeroPR rec={heroDistance} unit={unit} now={now} />}
 
       {/* Per-distance expandable list */}
-      <div className="bg-[var(--card)] border border-[var(--line)] rounded-2xl overflow-hidden">
+      <div className="bg-(--card) border border-(--line) rounded-2xl overflow-hidden">
         {slimList.map((rec) => (
           <DistanceRow key={rec.key} rec={rec} unit={unit} now={now} />
         ))}
