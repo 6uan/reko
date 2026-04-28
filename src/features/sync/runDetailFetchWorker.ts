@@ -28,6 +28,7 @@
 import { and, asc, eq, isNull } from 'drizzle-orm'
 import { getDb } from '../../db/client'
 import { activities, syncLog } from '../../db/schema'
+import { publish } from '../../lib/eventBus'
 import { StravaRateLimitedError } from '../../lib/strava'
 import { storeActivityDetail } from './storeActivityDetail'
 import { withFreshToken } from './withFreshToken'
@@ -143,6 +144,14 @@ async function runDetailFetchWorker(
           .update(syncLog)
           .set({ callsUsed })
           .where(eq(syncLog.id, syncLogId))
+
+        // Live-updates fan-out: nudge open dashboards each time a new
+        // activity's best_efforts + streams land. The Records tab is
+        // the most visible benefactor — PRs progressively fill in as
+        // older activities get processed. Per-activity is fine: the
+        // worker is rate-limited (~1 activity per 18s during normal
+        // operation, much slower under 429), so we never spam the bus.
+        publish(userId, { type: 'activity-changed', reason: 'detail-worker' })
       } catch (err) {
         if (err instanceof StravaRateLimitedError) {
           const ms =

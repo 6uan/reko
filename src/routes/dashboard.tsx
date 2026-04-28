@@ -8,6 +8,7 @@ import { activities, syncLog } from '../db/schema'
 import { sessionConfig, type SessionData } from '../features/auth/session'
 import { enqueueBackfill } from '../features/sync/backfillActivities'
 import ResyncButton from '../features/sync/ResyncButton'
+import { useLiveUpdates } from '../features/sync/useLiveUpdates'
 import { Avatar } from '../ui/Avatar'
 import SyncBanner from '../features/sync/SyncBanner'
 import {
@@ -151,6 +152,13 @@ const TABS: { id: TabId; icon: typeof LayoutDashboard; label: string }[] = [
 function Dashboard() {
   const { runs, records, athlete, lastSyncFinishedAt: initialFinishedAt } =
     Route.useLoaderData()
+
+  // Live updates: opens an SSE stream to /api/sync/stream and invalidates
+  // this route whenever a background worker publishes an activity-changed
+  // event (webhook from Strava, detail-fetch progress, backfill done).
+  // See src/features/sync/useLiveUpdates.ts for the wiring details.
+  useLiveUpdates()
+
   const [tab, setTab] = useState<TabId>('overview')
   const [unit, setUnit] = useState<'km' | 'mi'>(() => {
     if (typeof window !== 'undefined') {

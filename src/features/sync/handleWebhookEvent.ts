@@ -46,6 +46,7 @@ import {
   users,
   webhookEvents,
 } from '../../db/schema'
+import { publish } from '../../lib/eventBus'
 import { fetchActivityDetail } from '../../lib/strava'
 import { mapStravaActivity } from './mapStravaActivity'
 import { withFreshToken } from './withFreshToken'
@@ -95,6 +96,13 @@ export async function handleWebhookEvent(
 
     if (payload.object_type === 'activity') {
       await handleActivityEvent(user.id, payload)
+      // Live-updates fan-out: nudge any open dashboard tabs for this user
+      // to re-run their loader. The eventBus is in-memory and per-process
+      // (see src/lib/eventBus.ts) — no listeners = no work, no harm.
+      // Covers create, update, and delete; the deauth path also lands
+      // here, which is fine (invalidating the loader on deauth surfaces
+      // the empty state immediately rather than at next page load).
+      publish(user.id, { type: 'activity-changed', reason: 'webhook' })
     } else if (payload.object_type === 'athlete') {
       await handleAthleteEvent(user.id, payload)
     } else {

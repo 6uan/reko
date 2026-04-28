@@ -22,6 +22,7 @@
 import { and, desc, eq, isNotNull, sql } from 'drizzle-orm'
 import { getDb } from '../../db/client'
 import { activities, syncLog } from '../../db/schema'
+import { publish } from '../../lib/eventBus'
 import { fetchAthleteActivities } from '../../lib/strava'
 import { RESYNC_COOLDOWN_MS } from './constants'
 import { mapStravaActivity } from './mapStravaActivity'
@@ -181,6 +182,13 @@ async function runBackfillWorker(
         callsUsed: pagesFetched,
       })
       .where(eq(syncLog.id, syncLogId))
+
+    // Live-updates fan-out: signal any open dashboard tabs that the
+    // summary cache is fully loaded. Mostly redundant with SyncBanner's
+    // own router.invalidate() (it polls until it sees status='success'
+    // and invalidates then), but covers the multi-tab case — only one
+    // tab runs the banner's poller, every tab is subscribed to the bus.
+    publish(userId, { type: 'activity-changed', reason: 'backfill' })
 
     // Kick off the detail-fetch worker now that the summary cache is
     // current. Fire-and-forget — this can take a long time (rate limits)
