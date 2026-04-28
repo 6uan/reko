@@ -74,10 +74,19 @@ export function subscribe(userId: number, listener: Listener): () => void {
  * Listener errors are swallowed so one broken listener can't stop the
  * fan-out to everyone else. Listeners are typically simple stream
  * writes — if they throw, the SSE route's own error path handles it.
+ *
+ * Logs subscriber count on every publish so prod traces show whether a
+ * publish reached any browser. `subs=0` means there was no open SSE
+ * connection at that instant — the live update is dropped (NOT durable,
+ * by design) and the user will see the change at next page load.
  */
 export function publish(userId: number, event: ActivityEvent): void {
   const set = subscribers.get(userId)
-  if (!set || set.size === 0) return
+  const count = set?.size ?? 0
+  console.log(
+    `[eventBus] publish userId=${userId} reason=${event.reason} subs=${count}`,
+  )
+  if (!set || count === 0) return
 
   for (const listener of set) {
     try {
