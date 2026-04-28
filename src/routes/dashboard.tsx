@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { createFileRoute, redirect, Link } from '@tanstack/react-router'
 import { createServerFn } from '@tanstack/react-start'
 import { getSession as frameworkGetSession } from '@tanstack/react-start/server'
@@ -33,6 +33,11 @@ import { getRecordsData } from '../features/records/getRecordsData'
 export type DashboardRun = {
   id: number
   name: string
+  /** Strava's legacy sport field — always populated. e.g. 'Run', 'Walk', 'Ride'. */
+  type: string
+  /** Strava's modern, more granular sport_type — nullable for older activities.
+   *  e.g. 'Run', 'TrailRun', 'VirtualRun', 'Walk'. */
+  sportType: string | null
   date: string
   distanceMeters: number
   movingTime: number
@@ -42,6 +47,23 @@ export type DashboardRun = {
   cadence: number | null
   elevation: number
   prCount: number
+}
+
+/**
+ * Classify an activity for UI grouping. Strava's `type` is legacy and
+ * coarse ('Run', 'Walk'), `sport_type` is granular ('Run', 'TrailRun',
+ * 'VirtualRun', 'Walk', 'NordicWalk'). Treat any *Run* sport_type as a
+ * run and any *Walk* sport_type as a walk; fall back to `type` when
+ * sport_type is null (older activities pre-dating the sport_type field).
+ */
+export function activityKind(a: Pick<DashboardRun, 'type' | 'sportType'>):
+  | 'run'
+  | 'walk'
+  | 'other' {
+  const sport = a.sportType ?? a.type
+  if (sport === 'Run' || sport === 'TrailRun' || sport === 'VirtualRun') return 'run'
+  if (sport === 'Walk' || sport === 'NordicWalk') return 'walk'
+  return 'other'
 }
 
 // ── Data loading ───────────────────────────────────────────────────
@@ -54,22 +76,33 @@ const loadDashboardData = createServerFn({ method: 'GET' }).handler(
 
     const db = getDb()
 
-    // Read all runs from the DB cache. Filter to Runs only (Strava splits
-    // type/sport_type — match either). Sort newest first.
+    // Read all runs + walks from the DB cache. Strava splits type
+    // (legacy, coarse) from sport_type (modern, granular) — match either
+    // for both Run and Walk to catch TrailRun/VirtualRun/NordicWalk
+    // variants. Other sport types (Ride, Hike, Workout, …) are excluded
+    // — Reko is a running dashboard with walks added as a secondary view,
+    // not a general activity tracker.
     const dbRuns = await db
       .select()
       .from(activities)
       .where(
         and(
           eq(activities.userId, d.userId),
-          or(eq(activities.type, 'Run'), eq(activities.sportType, 'Run')),
+          or(
+            eq(activities.type, 'Run'),
+            eq(activities.sportType, 'Run'),
+            eq(activities.type, 'Walk'),
+            eq(activities.sportType, 'Walk'),
+          ),
         ),
       )
       .orderBy(desc(activities.startDate))
 
-    const runs: DashboardRun[] = dbRuns.map((a) => ({
+    const dashboardActivities: DashboardRun[] = dbRuns.map((a) => ({
       id: a.id,
       name: a.name,
+      type: a.type,
+      sportType: a.sportType,
       // startDateLocal is "YYYY-MM-DD HH:MM:SS" (wall-clock string).
       // Convert to ISO-style "YYYY-MM-DDTHH:MM:SSZ" so consumers' new Date()
       // parses consistently across browsers.
@@ -84,12 +117,12 @@ const loadDashboardData = createServerFn({ method: 'GET' }).handler(
       prCount: a.prCount,
     }))
 
-    // First-login backfill: if no runs cached, enqueue a sync. The
+    // First-login backfill: if nothing cached, enqueue a sync. The
     // function handles the "already running" idempotency check itself,
-    // so this is safe to call on every load when runs.length === 0.
+    // so this is safe to call on every load when nothing has been synced.
     // Awaited (not fire-and-forget) so the sync_log row is committed
     // before the response — the SyncBanner's first poll then sees it.
-    if (runs.length === 0) {
+    if (dashboardActivities.length === 0) {
       await enqueueBackfill(d.userId).catch((err) => {
         console.error('[backfill] enqueue failed:', err)
       })
@@ -112,7 +145,10 @@ const loadDashboardData = createServerFn({ method: 'GET' }).handler(
     const records = await getRecordsData(d.userId)
 
     return {
-      runs,
+      // Loader returns the full set (runs + walks). The Dashboard
+      // component splits it: analytics tabs get runs only (kind='run'),
+      // the Activities tab gets the full set so users can toggle.
+      activities: dashboardActivities,
       records,
       athlete: {
         firstname: d.firstname,
@@ -150,8 +186,20 @@ const TABS: { id: TabId; icon: typeof LayoutDashboard; label: string }[] = [
 // ── Dashboard component ────────────────────────────────────────────
 
 function Dashboard() {
-  const { runs, records, athlete, lastSyncFinishedAt: initialFinishedAt } =
-    Route.useLoaderData()
+  const {
+    activities: dashboardActivities,
+    records,
+    athlete,
+    lastSyncFinishedAt: initialFinishedAt,
+  } = Route.useLoaderData()
+
+  // Analytics tabs (Overview, Pace, HR, Cadence, Records) only make
+  // sense for runs — walking HR/cadence/pace are bimodal vs running and
+  // would muddy the charts. ActivitiesTab gets the full set + a toggle.
+  const runs = useMemo(
+    () => dashboardActivities.filter((a) => activityKind(a) === 'run'),
+    [dashboardActivities],
+  )
 
   // Live updates: opens an SSE stream to /api/sync/stream and invalidates
   // this route whenever a background worker publishes an activity-changed
@@ -318,7 +366,9 @@ function Dashboard() {
         {/* Tab content */}
         <div className="p-7 flex flex-col gap-6 min-w-0">
           {tab === 'overview' && <OverviewTab runs={runs} unit={unit} />}
-          {tab === 'activities' && <ActivitiesTab runs={runs} unit={unit} />}
+          {tab === 'activities' && (
+            <ActivitiesTab activities={dashboardActivities} unit={unit} />
+          )}
           {tab === 'pace' && <PaceTab runs={runs} unit={unit} />}
           {tab === 'heart' && <HeartRateTab runs={runs} unit={unit} />}
           {tab === 'cadence' && <CadenceTab runs={runs} unit={unit} />}

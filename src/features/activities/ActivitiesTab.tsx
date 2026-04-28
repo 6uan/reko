@@ -11,6 +11,10 @@ import {
 export type DashboardRun = {
   id: number;
   name: string;
+  /** Strava's legacy sport field — always populated. */
+  type: string;
+  /** Strava's modern, more granular sport_type — nullable for older activities. */
+  sportType: string | null;
   date: string;
   distanceMeters: number;
   movingTime: number;
@@ -23,9 +27,20 @@ export type DashboardRun = {
 };
 
 type Props = {
-  runs: DashboardRun[];
+  /** Full list — runs + walks. The sport-type toggle below filters
+   *  this down before the intensity chips apply. */
+  activities: DashboardRun[];
   unit: "km" | "mi";
 };
+
+/** Mirror of dashboard.tsx#activityKind — duplicated to avoid a
+ *  feature → route import (route imports go one way). */
+function kindOf(a: DashboardRun): "run" | "walk" | "other" {
+  const sport = a.sportType ?? a.type;
+  if (sport === "Run" || sport === "TrailRun" || sport === "VirtualRun") return "run";
+  if (sport === "Walk" || sport === "NordicWalk") return "walk";
+  return "other";
+}
 
 // ── Helpers ────────────────────────────────────────────────────────
 
@@ -43,6 +58,22 @@ function paceForUnit(speedMs: number, unit: "km" | "mi"): number {
 }
 
 // ── Filter definitions ─────────────────────────────────────────────
+
+type SportFilter = "all" | "run" | "walk";
+
+const SPORT_FILTERS: { key: SportFilter; label: string }[] = [
+  { key: "all", label: "All" },
+  { key: "run", label: "Runs" },
+  { key: "walk", label: "Walks" },
+];
+
+function applySportFilter(
+  activities: DashboardRun[],
+  sport: SportFilter,
+): DashboardRun[] {
+  if (sport === "all") return activities;
+  return activities.filter((a) => kindOf(a) === sport);
+}
 
 type FilterKey = "all" | "has_pr" | "10km" | "tempo" | "easy";
 
@@ -152,17 +183,28 @@ const COLUMNS: ColDef[] = [
 
 // ── Component ──────────────────────────────────────────────────────
 
-export default function Activities({ runs, unit }: Props) {
+export default function Activities({ activities, unit }: Props) {
+  // Default to "All" so the user sees both runs and walks immediately
+  // (the whole reason walks were brought in). Sport filter applies first;
+  // intensity chips compose on top of the sport-filtered set.
+  const [sportFilter, setSportFilter] = useState<SportFilter>("all");
   const [activeFilter, setActiveFilter] = useState<FilterKey>("all");
   const [sortCol, setSortCol] = useState<SortCol>("date");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
+
+  // Sport filter (run/walk/all) — applied first so subsequent stages
+  // operate on the smaller set.
+  const bySport = useMemo(
+    () => applySportFilter(activities, sportFilter),
+    [activities, sportFilter],
+  );
 
   // Filter to last 30 days
   const last30 = useMemo(() => {
     const cutoff = new Date();
     cutoff.setDate(cutoff.getDate() - 30);
-    return runs.filter((r) => new Date(r.date) >= cutoff);
-  }, [runs]);
+    return bySport.filter((r) => new Date(r.date) >= cutoff);
+  }, [bySport]);
 
   const filtered = useMemo(
     () => applyFilter(last30, activeFilter),
@@ -173,6 +215,15 @@ export default function Activities({ runs, unit }: Props) {
     () => sortRuns(filtered, sortCol, sortDir, unit),
     [filtered, sortCol, sortDir, unit],
   );
+
+  // Header copy reflects the current sport scope. "Activities" when "All"
+  // is selected, "Runs" / "Walks" when narrowed — keeps the count line
+  // semantically correct without juggling pluralization rules per sport.
+  const sportLabel =
+    sportFilter === "run" ? "run" : sportFilter === "walk" ? "walk" : "activity";
+  const sportLabelPlural =
+    sportFilter === "run" ? "runs" : sportFilter === "walk" ? "walks" : "activities";
+  const countWord = last30.length === 1 ? sportLabel : sportLabelPlural;
 
   function handleSort(col: SortCol) {
     if (col === sortCol) {
@@ -188,13 +239,27 @@ export default function Activities({ runs, unit }: Props) {
 
   function renderCell(run: DashboardRun, col: SortCol) {
     switch (col) {
-      case "name":
+      case "name": {
+        // Color-code the dot so walks are distinguishable at a glance
+        // without introducing a whole extra column. Accent = run, muted
+        // = walk, keeps the table dense.
+        const k = kindOf(run);
+        const dotClass =
+          k === "run"
+            ? "bg-[var(--accent)]"
+            : k === "walk"
+              ? "bg-[var(--ink-4)]"
+              : "bg-[var(--ink-4)] opacity-60";
         return (
           <span className="flex items-center gap-2">
-            <span className="inline-block w-2 h-2 rounded-full bg-[var(--accent)] shrink-0" />
+            <span
+              className={`inline-block w-2 h-2 rounded-full shrink-0 ${dotClass}`}
+              title={k === "walk" ? "Walk" : k === "run" ? "Run" : "Other"}
+            />
             <span className="truncate max-w-[200px]">{run.name}</span>
           </span>
         );
+      }
       case "date":
         return (
           <span className="text-[var(--ink-3)] whitespace-nowrap">
@@ -275,8 +340,7 @@ export default function Activities({ runs, unit }: Props) {
             Activities
           </h2>
           <p className="text-[13px] text-[var(--ink-3)] mt-1">
-            {last30.length} run{last30.length !== 1 ? "s" : ""} &middot; last 30
-            days
+            {last30.length} {countWord} &middot; last 30 days
           </p>
         </div>
         <div className="flex gap-2">
@@ -293,6 +357,29 @@ export default function Activities({ runs, unit }: Props) {
             Export
           </button>
         </div>
+      </div>
+
+      {/* Sport-type toggle (segmented). Separate from the intensity
+          chips below because it's a different filter axis: this picks
+          which sport to show, the chips refine within that sport. */}
+      <div className="inline-flex p-[3px] bg-[var(--card-2)] border border-[var(--line)] rounded-[9px] font-mono text-[11px] font-medium self-start">
+        {SPORT_FILTERS.map((s) => {
+          const isActive = s.key === sportFilter;
+          return (
+            <button
+              key={s.key}
+              type="button"
+              onClick={() => setSportFilter(s.key)}
+              className={`px-2.5 py-[5px] rounded-[6px] cursor-pointer transition-colors ${
+                isActive
+                  ? "bg-[var(--ink)] text-[var(--bg)]"
+                  : "text-[var(--ink-3)] bg-transparent"
+              }`}
+            >
+              {s.label}
+            </button>
+          );
+        })}
       </div>
 
       {/* Filter Chips */}
