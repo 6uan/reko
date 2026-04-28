@@ -49,6 +49,19 @@ import type { ActivityEvent } from '../../lib/eventBus'
 
 const STREAM_URL = '/api/sync/stream'
 
+/**
+ * Coalesce-window for invalidations. Multiple events arriving inside
+ * this window get merged into a single `router.invalidate()` call.
+ *
+ * Why this exists: the detail-fetch worker publishes once per activity,
+ * which during a fresh backfill (no rate limit yet) bursts at ~2-5
+ * events per second. Without debouncing, each event becomes a loader
+ * re-run, and the dashboard hammers itself. 250ms is short enough to
+ * still feel "live" (a single webhook arriving on its own gets through
+ * with negligible delay) but long enough to swallow worker bursts.
+ */
+const INVALIDATE_DEBOUNCE_MS = 250
+
 export function useLiveUpdates(): void {
   const router = useRouter()
 
@@ -61,6 +74,16 @@ export function useLiveUpdates(): void {
     }
 
     const es = new EventSource(STREAM_URL, { withCredentials: true })
+
+    // Debounce timer — see INVALIDATE_DEBOUNCE_MS.
+    let pendingInvalidate: ReturnType<typeof setTimeout> | null = null
+    const scheduleInvalidate = () => {
+      if (pendingInvalidate) clearTimeout(pendingInvalidate)
+      pendingInvalidate = setTimeout(() => {
+        pendingInvalidate = null
+        router.invalidate()
+      }, INVALIDATE_DEBOUNCE_MS)
+    }
 
     // 'message' is the default event name in SSE — used by the server's
     // `event: message` lines (see writeEvent in stream.tsx). Worth
@@ -77,9 +100,10 @@ export function useLiveUpdates(): void {
       }
       if (payload?.type !== 'activity-changed') return
 
-      // Re-runs the dashboard loader. Cheap, idempotent, the dashboard
-      // re-renders once the new data resolves.
-      router.invalidate()
+      // Re-runs the dashboard loader. Debounced so that a burst of
+      // events from one publisher (e.g. detail-fetch worker chewing
+      // through activities) collapses to a single loader run.
+      scheduleInvalidate()
     }
 
     const onConnected = () => {
@@ -108,6 +132,13 @@ export function useLiveUpdates(): void {
       es.removeEventListener('connected', onConnected)
       es.removeEventListener('error', onError)
       es.close()
+      // Drop any debounced invalidate that hadn't fired yet — the
+      // component is unmounting, the router instance may already be
+      // tearing down, no point in calling invalidate on the way out.
+      if (pendingInvalidate) {
+        clearTimeout(pendingInvalidate)
+        pendingInvalidate = null
+      }
     }
   }, [router])
 }
