@@ -104,6 +104,20 @@ async function handleStream(request: Request): Promise<Response> {
       // so consumers can use one parser.
       writeEvent('connected', { userId, ts: Date.now() })
 
+      // Padding comment — fixes a Coolify / Traefik (and historically
+      // Nginx / Cloudflare) class of bug where browsers send
+      // `Accept-Encoding: gzip, br` and the proxy decides to compress
+      // the response. To compress, it has to buffer; SSE never ends, so
+      // the buffer never flushes, and the browser stalls forever
+      // (curl works because curl doesn't request compression by default).
+      //
+      // 2KB of comment bytes is enough to push past the typical compression
+      // min-buffer threshold and force an early flush even when a proxy
+      // ignores `Content-Encoding: identity` below. Comments (lines starting
+      // with `:`) are silently dropped by EventSource, so this is invisible
+      // to the client. Sent only once per connection — negligible overhead.
+      safeEnqueue(`: ${' '.repeat(2048)}\n\n`)
+
       // Subscribe AFTER the hello write — guarantees the client sees
       // 'connected' before any data event, which simplifies the hook's
       // ready-state handling.
@@ -146,6 +160,13 @@ async function handleStream(request: Request): Promise<Response> {
       // doesn't buffer by default but this is a cheap insurance policy
       // for anyone fronting Reko with a different proxy.
       'X-Accel-Buffering': 'no',
+      // Explicit "no encoding" — tells well-behaved proxies (Traefik,
+      // Cloudflare) NOT to apply gzip/br compression even when the
+      // browser asks for it via Accept-Encoding. Compression breaks SSE
+      // because the proxy must buffer the whole response to compress it.
+      // Paired with the 2KB padding comment in the stream's start() to
+      // defeat proxies that ignore this header.
+      'Content-Encoding': 'identity',
     },
   })
 }
