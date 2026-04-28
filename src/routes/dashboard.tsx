@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { createFileRoute, redirect, Link } from '@tanstack/react-router'
 import { createServerFn } from '@tanstack/react-start'
 import { getSession as frameworkGetSession } from '@tanstack/react-start/server'
@@ -18,7 +18,9 @@ import {
   Heart,
   Footprints,
   Trophy,
+  X,
 } from 'lucide-react'
+import { HiViewGridAdd } from 'react-icons/hi'
 
 import OverviewTab from '../features/overview/OverviewTab'
 import ActivitiesTab from '../features/activities/ActivitiesTab'
@@ -231,6 +233,41 @@ function Dashboard() {
     if (typeof window !== 'undefined') localStorage.setItem('reko-unit', u)
   }
 
+  // Mobile nav drawer — fullscreen overlay triggered by the HiViewGridAdd
+  // icon in the topbar. Hidden entirely on lg+ since the desktop sidebar
+  // covers nav there.
+  const [mobileNavOpen, setMobileNavOpen] = useState(false)
+
+  // Lock body scroll while the drawer is open so the underlying page
+  // doesn't scroll behind it (iOS especially leaks scroll otherwise).
+  useEffect(() => {
+    if (!mobileNavOpen) return
+    const prev = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => {
+      document.body.style.overflow = prev
+    }
+  }, [mobileNavOpen])
+
+  // ESC closes the drawer — keyboard parity with desktop overlays even
+  // though primary input on mobile is touch.
+  useEffect(() => {
+    if (!mobileNavOpen) return
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setMobileNavOpen(false)
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [mobileNavOpen])
+
+  // Tab pick that also closes the drawer — wired to both the desktop
+  // sidebar buttons (no-op for the close, drawer never opens on lg+)
+  // and the mobile grid tiles.
+  const selectTab = (id: TabId) => {
+    setTab(id)
+    setMobileNavOpen(false)
+  }
+
   const activeTab = TABS.find((t) => t.id === tab)!
 
   return (
@@ -261,7 +298,7 @@ function Dashboard() {
             {TABS.map(({ id, icon: Icon, label }) => (
               <button
                 key={id}
-                onClick={() => setTab(id)}
+                onClick={() => selectTab(id)}
                 className={`w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-[13px] transition-colors cursor-pointer ${
                   tab === id
                     ? 'bg-[var(--card)] text-[var(--ink)] font-medium shadow-[0_1px_2px_rgba(0,0,0,0.04)] border border-[var(--line)]'
@@ -293,7 +330,7 @@ function Dashboard() {
                 {athlete.firstname} {athlete.lastname}
               </div>
               <div className="font-mono text-[10px] text-[var(--ink-4)]">
-                {runs.length} runs loaded
+                {dashboardActivities.length} activities loaded
               </div>
             </div>
           </Link>
@@ -316,14 +353,24 @@ function Dashboard() {
         />
 
         {/* Topbar */}
-        <div className="sticky top-0 z-30 bg-[var(--bg)]/80 backdrop-blur-xl border-b border-[var(--line)] px-7 py-3.5 flex items-center justify-between">
-          <div className="font-mono text-[12px] text-[var(--ink-3)]">
+        <div className="sticky top-0 z-30 bg-[var(--bg)]/80 backdrop-blur-xl border-b border-[var(--line)] px-4 lg:px-7 py-3.5 flex items-center justify-between">
+          <div className="flex items-center gap-3 font-mono text-[12px] text-[var(--ink-3)]">
+            {/* Mobile nav trigger — only visible below lg, where the
+                desktop sidebar is hidden. Sits at top-left as requested. */}
+            <button
+              type="button"
+              onClick={() => setMobileNavOpen(true)}
+              aria-label="Open navigation"
+              className="lg:hidden -ml-1 inline-flex items-center justify-center w-9 h-9 rounded-lg text-[var(--ink-2)] hover:text-[var(--ink)] hover:bg-[var(--card)] transition-colors"
+            >
+              <HiViewGridAdd size={20} />
+            </button>
             <strong className="text-[var(--ink)] font-medium">
               {activeTab.label}
             </strong>
           </div>
           <div className="flex items-center gap-2.5">
-            <div className="flex items-center gap-1.5 px-2.5 py-1.5 bg-[var(--card)] border border-[var(--line)] rounded-lg font-mono text-[12px] text-[var(--ink-3)]">
+            <div className="hidden md:flex items-center gap-1.5 px-2.5 py-1.5 bg-[var(--card)] border border-[var(--line)] rounded-lg font-mono text-[12px] text-[var(--ink-3)]">
               <svg
                 width="11"
                 height="11"
@@ -364,7 +411,7 @@ function Dashboard() {
         </div>
 
         {/* Tab content */}
-        <div className="p-7 flex flex-col gap-6 min-w-0">
+        <div className="p-4 lg:p-7 flex flex-col gap-6 min-w-0">
           {tab === 'overview' && <OverviewTab runs={runs} unit={unit} />}
           {tab === 'activities' && (
             <ActivitiesTab activities={dashboardActivities} unit={unit} />
@@ -377,6 +424,101 @@ function Dashboard() {
           )}
         </div>
       </main>
+
+      {/* ── Mobile nav drawer ──────────────────────────────────────────
+          Fullscreen overlay, lg:hidden so it's literally absent on
+          desktop (no DOM cost). Mounts when mobileNavOpen is true.
+          Tile click → selectTab() (sets tab + closes drawer in one go).
+          User card at the bottom mirrors the desktop sidebar's footer
+          so familiarity carries between viewports. */}
+      {mobileNavOpen && (
+        <div className="lg:hidden fixed inset-0 z-50 bg-[var(--bg)] flex flex-col">
+          {/* Drawer header */}
+          <div className="flex items-center justify-between px-4 py-3.5 border-b border-[var(--line)]">
+            <Link
+              to="/"
+              onClick={() => setMobileNavOpen(false)}
+              className="inline-flex items-center gap-2.5 no-underline"
+            >
+              <span className="brand-mark">
+                <span>R</span>
+              </span>
+              <span className="font-semibold text-xl tracking-tight text-[var(--ink)]">
+                Reko
+              </span>
+            </Link>
+            <button
+              type="button"
+              onClick={() => setMobileNavOpen(false)}
+              aria-label="Close navigation"
+              className="inline-flex items-center justify-center w-9 h-9 rounded-lg text-[var(--ink-2)] hover:text-[var(--ink)] hover:bg-[var(--card)] transition-colors"
+            >
+              <X size={20} />
+            </button>
+          </div>
+
+          {/* Tab grid — 2 columns, bold labels per the user's spec.
+              Each tile is a button so keyboard / a11y just works. */}
+          <nav className="flex-1 overflow-y-auto px-4 py-5">
+            <p className="font-mono text-[10px] uppercase tracking-[0.1em] text-[var(--ink-4)] mb-3 px-1">
+              Training
+            </p>
+            <div className="grid grid-cols-2 gap-3">
+              {TABS.map(({ id, icon: Icon, label }) => {
+                const isActive = tab === id
+                return (
+                  <button
+                    key={id}
+                    type="button"
+                    onClick={() => selectTab(id)}
+                    className={`flex flex-col items-start gap-3 p-4 rounded-2xl border text-left transition-colors ${
+                      isActive
+                        ? 'bg-[var(--card)] border-[var(--accent)] shadow-[0_1px_2px_rgba(0,0,0,0.04)]'
+                        : 'bg-[var(--card)] border-[var(--line)] hover:bg-[var(--card-2)]'
+                    }`}
+                  >
+                    <Icon
+                      size={22}
+                      className={
+                        isActive ? 'text-[var(--accent)]' : 'text-[var(--ink-3)]'
+                      }
+                    />
+                    <span className="text-[15px] font-bold text-[var(--ink)] leading-tight">
+                      {label}
+                    </span>
+                  </button>
+                )
+              })}
+            </div>
+          </nav>
+
+          {/* User card — same shape as the desktop sidebar footer.
+              Profile link + Resync button are siblings (nesting buttons
+              inside an anchor would be invalid HTML). Activity count
+              shown explicitly per the user's request. */}
+          <div className="relative mx-4 mb-4">
+            <Link
+              to="/profile"
+              onClick={() => setMobileNavOpen(false)}
+              className="flex items-center gap-2.5 px-3 py-3 border border-[var(--line)] rounded-[12px] bg-[var(--card)] no-underline hover:bg-[var(--card-2)] transition-colors"
+            >
+              <Avatar name={athlete.firstname} size="md" />
+              <div>
+                <div className="text-[14px] font-medium text-[var(--ink)]">
+                  {athlete.firstname} {athlete.lastname}
+                </div>
+                <div className="font-mono text-[11px] text-[var(--ink-4)]">
+                  {dashboardActivities.length} activities loaded
+                </div>
+              </div>
+            </Link>
+            <ResyncButton
+              onTriggered={() => setSyncTriggerKey((k) => k + 1)}
+              lastSyncFinishedAt={lastSyncFinishedAt}
+            />
+          </div>
+        </div>
+      )}
     </div>
   )
 }
