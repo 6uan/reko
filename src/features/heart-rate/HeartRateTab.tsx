@@ -1,9 +1,6 @@
 import { useMemo } from 'react'
-import {
-  speedToPaceSeconds,
-  formatPace,
-} from '../../lib/strava'
-import { type DashboardRun, type Unit } from '../../lib/activities'
+import { formatPace } from '../../lib/strava'
+import { paceForUnit, avg, type DashboardRun, type Unit } from '../../lib/activities'
 
 type Props = { runs: DashboardRun[]; unit: Unit }
 
@@ -19,15 +16,6 @@ const ZONES = [
 
 function zoneFor(hr: number) {
   return ZONES.find((z) => hr >= z.min && hr < z.max) ?? ZONES[4]
-}
-
-function paceForUnit(speedMs: number, unit: Unit): number {
-  const paceSec = speedToPaceSeconds(speedMs)
-  return unit === 'mi' ? paceSec * 1.60934 : paceSec
-}
-
-function avg(nums: number[]) {
-  return nums.length ? nums.reduce((a, b) => a + b, 0) / nums.length : 0
 }
 
 // ── Component ─────────────────────────────────────────────────────

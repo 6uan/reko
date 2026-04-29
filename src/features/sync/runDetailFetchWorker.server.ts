@@ -30,8 +30,8 @@ import { getDb } from '../../db/client'
 import { activities, syncLog } from '../../db/schema'
 import { publish } from '../../lib/eventBus'
 import { StravaRateLimitedError } from '../../lib/strava'
-import { storeActivityDetail } from './storeActivityDetail'
-import { withFreshToken } from './withFreshToken'
+import { storeActivityDetail } from './storeActivityDetail.server'
+import { withFreshToken } from './withFreshToken.server'
 
 /** Default pause when Strava sends a 429 without a Retry-After header. */
 const DEFAULT_RETRY_AFTER_MS = 15 * 60 * 1000

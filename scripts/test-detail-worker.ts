@@ -26,7 +26,7 @@ import 'dotenv/config'
 import { and, count, eq, isNull } from 'drizzle-orm'
 import { closeDb, getDb } from '../src/db/client.ts'
 import { activities, syncLog } from '../src/db/schema.ts'
-import { enqueueDetailFetch } from '../src/features/sync/runDetailFetchWorker.ts'
+import { enqueueDetailFetch } from '../src/features/sync/runDetailFetchWorker.server.ts'
 
 const POLL_MS = 2000
 

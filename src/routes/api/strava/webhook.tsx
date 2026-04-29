@@ -32,7 +32,7 @@ import { webhookEvents } from '../../../db/schema'
 import {
   handleWebhookEvent,
   type StravaWebhookPayload,
-} from '../../../features/sync/handleWebhookEvent'
+} from '../../../features/sync/handleWebhookEvent.server'
 
 // ── Handshake (GET) ──────────────────────────────────────────────────────
 

@@ -1,20 +1,10 @@
 import { useMemo } from 'react'
-import {
-  speedToPaceSeconds,
-  formatPace,
-} from '../../lib/strava'
-import { type DashboardRun, type Unit } from '../../lib/activities'
+import { formatPace } from '../../lib/strava'
+import { paceForUnit, type DashboardRun, type Unit } from '../../lib/activities'
 
 type Props = {
   runs: DashboardRun[]
   unit: Unit
-}
-
-// ── Helpers ───────────────────────────────────────────────────────
-
-function paceForUnit(speedMs: number, unit: Unit): number {
-  const paceSec = speedToPaceSeconds(speedMs)
-  return unit === 'mi' ? paceSec * 1.60934 : paceSec
 }
 
 function linearRegression(pts: { x: number; y: number }[]) {

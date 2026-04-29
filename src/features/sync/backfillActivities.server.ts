@@ -25,9 +25,9 @@ import { activities, syncLog } from '../../db/schema'
 import { publish } from '../../lib/eventBus'
 import { fetchAthleteActivities } from '../../lib/strava'
 import { RESYNC_COOLDOWN_MS } from './constants'
-import { mapStravaActivity } from './mapStravaActivity'
-import { enqueueDetailFetch } from './runDetailFetchWorker'
-import { withFreshToken } from './withFreshToken'
+import { mapStravaActivity } from './mapStravaActivity.server'
+import { enqueueDetailFetch } from './runDetailFetchWorker.server'
+import { withFreshToken } from './withFreshToken.server'
 
 const PAGE_SIZE = 200 // Strava's max
 

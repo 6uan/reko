@@ -8,7 +8,7 @@
  * source of truth now.
  */
 
-import { formatDistanceKm } from './strava'
+import { formatDistanceKm, speedToPaceSeconds } from './strava'
 
 // ── Types ──────────────────────────────────────────────────────────
 
@@ -64,4 +64,19 @@ export function activityKind(
 export function toDisplayDistance(meters: number, unit: Unit): string {
   if (unit === 'mi') return (meters / KM_PER_MI).toFixed(2)
   return formatDistanceKm(meters)
+}
+
+/**
+ * Convert a speed (m/s) to pace (seconds per unit distance).
+ * Used by every analytics tab for chart/KPI calculations.
+ */
+export function paceForUnit(speedMs: number, unit: Unit): number {
+  if (speedMs <= 0) return 0
+  if (unit === 'mi') return KM_PER_MI / speedMs
+  return speedToPaceSeconds(speedMs)
+}
+
+/** Average of a number array, returning 0 for empty arrays. */
+export function avg(nums: number[]): number {
+  return nums.length ? nums.reduce((a, b) => a + b, 0) / nums.length : 0
 }

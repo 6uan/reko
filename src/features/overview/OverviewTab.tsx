@@ -1,6 +1,5 @@
 import { useMemo } from "react";
 import {
-  speedToPaceSeconds,
   formatPace,
   formatDuration,
   getMonday,
@@ -8,6 +7,7 @@ import {
 import {
   KM_PER_MI,
   toDisplayDistance,
+  paceForUnit,
   type DashboardRun,
   type Unit,
 } from "../../lib/activities";
@@ -16,14 +16,6 @@ type Props = {
   runs: DashboardRun[];
   unit: Unit;
 };
-
-// ── Helpers ────────────────────────────────────────────────────────
-
-function paceForUnit(speedMs: number, unit: Unit): number {
-  if (speedMs <= 0) return 0;
-  if (unit === "mi") return KM_PER_MI / speedMs;
-  return speedToPaceSeconds(speedMs);
-}
 
 function isSameWeek(d1: Date, d2: Date): boolean {
   return getMonday(d1).getTime() === getMonday(d2).getTime();

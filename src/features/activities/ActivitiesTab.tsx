@@ -1,13 +1,12 @@
 import { useState, useMemo } from "react";
 import {
-  speedToPaceSeconds,
   formatPace,
   formatDuration,
 } from "../../lib/strava";
 import {
   activityKind,
-  KM_PER_MI,
   toDisplayDistance,
+  paceForUnit,
   type DashboardRun,
   type Unit,
 } from "../../lib/activities";
@@ -18,14 +17,6 @@ type Props = {
   activities: DashboardRun[];
   unit: Unit;
 };
-
-// ── Helpers ────────────────────────────────────────────────────────
-
-function paceForUnit(speedMs: number, unit: Unit): number {
-  if (speedMs <= 0) return 0;
-  if (unit === "mi") return KM_PER_MI / speedMs;
-  return speedToPaceSeconds(speedMs);
-}
 
 // ── Filter definitions ─────────────────────────────────────────────
 

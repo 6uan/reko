@@ -7,6 +7,7 @@ import {
 import {
   KM_PER_MI,
   toDisplayDistance,
+  avg,
   type DashboardRun,
   type Unit,
 } from '../../lib/activities'
@@ -19,13 +20,11 @@ function distInUnit(meters: number, unit: Unit) {
   return unit === 'mi' ? meters / KM_PER_MI : meters / 1000
 }
 
-function paceForRun(run: DashboardRun, unit: 'km' | 'mi') {
+/** Pace from distance + moving time (not avgSpeed). Used here because
+ *  PaceTab ranks runs by actual elapsed pace, not Strava's avg speed. */
+function paceForRun(run: DashboardRun, unit: Unit) {
   const d = distInUnit(run.distanceMeters, unit)
   return d > 0 ? run.movingTime / d : 0
-}
-
-function avg(nums: number[]) {
-  return nums.length ? nums.reduce((a, b) => a + b, 0) / nums.length : 0
 }
 
 // ── Component ─────────────────────────────────────────────────────

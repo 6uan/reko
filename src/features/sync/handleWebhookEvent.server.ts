@@ -48,8 +48,8 @@ import {
 } from '../../db/schema'
 import { publish } from '../../lib/eventBus'
 import { fetchActivityDetail } from '../../lib/strava'
-import { mapStravaActivity } from './mapStravaActivity'
-import { withFreshToken } from './withFreshToken'
+import { mapStravaActivity } from './mapStravaActivity.server'
+import { withFreshToken } from './withFreshToken.server'
 
 export type StravaWebhookPayload = {
   object_type: 'activity' | 'athlete' | string
