@@ -9,7 +9,7 @@
  * inside DistanceRow and aren't worth their own files.
  */
 
-import { ChevronRight } from 'lucide-react'
+import { IoChevronForward } from 'react-icons/io5'
 import { formatDuration } from '../../../lib/strava'
 import type { Unit } from '../../../lib/activities'
 import type { DistanceRecord, RecordEffort } from '../distances'
@@ -143,7 +143,7 @@ export default function DistanceRow({ rec, unit, now }: Props) {
         <span className="font-mono text-[11px] text-(--ink-4)] text-right whitespace-nowrap">
           {relTime(rec.best.startDateLocal, now)}
         </span>
-        <ChevronRight
+        <IoChevronForward
           size={14}
           className="text-(--ink-3) transition-transform duration-150 group-open:rotate-90 justify-self-end"
         />

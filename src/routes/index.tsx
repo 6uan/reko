@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { LayoutDashboard } from "lucide-react";
+import { LuLayoutDashboard } from "react-icons/lu";
+import StravaConnectButton from "../ui/StravaConnectButton";
 import DashboardMockup from "../features/landing/DashboardMockup";
 import StatsStrip from "../features/landing/StatsStrip";
 import OpenSourceSection from "../features/landing/OpenSourceSection";
@@ -42,24 +43,11 @@ function Home() {
                 aria-label="Go to dashboard"
                 className="btn btn-primary max-sm:flex-1"
               >
-                <LayoutDashboard size={16} />
+                <LuLayoutDashboard size={16} />
                 Go to dashboard
               </Link>
             ) : (
-              <a
-                href="/auth/strava"
-                aria-label="Connect with Strava"
-                className="inline-block transition-transform duration-150 ease-out hover:-translate-y-0.5 max-sm:flex-1"
-              >
-                <img
-                  src="/strava/btn_strava_connect_with_orange@2x.png"
-                  srcSet="/strava/btn_strava_connect_with_orange.png 1x, /strava/btn_strava_connect_with_orange@2x.png 2x"
-                  alt="Connect with Strava"
-                  width={237}
-                  height={48}
-                  className="block h-12 w-auto max-sm:w-full max-sm:h-auto"
-                />
-              </a>
+              <StravaConnectButton size="md" className="max-sm:flex-1" />
             )}
             <a
               href="https://github.com/6uan/reko"

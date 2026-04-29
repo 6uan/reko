@@ -13,7 +13,7 @@
  */
 
 import { useEffect, useRef, useState } from 'react'
-import { RefreshCw } from 'lucide-react'
+import { LuRefreshCw } from 'react-icons/lu'
 import { triggerResync } from './triggerResync'
 import { RESYNC_COOLDOWN_MS } from './constants'
 
@@ -131,7 +131,7 @@ export default function ResyncButton({
           />
         </svg>
       ) : (
-        <RefreshCw size={13} className={busy ? 'animate-spin' : ''} />
+        <LuRefreshCw size={13} className={busy ? 'animate-spin' : ''} />
       )}
     </button>
   )

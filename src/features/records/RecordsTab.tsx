@@ -14,7 +14,7 @@
  */
 
 import { useMemo } from 'react'
-import { ChevronRight } from 'lucide-react'
+import { IoChevronForward } from 'react-icons/io5'
 import { DISTANCE_DEFS, type RecordsData, type DistanceRecord } from './distances'
 import type { DashboardRun, Unit } from '../../lib/activities'
 import { parseLocalDate } from './components/helpers'
@@ -49,7 +49,7 @@ function Disclosure({
         </span>
         <span className="flex items-center gap-3 font-mono text-[11px] text-(--ink-4)">
           {meta}
-          <ChevronRight
+          <IoChevronForward
             size={12}
             className="text-(--ink-3) transition-transform duration-150 group-open:rotate-90"
           />

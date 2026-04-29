@@ -15,15 +15,16 @@ import { useBodyScrollLock } from "../lib/useBodyScrollLock";
 import { useEscapeKey } from "../lib/useEscapeKey";
 import { activityKind, type Unit } from "../lib/activities";
 import {
-  LayoutDashboard,
-  List,
-  Gauge,
-  Heart,
-  Footprints,
-  Trophy,
-  X,
-} from "lucide-react";
+  LuLayoutDashboard,
+  LuList,
+  LuCircleGauge,
+  LuHeartPulse,
+} from "react-icons/lu";
+import { FaPersonRunning } from "react-icons/fa6";
+import { FaTrophy } from "react-icons/fa";
+import { HiOutlineXMark } from "react-icons/hi2";
 import { HiViewGridAdd } from "react-icons/hi";
+import type { IconType } from "react-icons";
 
 import OverviewTab from "../features/overview/OverviewTab";
 import ActivitiesTab from "../features/activities/ActivitiesTab";
@@ -88,13 +89,13 @@ type TabId =
   | "cadence"
   | "records";
 
-const TABS: { id: TabId; icon: typeof LayoutDashboard; label: string }[] = [
-  { id: "overview", icon: LayoutDashboard, label: "Overview" },
-  { id: "activities", icon: List, label: "Activities" },
-  { id: "pace", icon: Gauge, label: "Pace" },
-  { id: "heart", icon: Heart, label: "Heart rate" },
-  { id: "cadence", icon: Footprints, label: "Cadence" },
-  { id: "records", icon: Trophy, label: "Personal records" },
+const TABS: { id: TabId; icon: IconType; label: string }[] = [
+  { id: "overview", icon: LuLayoutDashboard, label: "Overview" },
+  { id: "activities", icon: LuList, label: "Activities" },
+  { id: "pace", icon: LuCircleGauge, label: "Pace" },
+  { id: "heart", icon: LuHeartPulse, label: "Heart rate" },
+  { id: "cadence", icon: FaPersonRunning, label: "Cadence" },
+  { id: "records", icon: FaTrophy, label: "Personal records" },
 ];
 
 // ── Dashboard component ────────────────────────────────────────────
@@ -166,10 +167,7 @@ function Dashboard() {
 
   const activeTab = TABS.find((t) => t.id === tab)!;
 
-  const handleResync = useCallback(
-    () => setSyncTriggerKey((k) => k + 1),
-    [],
-  );
+  const handleResync = useCallback(() => setSyncTriggerKey((k) => k + 1), []);
 
   // Inline sub-component for the unit toggle buttons (km / mi)
   const UnitBtn = ({ value }: { value: Unit }) => (
@@ -319,7 +317,7 @@ function Dashboard() {
               onClick={() => setMobileNavOpen(false)}
               aria-label="Close navigation"
             >
-              <X size={18} />
+              <HiOutlineXMark size={18} />
             </IconButton>
           </div>
 

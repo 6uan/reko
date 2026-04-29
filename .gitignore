@@ -165,3 +165,6 @@ vite.config.ts.timestamp-*
 
 # Drizzle generated migrations / metadata (we use db:push for now)
 /drizzle
+
+# Fallow
+.fallow/
