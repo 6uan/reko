@@ -1,6 +1,20 @@
 import { createFileRoute, redirect, useNavigate } from '@tanstack/react-router'
+import { createServerFn } from '@tanstack/react-start'
+import { getSession as frameworkGetSession } from '@tanstack/react-start/server'
+import { sessionConfig, type SessionData } from '../features/auth/session'
 import { clearSessionFn } from '../features/auth/session'
+import { getHealthData } from '../features/health/getHealthData.server'
+import HealthSection from '../features/health/HealthSection'
 import { Avatar } from '../ui/Avatar'
+
+const loadProfileData = createServerFn({ method: 'GET' }).handler(async () => {
+  const session = await frameworkGetSession<SessionData>(sessionConfig)
+  const d = session.data
+  if (!d.userId) throw redirect({ to: '/' })
+
+  const health = await getHealthData(d.userId)
+  return { health }
+})
 
 export const Route = createFileRoute('/profile')({
   beforeLoad: async ({ context }) => {
@@ -8,11 +22,13 @@ export const Route = createFileRoute('/profile')({
       throw redirect({ to: '/' })
     }
   },
+  loader: () => loadProfileData(),
   component: Profile,
 })
 
 function Profile() {
   const { session } = Route.useRouteContext()
+  const { health } = Route.useLoaderData()
   const navigate = useNavigate()
 
   const handleLogout = async () => {
@@ -57,6 +73,11 @@ function Profile() {
           <p className="text-sm text-(--ink-2)">
             Unit and display preferences coming soon.
           </p>
+        </div>
+
+        {/* Advanced / Health Diagnostics */}
+        <div className="mb-6">
+          <HealthSection data={health} />
         </div>
 
         {/* Danger Zone */}
