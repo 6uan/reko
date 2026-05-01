@@ -307,12 +307,3 @@ export function formatDuration(totalSeconds: number): string {
   return `${m}:${s.toString().padStart(2, '0')}`
 }
 
-/** Get Monday 00:00 of the week containing `date` */
-export function getMonday(date: Date): Date {
-  const d = new Date(date)
-  const day = d.getDay()
-  const diff = d.getDate() - day + (day === 0 ? -6 : 1)
-  d.setHours(0, 0, 0, 0)
-  d.setDate(diff)
-  return d
-}

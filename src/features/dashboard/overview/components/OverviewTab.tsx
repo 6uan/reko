@@ -1,5 +1,5 @@
 import { useMemo } from 'react'
-import { getMonday } from '@/lib/strava'
+import { getMonday } from '@/lib/dates'
 import {
   KM_PER_MI,
   paceForUnit,

@@ -10,8 +10,9 @@ import {
   ResponsiveContainer,
   ReferenceLine,
 } from 'recharts'
-import { formatPace, getMonday } from '@/lib/strava'
+import { formatPace } from '@/lib/strava'
 import { paceForUnit, avg, paceUnit, type Activity, type Unit } from '@/lib/activities'
+import { formatDate, getMonday } from '@/lib/dates'
 import KpiCard from '@/features/dashboard/ui/KpiCard'
 import SectionHeader from '@/features/dashboard/ui/SectionHeader'
 import EmptyState from '@/features/dashboard/ui/EmptyState'
@@ -316,11 +317,7 @@ export default function CadenceTab({ runs, unit }: Props) {
                       {formatPace(pace)}{unitLabel}
                     </td>
                     <td className="px-4 py-3 border-b border-(--line-2) text-sm font-mono tabular-nums text-(--ink-3)">
-                      {new Date(run.date).toLocaleDateString('en-GB', {
-                        day: 'numeric',
-                        month: 'short',
-                        year: 'numeric',
-                      })}
+                      {formatDate(run.date)}
                     </td>
                   </tr>
                 )

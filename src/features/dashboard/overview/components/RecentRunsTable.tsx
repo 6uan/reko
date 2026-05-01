@@ -11,6 +11,7 @@ import {
   type Activity,
   type Unit,
 } from '@/lib/activities'
+import { formatDateShort } from '@/lib/dates'
 import Card from '@/features/dashboard/ui/Card'
 
 type Props = {
@@ -52,10 +53,7 @@ export default function RecentRunsTable({ runs, unit }: Props) {
                   <span className="truncate max-w-45">{run.name}</span>
                 </td>
                 <td className="px-4 py-3 text-(--ink-3) whitespace-nowrap">
-                  {new Date(run.date).toLocaleDateString('en-US', {
-                    month: 'short',
-                    day: 'numeric',
-                  })}
+                  {formatDateShort(run.date)}
                 </td>
                 <td className="px-4 py-3 text-right font-mono tabular-nums">
                   {toDisplayDistance(run.distanceMeters, unit)} {unitLabel}

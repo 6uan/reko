@@ -10,6 +10,7 @@ import {
   type Activity,
   type Unit,
 } from '@/lib/activities'
+import { formatDateShort } from '@/lib/dates'
 import Card from '@/features/dashboard/ui/Card'
 import ActivityLink from '@/features/dashboard/ui/ActivityLink'
 
@@ -498,10 +499,7 @@ function Cell({
     case 'date':
       return (
         <span className="text-(--ink-3) whitespace-nowrap">
-          {new Date(run.date).toLocaleDateString('en-US', {
-            month: 'short',
-            day: 'numeric',
-          })}
+          {formatDateShort(run.date)}
         </span>
       )
     case 'distance':

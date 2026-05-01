@@ -19,7 +19,7 @@ import {
 } from 'recharts'
 import { formatDuration } from '@/lib/strava'
 import type { DistanceRecord } from '@/features/dashboard/records/distances'
-import { parseLocalDate } from './helpers'
+import { parseLocalDate, formatDate } from '@/lib/dates'
 
 const DISTANCE_COLORS: Record<string, string> = {
   '1k': '#6ac6dc',
@@ -73,11 +73,7 @@ export default function ProgressionChart({ distances }: Props) {
     label,
   }: TooltipContentProps) => {
     if (!active || !payload || payload.length === 0 || label == null) return null
-    const date = new Date(Number(label)).toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-    })
+    const date = formatDate(new Date(Number(label)))
     return (
       <div className="bg-(--card) border border-(--line) rounded-(--radius-s) shadow-(--shadow-m) px-3 py-2 font-mono text-[11px] min-w-45">
         <div className="text-(--ink-3) mb-1.5">{date}</div>

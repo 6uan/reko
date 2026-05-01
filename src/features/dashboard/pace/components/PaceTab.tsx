@@ -9,11 +9,8 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from 'recharts'
-import {
-  formatPace,
-  formatDuration,
-  getMonday,
-} from '@/lib/strava'
+import { formatPace, formatDuration } from '@/lib/strava'
+import { formatDate, getMonday } from '@/lib/dates'
 import {
   KM_PER_MI,
   toDisplayDistance,
@@ -275,11 +272,7 @@ export default function Pace({ runs, unit }: Props) {
                       {run.avgHr !== null ? `${Math.round(run.avgHr)} bpm` : '—'}
                     </td>
                     <td className="px-4 py-3 border-b border-(--line-2) font-mono tabular-nums text-(--ink-3) whitespace-nowrap">
-                      {new Date(run.date).toLocaleDateString('en-GB', {
-                        day: 'numeric',
-                        month: 'short',
-                        year: 'numeric',
-                      })}
+                      {formatDate(run.date)}
                     </td>
                   </tr>
                 )

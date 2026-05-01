@@ -10,7 +10,8 @@ import { FaTrophy } from 'react-icons/fa'
 import { formatDuration } from '@/lib/strava'
 import { DISTANCE_DEFS, type RecordsData, type DistanceRecord, type DistanceKey } from '../distances'
 import { paceUnit, type Activity, type Unit, type BestEffortTimes } from '@/lib/activities'
-import { parseLocalDate, paceForDist, formatPace } from './helpers'
+import { paceForDist, formatPace } from './helpers'
+import { parseLocalDate, formatDate, formatRelativeTime } from '@/lib/dates'
 import ProgressionChart from './ProgressionChart'
 import Card from '@/features/dashboard/ui/Card'
 import SectionHeader from '@/features/dashboard/ui/SectionHeader'
@@ -45,27 +46,6 @@ const PODIUM_STYLES = [
   { color: 'var(--ink-3)', label: '2nd' },
   { color: '#a0724a', label: '3rd' },
 ] as const
-
-// ── Helpers ──────────────────────────────────────────────────────
-
-function timeAgo(dateStr: string, now: Date): string {
-  const days = Math.floor((now.getTime() - new Date(dateStr).getTime()) / 86400000)
-  if (days < 1) return 'today'
-  if (days < 2) return 'yesterday'
-  if (days < 14) return `${days} days ago`
-  if (days < 60) return `${Math.floor(days / 7)} weeks ago`
-  if (days < 365) return `${Math.floor(days / 30)} months ago`
-  const y = Math.floor(days / 365)
-  return `${y} year${y > 1 ? 's' : ''} ago`
-}
-
-function formatDate(dateStr: string): string {
-  return new Date(dateStr).toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-  })
-}
 
 // ── Main component ───────────────────────────────────────────────
 
@@ -268,7 +248,7 @@ export default function Records({ data, runs, unit }: Props) {
                         </ActivityLink>
                       </td>
                       <td className="px-4 py-3 border-b border-(--line-2) text-sm font-mono tabular-nums text-(--ink-3) whitespace-nowrap">
-                        {timeAgo(effort.date, now)}
+                        {formatRelativeTime(effort.date, now)}
                       </td>
                     </tr>
                   )

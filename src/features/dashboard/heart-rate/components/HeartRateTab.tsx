@@ -1,6 +1,7 @@
 import { useMemo } from 'react'
 import { formatPace } from '@/lib/strava'
 import { paceForUnit, avg, paceUnit, type Activity, type Unit } from '@/lib/activities'
+import { formatDate } from '@/lib/dates'
 import KpiCard from '@/features/dashboard/ui/KpiCard'
 import SectionHeader from '@/features/dashboard/ui/SectionHeader'
 import Card from '@/features/dashboard/ui/Card'
@@ -252,13 +253,7 @@ export default function HeartRate({ runs, unit }: Props) {
                     {zone.bestRun?.name ?? '—'}
                   </td>
                   <td className="px-4 py-3 border-b border-(--line-2) text-sm font-mono tabular-nums text-(--ink-3)">
-                    {zone.bestRun
-                      ? new Date(zone.bestRun.date).toLocaleDateString('en-GB', {
-                          day: 'numeric',
-                          month: 'short',
-                          year: 'numeric',
-                        })
-                      : '—'}
+                    {zone.bestRun ? formatDate(zone.bestRun.date) : '—'}
                   </td>
                   <td className="px-4 py-3 border-b border-(--line-2) text-sm font-mono tabular-nums text-(--ink-3) text-right">
                     {zone.count}
