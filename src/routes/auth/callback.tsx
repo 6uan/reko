@@ -1,7 +1,7 @@
 import { createFileRoute, redirect } from '@tanstack/react-router'
 import { createServerFn } from '@tanstack/react-start'
 import { exchangeCodeForTokens } from '@/lib/strava'
-import { persistAthlete } from '@/features/auth/persistAthlete.server'
+import { persistAthlete } from '@/features/auth/api/persistAthlete.server'
 import { setSession } from '@/features/auth/session'
 
 /** Exchange auth code → persist user + tokens → encrypted session cookie */

@@ -4,6 +4,8 @@ import {
   activityKind,
   toDisplayDistance,
   paceForUnit,
+  distanceUnit,
+  paceUnit,
   type BestEffortTimes,
   type Activity,
   type Unit,
@@ -246,8 +248,8 @@ export default function Activities({ activities, unit }: Props) {
     }
   }
 
-  const unitLabel = unit === 'mi' ? 'mi' : 'km'
-  const paceLabel = unit === 'mi' ? '/mi' : '/km'
+  const unitLabel = distanceUnit(unit)
+  const paceLabel = paceUnit(unit)
 
   return (
     <div className="flex flex-col gap-4">
@@ -263,7 +265,7 @@ export default function Activities({ activities, unit }: Props) {
             <button
               type="button"
               onClick={() => (filterOpen ? setFilterOpen(false) : openFilter())}
-              className={`px-3 py-1.5 text-xs rounded-lg border bg-(--card) transition-colors cursor-pointer ${
+              className={`px-3 py-1.5 text-xs rounded-(--radius-s) border bg-(--card) transition-colors cursor-pointer ${
                 hasChanges
                   ? 'border-(--accent) text-(--accent)'
                   : 'border-(--line) text-(--ink-3) hover:text-(--ink)'
@@ -279,7 +281,7 @@ export default function Activities({ activities, unit }: Props) {
                   <div className="w-48 py-2">
                     {/* Sport */}
                     <div className="px-3 py-1.5">
-                      <span className="text-[10px] font-medium text-(--ink-4) uppercase tracking-wider">
+                      <span className="text-eyebrow">
                         Sport
                       </span>
                     </div>
@@ -302,7 +304,7 @@ export default function Activities({ activities, unit }: Props) {
 
                     {/* Intensity */}
                     <div className="px-3 py-1.5">
-                      <span className="text-[10px] font-medium text-(--ink-4) uppercase tracking-wider">
+                      <span className="text-eyebrow">
                         Intensity
                       </span>
                     </div>
@@ -325,7 +327,7 @@ export default function Activities({ activities, unit }: Props) {
                   {/* Right column — Columns (2-col grid) */}
                   <div className="w-64 py-2">
                     <div className="px-3 py-1.5">
-                      <span className="text-[10px] font-medium text-(--ink-4) uppercase tracking-wider">
+                      <span className="text-eyebrow">
                         Columns
                       </span>
                     </div>
@@ -382,7 +384,7 @@ export default function Activities({ activities, unit }: Props) {
                   <button
                     type="button"
                     onClick={applyDraft}
-                    className="px-3 py-1.5 text-xs rounded-lg bg-(--accent) text-white font-medium cursor-pointer hover:opacity-90 transition-opacity"
+                    className="px-3 py-1.5 text-xs rounded-(--radius-s) bg-(--accent) text-white font-medium cursor-pointer hover:opacity-90 transition-opacity"
                   >
                     Apply
                   </button>
@@ -393,7 +395,7 @@ export default function Activities({ activities, unit }: Props) {
 
           <button
             type="button"
-            className="px-3 py-1.5 text-xs rounded-lg border border-(--line) bg-(--card) text-(--ink-3) hover:text-(--ink) transition-colors cursor-pointer"
+            className="px-3 py-1.5 text-xs rounded-(--radius-s) border border-(--line) bg-(--card) text-(--ink-3) hover:text-(--ink) transition-colors cursor-pointer"
           >
             Export
           </button>
@@ -437,7 +439,7 @@ export default function Activities({ activities, unit }: Props) {
                   {visibleCols.map((col) => (
                     <td
                       key={col.key}
-                      className={`px-4 py-2.5 ${
+                      className={`px-4 py-3 ${
                         col.align === 'right'
                           ? 'text-right'
                           : col.align === 'center'

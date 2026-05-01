@@ -3,9 +3,9 @@ import { createServerFn } from '@tanstack/react-start'
 import { getSession as frameworkGetSession } from '@tanstack/react-start/server'
 import { sessionConfig, type SessionData } from '@/features/auth/session'
 import { clearSessionFn } from '@/features/auth/session'
-import { getHealthData } from '@/features/health/getHealthData.server'
+import { getHealthData } from '@/features/health/api/getHealthData.server'
 import HealthSection from '@/features/health/HealthSection'
-import { Avatar } from '@/components/Avatar'
+import { Avatar } from '@/components/ui/Avatar'
 
 const loadProfileData = createServerFn({ method: 'GET' }).handler(async () => {
   const session = await frameworkGetSession<SessionData>(sessionConfig)

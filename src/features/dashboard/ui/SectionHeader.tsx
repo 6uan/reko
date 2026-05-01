@@ -11,10 +11,8 @@ type Props = {
 export default function SectionHeader({ title, subtitle }: Props) {
   return (
     <div className="flex justify-between items-baseline">
-      <h3 className="text-[15px] font-medium text-(--ink)">{title}</h3>
-      {subtitle && (
-        <span className="font-mono text-[11px] text-(--ink-4)">{subtitle}</span>
-      )}
+      <h3 className="text-section">{title}</h3>
+      {subtitle && <span className="text-meta">{subtitle}</span>}
     </div>
   )
 }

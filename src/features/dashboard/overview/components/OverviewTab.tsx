@@ -7,10 +7,10 @@ import {
   type Activity,
   type Unit,
 } from '@/lib/activities'
-import KpiCards from './components/KpiCards'
-import VolumeChart, { type MonthBucket } from './components/VolumeChart'
-import PaceChart, { type PacePoint } from './components/PaceChart'
-import RecentRunsTable from './components/RecentRunsTable'
+import KpiCards from './KpiCards'
+import VolumeChart, { type MonthBucket } from './VolumeChart'
+import PaceChart, { type PacePoint } from './PaceChart'
+import RecentRunsTable from './RecentRunsTable'
 
 type Props = {
   runs: Activity[]
@@ -137,7 +137,7 @@ export default function Overview({ runs, unit }: Props) {
   // ── Render ────────────────────────────────────────────────────────
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-4">
       <KpiCards
         totalDist={totalDist}
         avgPace={avgPace}
@@ -146,7 +146,7 @@ export default function Overview({ runs, unit }: Props) {
         unit={unit}
       />
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-2.5">
         <VolumeChart data={monthlyBuckets} unit={unit} />
         <PaceChart data={paceData} unit={unit} />
       </div>

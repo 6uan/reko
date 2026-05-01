@@ -37,6 +37,7 @@
   --accent-soft: #fde8dc;
   --accent-glow: 239 78 26;
   --ok: #3f8a3a;
+  --bad: #d94b3b;
   --hr-1: #6ac6dc;
   --hr-2: #7dce72;
   --hr-3: #f3c64a;
@@ -84,6 +85,7 @@
   --accent-soft: #3d1f10;
   --accent-glow: 255 107 61;
   --ok: #5aad55;
+  --bad: #d94b3b;
   --hr-1: #6ac6dc;
   --hr-2: #7dce72;
   --hr-3: #f3c64a;
@@ -110,6 +112,7 @@
     --accent-soft: #3d1f10;
     --accent-glow: 255 107 61;
     --ok: #5aad55;
+    --bad: #d94b3b;
     --hr-1: #6ac6dc;
     --hr-2: #7dce72;
     --hr-3: #f3c64a;
@@ -163,10 +166,36 @@ body {
   @apply border-2 border-red-500;
 }
 
-/* Eyebrow label — uppercase, tracked, muted. Used for stat-card labels,
-   table column headers, and any "above the title" caption. */
+/* ─── Typography scale ─────────────────────────────────────────────
+   5 tokens cover ~95% of dashboard text. Inline pixel sizes
+   (text-[11px], text-[26px], etc.) should route through these. */
+
+/* Uppercase, tracked, muted — stat-card labels, table column headers,
+   "above the title" captions. */
 @utility text-eyebrow {
   @apply font-mono text-[10px] uppercase tracking-widest text-(--ink-4);
+}
+
+/* 11px mono, lightest muted — section subtitles, dates, captions. */
+@utility text-meta {
+  @apply font-mono text-[11px] text-(--ink-4);
+}
+
+/* 11px mono, mid-muted — in-card secondary text (run names, run counts,
+   detail lines under stat values). */
+@utility text-detail {
+  @apply font-mono text-[11px] text-(--ink-3);
+}
+
+/* 15px medium — card / section titles. */
+@utility text-section {
+  @apply text-[15px] font-medium text-(--ink);
+}
+
+/* 26px mono medium — big numeric stat values (KPI cards, podium times,
+   PR best paces). */
+@utility text-stat {
+  @apply font-mono text-[26px] font-medium tracking-tight tabular-nums;
 }
 
 code {

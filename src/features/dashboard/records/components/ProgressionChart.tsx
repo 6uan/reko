@@ -57,7 +57,7 @@ export default function ProgressionChart({ distances }: Props) {
 
   if (withTrend.length === 0) {
     return (
-      <div className="p-10 text-center font-mono text-[12px] text-(--ink-3)]">
+      <div className="p-10 text-center text-detail">
         No PR history yet — keep running and the chart will fill in.
       </div>
     )
@@ -79,7 +79,7 @@ export default function ProgressionChart({ distances }: Props) {
       year: 'numeric',
     })
     return (
-      <div className="bg-(--card) border border-(--line) rounded-lg shadow-md px-3 py-2 font-mono text-[11px] min-w-45">
+      <div className="bg-(--card) border border-(--line) rounded-(--radius-s) shadow-(--shadow-m) px-3 py-2 font-mono text-[11px] min-w-45">
         <div className="text-(--ink-3) mb-1.5">{date}</div>
         <div className="flex flex-col gap-1">
           {payload.map((p) => {
@@ -111,10 +111,10 @@ export default function ProgressionChart({ distances }: Props) {
   return (
     <div className="p-5">
       <div className="flex justify-between items-center mb-3">
-        <h4 className="text-[14px] font-medium text-(--ink)">
+        <h4 className="text-section">
           PR progression
         </h4>
-        <span className="font-mono text-[11px] text-(--ink-3)">
+        <span className="text-detail">
           % above all-time best per distance
         </span>
       </div>
@@ -189,11 +189,11 @@ export default function ProgressionChart({ distances }: Props) {
           </LineChart>
         </ResponsiveContainer>
       </div>
-      <div className="flex gap-3.5 flex-wrap font-mono text-[11px] text-(--ink-3) mt-3">
+      <div className="flex gap-4 flex-wrap text-detail mt-3">
         {withTrend.map((d) => (
           <span
             key={d.key}
-            className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md"
+            className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-(--radius-s)"
           >
             <span
               className="inline-block w-2.5 h-0.5 rounded-sm"

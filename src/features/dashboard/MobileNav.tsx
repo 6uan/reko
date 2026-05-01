@@ -1,6 +1,6 @@
 import { Link, useLocation } from "@tanstack/react-router";
 import ProfileCard from "@/components/ProfileCard";
-import IconButton from "@/components/IconButton";
+import IconButton from "@/components/ui/IconButton";
 import { TABS, isTabActive } from "./tabs";
 import { HiOutlineXMark } from "react-icons/hi2";
 
@@ -30,7 +30,7 @@ export default function MobileNav({
       </div>
 
       <nav className="flex-1 overflow-y-auto px-4 py-5">
-        <p className="text-eyebrow mb-3 px-1">Training</p>
+        {/* <p className="text-eyebrow mb-3 px-1">Training</p> */}
         <div className="grid grid-cols-2 gap-3">
           {TABS.map((tab) => {
             const isActive = isTabActive(tab, pathname);
@@ -63,7 +63,7 @@ export default function MobileNav({
         <Link
           to="/"
           onClick={onClose}
-          className="flex items-center gap-2.5 px-3 py-2.5 rounded-[10px] text-[13px] font-medium text-(--ink-2) no-underline hover:bg-(--card) hover:text-(--ink) transition-colors"
+          className="flex items-center gap-2.5 px-3 py-2.5 rounded-(--radius-s) text-[13px] font-medium text-(--ink-2) no-underline hover:bg-(--card) hover:text-(--ink) transition-colors"
         >
           <svg
             width="16"

@@ -11,7 +11,7 @@ import {
   ReferenceLine,
 } from 'recharts'
 import { formatPace, getMonday } from '@/lib/strava'
-import { paceForUnit, avg, type Activity, type Unit } from '@/lib/activities'
+import { paceForUnit, avg, paceUnit, type Activity, type Unit } from '@/lib/activities'
 import KpiCard from '@/features/dashboard/ui/KpiCard'
 import SectionHeader from '@/features/dashboard/ui/SectionHeader'
 import EmptyState from '@/features/dashboard/ui/EmptyState'
@@ -51,7 +51,7 @@ const CADENCE_ZONES = [
 // ── Component ────────────────────────────────────────────────────
 
 export default function CadenceTab({ runs, unit }: Props) {
-  const unitLabel = unit === 'mi' ? '/mi' : '/km'
+  const unitLabel = paceUnit(unit)
 
   const withCadence = useMemo(
     () => runs.filter((r) => r.cadence != null && r.cadence > 0),
@@ -305,17 +305,17 @@ export default function CadenceTab({ runs, unit }: Props) {
                 const pace = paceForUnit(run.avgSpeed, unit)
                 return (
                   <tr key={run.id}>
-                    <td className="px-3 py-3 border-b border-(--line-2) text-sm font-medium text-(--ink)">
+                    <td className="px-4 py-3 border-b border-(--line-2) text-sm font-medium text-(--ink)">
                       {run.name}
                     </td>
-                    <td className="px-3 py-3 border-b border-(--line-2) text-sm font-mono tabular-nums text-(--ink)">
+                    <td className="px-4 py-3 border-b border-(--line-2) text-sm font-mono tabular-nums text-(--ink)">
                       {run.cadence}
                       <span className="text-(--ink-3) ml-0.5">spm</span>
                     </td>
-                    <td className="px-3 py-3 border-b border-(--line-2) text-sm font-mono tabular-nums text-(--ink-3)">
+                    <td className="px-4 py-3 border-b border-(--line-2) text-sm font-mono tabular-nums text-(--ink-3)">
                       {formatPace(pace)}{unitLabel}
                     </td>
-                    <td className="px-3 py-3 border-b border-(--line-2) text-sm font-mono tabular-nums text-(--ink-3)">
+                    <td className="px-4 py-3 border-b border-(--line-2) text-sm font-mono tabular-nums text-(--ink-3)">
                       {new Date(run.date).toLocaleDateString('en-GB', {
                         day: 'numeric',
                         month: 'short',

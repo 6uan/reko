@@ -1,9 +1,9 @@
 import { useEffect, useRef } from 'react'
 import { Link, useNavigate } from '@tanstack/react-router'
-import ThemeToggle from './ThemeToggle'
-import { Avatar } from './Avatar'
-import IconButton from './IconButton'
-import StravaConnectButton from './StravaConnectButton'
+import ThemeToggle from '../ui/ThemeToggle'
+import { Avatar } from '../ui/Avatar'
+import IconButton from '../ui/IconButton'
+import StravaConnectButton from '../StravaConnectButton'
 import type { SessionData } from '@/features/auth/session'
 
 export default function Header({

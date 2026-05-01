@@ -8,7 +8,7 @@
  */
 
 import { useState } from 'react'
-import type { HealthData } from './getHealthData.server'
+import type { HealthData } from './api/getHealthData.server'
 
 // ── Helpers ───────────────────────────────────────────────────────
 

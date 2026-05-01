@@ -18,6 +18,7 @@ import {
   KM_PER_MI,
   toDisplayDistance,
   avg,
+  paceUnit,
   type Activity,
   type Unit,
 } from '@/lib/activities'
@@ -45,7 +46,7 @@ function paceForRun(run: Activity, unit: Unit) {
 // ── Component ─────────────────────────────────────────────────────
 
 export default function Pace({ runs, unit }: Props) {
-  const unitLabel = unit === 'mi' ? '/mi' : '/km'
+  const unitLabel = paceUnit(unit)
 
   // ── KPI calculations ────────────────────────────────────────────
 
@@ -252,28 +253,28 @@ export default function Pace({ runs, unit }: Props) {
                 const pace = paceForRun(run, unit)
                 return (
                   <tr key={run.id}>
-                    <td className="px-3 py-3 border-b border-(--line-2) font-mono tabular-nums text-(--ink-3) w-14 whitespace-nowrap">
+                    <td className="px-4 py-3 border-b border-(--line-2) font-mono tabular-nums text-(--ink-3) w-14 whitespace-nowrap">
                       {i + 1}
                     </td>
-                    <td className="px-3 py-3 border-b border-(--line-2) font-medium text-(--ink)">
+                    <td className="px-4 py-3 border-b border-(--line-2) font-medium text-(--ink)">
                       {run.name}
                     </td>
-                    <td className="px-3 py-3 border-b border-(--line-2) font-mono tabular-nums whitespace-nowrap">
+                    <td className="px-4 py-3 border-b border-(--line-2) font-mono tabular-nums whitespace-nowrap">
                       <span className={i === 0 ? 'text-(--accent) font-medium' : 'text-(--ink)'}>
                         {formatPace(pace)}
                       </span>
                       <span className="text-(--ink-3) text-xs ml-0.5">{unitLabel}</span>
                     </td>
-                    <td className="px-3 py-3 border-b border-(--line-2) font-mono tabular-nums text-(--ink-3) whitespace-nowrap">
+                    <td className="px-4 py-3 border-b border-(--line-2) font-mono tabular-nums text-(--ink-3) whitespace-nowrap">
                       {toDisplayDistance(run.distanceMeters, unit)} {unit}
                     </td>
-                    <td className="px-3 py-3 border-b border-(--line-2) font-mono tabular-nums text-(--ink-3) whitespace-nowrap">
+                    <td className="px-4 py-3 border-b border-(--line-2) font-mono tabular-nums text-(--ink-3) whitespace-nowrap">
                       {formatDuration(run.movingTime)}
                     </td>
-                    <td className="px-3 py-3 border-b border-(--line-2) font-mono tabular-nums text-(--ink-3) whitespace-nowrap">
+                    <td className="px-4 py-3 border-b border-(--line-2) font-mono tabular-nums text-(--ink-3) whitespace-nowrap">
                       {run.avgHr !== null ? `${Math.round(run.avgHr)} bpm` : '—'}
                     </td>
-                    <td className="px-3 py-3 border-b border-(--line-2) font-mono tabular-nums text-(--ink-3) whitespace-nowrap">
+                    <td className="px-4 py-3 border-b border-(--line-2) font-mono tabular-nums text-(--ink-3) whitespace-nowrap">
                       {new Date(run.date).toLocaleDateString('en-GB', {
                         day: 'numeric',
                         month: 'short',

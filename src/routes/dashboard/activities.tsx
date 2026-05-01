@@ -1,6 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useDashboard } from '@/features/dashboard/DashboardContext'
-import ActivitiesTab from '@/features/dashboard/activities/ActivitiesTab'
+import ActivitiesTab from '@/features/dashboard/activities/components/ActivitiesTab'
 
 export const Route = createFileRoute('/dashboard/activities')({
   component: DashboardActivities,

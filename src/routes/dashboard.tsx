@@ -3,18 +3,18 @@ import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
 import { getSession as frameworkGetSession } from "@tanstack/react-start/server";
 import { sessionConfig, type SessionData } from "@/features/auth/session";
-import { enqueueBackfill } from "@/features/sync/backfillActivities.server";
-import { getActivities } from "@/features/dashboard/activities/getActivities.server";
-import { getLastSyncTime } from "@/features/sync/getLastSyncTime.server";
-import { getRecordsData } from "@/features/dashboard/records/getRecordsData.server";
+import { enqueueBackfill } from "@/features/sync/api/backfillActivities.server";
+import { getActivities } from "@/features/dashboard/activities/api/getActivities.server";
+import { getLastSyncTime } from "@/features/sync/api/getLastSyncTime.server";
+import { getRecordsData } from "@/features/dashboard/records/api/getRecordsData.server";
 import { useLiveUpdates } from "@/features/sync/useLiveUpdates";
 import { DashboardProvider } from "@/features/dashboard/DashboardContext";
 import SyncBanner from "@/features/sync/SyncBanner";
 import Sidebar from "@/features/dashboard/Sidebar";
 import Topbar from "@/features/dashboard/Topbar";
 import MobileNav from "@/features/dashboard/MobileNav";
-import { useBodyScrollLock } from "@/lib/useBodyScrollLock";
-import { useEscapeKey } from "@/lib/useEscapeKey";
+import { useBodyScrollLock } from "@/hooks/useBodyScrollLock";
+import { useEscapeKey } from "@/hooks/useEscapeKey";
 
 // ── Data loading ───────────────────────────────────────────────────
 

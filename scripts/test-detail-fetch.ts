@@ -26,8 +26,8 @@ import {
   bestEfforts,
   streams,
 } from '../src/db/schema.ts'
-import { storeActivityDetail } from '../src/features/sync/storeActivityDetail.server.ts'
-import { withFreshToken } from '../src/features/sync/withFreshToken.server.ts'
+import { storeActivityDetail } from '../src/features/sync/api/storeActivityDetail.server.ts'
+import { withFreshToken } from '../src/features/sync/api/withFreshToken.server.ts'
 
 async function main() {
   const userId = Number(process.argv[2])

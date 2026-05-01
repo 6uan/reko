@@ -6,6 +6,8 @@ import { formatPace, formatDuration } from '@/lib/strava'
 import {
   toDisplayDistance,
   paceForUnit,
+  distanceUnit,
+  paceUnit,
   type Activity,
   type Unit,
 } from '@/lib/activities'
@@ -17,8 +19,8 @@ type Props = {
 }
 
 export default function RecentRunsTable({ runs, unit }: Props) {
-  const unitLabel = unit === 'mi' ? 'mi' : 'km'
-  const paceLabel = unit === 'mi' ? '/mi' : '/km'
+  const unitLabel = distanceUnit(unit)
+  const paceLabel = paceUnit(unit)
 
   return (
     <Card className="overflow-hidden">
@@ -45,32 +47,32 @@ export default function RecentRunsTable({ runs, unit }: Props) {
                 key={run.id}
                 className="border-t border-(--line) hover:bg-(--bg-2) transition-colors"
               >
-                <td className="px-4 py-2.5 flex items-center gap-2">
+                <td className="px-4 py-3 flex items-center gap-2">
                   <span className="inline-block w-2 h-2 rounded-full bg-(--accent) shrink-0" />
                   <span className="truncate max-w-45">{run.name}</span>
                 </td>
-                <td className="px-4 py-2.5 text-(--ink-3) whitespace-nowrap">
+                <td className="px-4 py-3 text-(--ink-3) whitespace-nowrap">
                   {new Date(run.date).toLocaleDateString('en-US', {
                     month: 'short',
                     day: 'numeric',
                   })}
                 </td>
-                <td className="px-4 py-2.5 text-right font-mono tabular-nums">
+                <td className="px-4 py-3 text-right font-mono tabular-nums">
                   {toDisplayDistance(run.distanceMeters, unit)} {unitLabel}
                 </td>
-                <td className="px-4 py-2.5 text-right font-mono tabular-nums">
+                <td className="px-4 py-3 text-right font-mono tabular-nums">
                   {formatDuration(run.movingTime)}
                 </td>
-                <td className="px-4 py-2.5 text-right font-mono tabular-nums">
+                <td className="px-4 py-3 text-right font-mono tabular-nums">
                   {formatPace(paceForUnit(run.avgSpeed, unit))} {paceLabel}
                 </td>
-                <td className="px-4 py-2.5 text-right font-mono tabular-nums">
+                <td className="px-4 py-3 text-right font-mono tabular-nums">
                   {run.avgHr !== null ? run.avgHr : '—'}
                 </td>
-                <td className="px-4 py-2.5 text-right font-mono tabular-nums">
+                <td className="px-4 py-3 text-right font-mono tabular-nums">
                   {run.elevation > 0 ? `${Math.round(run.elevation)}m` : '—'}
                 </td>
-                <td className="px-4 py-2.5 text-center">
+                <td className="px-4 py-3 text-center">
                   {run.prCount > 0 ? (
                     <span className="inline-block px-2 py-0.5 rounded-full bg-(--accent-soft) text-(--accent) text-[11px] font-medium">
                       {run.prCount} PR

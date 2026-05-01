@@ -16,7 +16,7 @@ import {
   ResponsiveContainer,
 } from 'recharts'
 import { formatPace } from '@/lib/strava'
-import type { Unit } from '@/lib/activities'
+import { paceUnit, type Unit } from '@/lib/activities'
 import Card from '@/features/dashboard/ui/Card'
 import ChartTooltip from '@/features/dashboard/ui/ChartTooltip'
 
@@ -48,7 +48,7 @@ function CustomTooltip({
   if (!active || !payload?.[0]) return null
 
   const d = payload[0].payload
-  const paceLabel = unit === 'mi' ? '/mi' : '/km'
+  const paceLabel = paceUnit(unit)
 
   return (
     <ChartTooltip>

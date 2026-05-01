@@ -1,5 +1,5 @@
 import { Link } from '@tanstack/react-router'
-import { Avatar } from './Avatar'
+import { Avatar } from './ui/Avatar'
 import ResyncButton from '@/features/sync/ResyncButton'
 import { cn } from '@/lib/cn'
 

@@ -1,6 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useDashboard } from '@/features/dashboard/DashboardContext'
-import HeartRateTab from '@/features/dashboard/heart-rate/HeartRateTab'
+import HeartRateTab from '@/features/dashboard/heart-rate/components/HeartRateTab'
 
 export const Route = createFileRoute('/dashboard/heart-rate')({
   component: DashboardHeartRate,

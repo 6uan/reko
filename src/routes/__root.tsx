@@ -7,8 +7,8 @@ import {
 } from '@tanstack/react-router'
 import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
 import { TanStackDevtools } from '@tanstack/react-devtools'
-import Footer from '@/components/Footer'
-import Header from '@/components/Header'
+import Footer from '@/components/layout/Footer'
+import Header from '@/components/layout/Header'
 import { getSession } from '@/features/auth/session'
 
 import appCss from '@/styles.css?url'

@@ -8,10 +8,10 @@ import { useMemo, useState } from 'react'
 import { IoChevronForward } from 'react-icons/io5'
 import { FaTrophy } from 'react-icons/fa'
 import { formatDuration } from '@/lib/strava'
-import { DISTANCE_DEFS, type RecordsData, type DistanceRecord, type DistanceKey } from './distances'
-import type { Activity, Unit, BestEffortTimes } from '@/lib/activities'
-import { parseLocalDate, paceForDist, formatPace } from './components/helpers'
-import ProgressionChart from './components/ProgressionChart'
+import { DISTANCE_DEFS, type RecordsData, type DistanceRecord, type DistanceKey } from '../distances'
+import { paceUnit, type Activity, type Unit, type BestEffortTimes } from '@/lib/activities'
+import { parseLocalDate, paceForDist, formatPace } from './helpers'
+import ProgressionChart from './ProgressionChart'
 import Card from '@/features/dashboard/ui/Card'
 import SectionHeader from '@/features/dashboard/ui/SectionHeader'
 import Th from '@/features/dashboard/ui/Th'
@@ -71,7 +71,7 @@ function formatDate(dateStr: string): string {
 
 export default function Records({ data, runs, unit }: Props) {
   const now = useMemo(() => new Date(), [])
-  const unitLabel = unit === 'km' ? '/km' : '/mi'
+  const unitLabel = paceUnit(unit)
 
   // Hydrate distances
   const distancesByKey = useMemo(() => {
@@ -165,7 +165,7 @@ export default function Records({ data, runs, unit }: Props) {
               return (
                 <div key={i} className="flex flex-col items-center text-center gap-2 py-4">
                   <FaTrophy size={i === 0 ? 28 : 20} style={{ color: style.color }} />
-                  <div className="font-mono text-[26px] font-medium tabular-nums tracking-tight text-(--ink) leading-none mt-1">
+                  <div className="text-stat text-(--ink) leading-none mt-1">
                     {formatDuration(effort.elapsedTime)}
                   </div>
                   <div className="font-mono text-sm tabular-nums text-(--ink-3)">
@@ -174,7 +174,7 @@ export default function Records({ data, runs, unit }: Props) {
                   <div className="text-sm text-(--ink-3) truncate max-w-full mt-1">
                     {effort.activityName}
                   </div>
-                  <div className="font-mono text-[11px] text-(--ink-4)">
+                  <div className="text-meta">
                     {formatDate(effort.startDateLocal)}
                   </div>
                 </div>
@@ -238,7 +238,7 @@ export default function Records({ data, runs, unit }: Props) {
               <thead>
                 <tr>
                   {['#', 'Time', 'Pace', 'Activity', 'Date'].map((h) => (
-                    <Th key={h} className="px-4 text-left">{h}</Th>
+                    <Th key={h}>{h}</Th>
                   ))}
                 </tr>
               </thead>
@@ -299,7 +299,7 @@ function Disclosure({
         <span className="text-sm font-medium text-(--ink) tracking-tight">
           {title}
         </span>
-        <span className="flex items-center gap-3 font-mono text-[11px] text-(--ink-4)">
+        <span className="flex items-center gap-3 text-meta">
           {meta}
           <IoChevronForward
             size={12}

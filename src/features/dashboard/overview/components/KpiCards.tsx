@@ -3,7 +3,7 @@
  */
 
 import { formatPace, formatDuration } from '@/lib/strava'
-import { toDisplayDistance, type Unit } from '@/lib/activities'
+import { toDisplayDistance, distanceUnit, paceUnit, type Unit } from '@/lib/activities'
 import KpiCard from '@/features/dashboard/ui/KpiCard'
 
 type Props = {
@@ -21,11 +21,11 @@ export default function KpiCards({
   totalTime,
   unit,
 }: Props) {
-  const unitLabel = unit === 'mi' ? 'mi' : 'km'
-  const paceLabel = unit === 'mi' ? '/mi' : '/km'
+  const unitLabel = distanceUnit(unit)
+  const paceLabel = paceUnit(unit)
 
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+    <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5">
       <KpiCard
         label="Total Distance"
         value={toDisplayDistance(totalDist, unit)}

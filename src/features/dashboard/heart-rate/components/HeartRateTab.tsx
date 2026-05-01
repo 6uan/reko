@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
 import { formatPace } from '@/lib/strava'
-import { paceForUnit, avg, type Activity, type Unit } from '@/lib/activities'
+import { paceForUnit, avg, paceUnit, type Activity, type Unit } from '@/lib/activities'
 import KpiCard from '@/features/dashboard/ui/KpiCard'
 import SectionHeader from '@/features/dashboard/ui/SectionHeader'
 import Card from '@/features/dashboard/ui/Card'
@@ -31,7 +31,7 @@ function rangeLabel(zone: (typeof ZONES)[number]) {
 // ── Component ────────────────────────────────────────────────────
 
 export default function HeartRate({ runs, unit }: Props) {
-  const unitLabel = unit === 'mi' ? '/mi' : '/km'
+  const unitLabel = paceUnit(unit)
 
   const withHr = useMemo(
     () => runs.filter((r) => r.avgHr !== null),
@@ -149,7 +149,7 @@ export default function HeartRate({ runs, unit }: Props) {
         {activeZones.map((zone) => (
           <Card
             key={zone.name}
-            className="p-4.5 relative overflow-hidden"
+            className="p-4 relative overflow-hidden"
           >
             <div
               className="absolute top-0 left-0 right-0 h-1 rounded-t-(--radius-m)"
@@ -159,11 +159,11 @@ export default function HeartRate({ runs, unit }: Props) {
             <div className="font-mono text-[11px] uppercase tracking-widest text-(--ink-3) mt-1">
               {zone.name}
             </div>
-            <div className="font-mono text-[10px] text-(--ink-4) mt-0.5">
+            <div className="text-meta mt-0.5">
               {rangeLabel(zone)}
             </div>
 
-            <div className="font-mono text-[26px] font-medium tracking-tight tabular-nums mt-3 text-(--ink)">
+            <div className="text-stat text-(--ink) mt-3">
               {zone.bestRun
                 ? formatPace(paceForUnit(zone.bestRun.avgSpeed, unit))
                 : '—'}
@@ -174,11 +174,11 @@ export default function HeartRate({ runs, unit }: Props) {
               )}
             </div>
 
-            <div className="font-mono text-[11px] text-(--ink-3) mt-1.5 truncate">
+            <div className="text-detail mt-1.5 truncate">
               {zone.bestRun?.name ?? 'No runs'}
             </div>
 
-            <div className="flex justify-between font-mono text-[10px] text-(--ink-4) mt-3 pt-2.5 border-t border-(--line-2)">
+            <div className="flex justify-between text-meta mt-3 pt-2.5 border-t border-(--line-2)">
               <span>{zone.count} run{zone.count !== 1 ? 's' : ''}</span>
               {zone.avgPace > 0 && (
                 <span>avg {formatPace(zone.avgPace)}</span>
@@ -217,7 +217,7 @@ export default function HeartRate({ runs, unit }: Props) {
             <thead>
               <tr>
                 {['Zone', 'HR range', 'Best pace', 'Avg pace', 'Best run', 'Date', 'Runs'].map((h, i) => (
-                  <Th key={h} className={`px-3 ${i === 6 ? 'text-right' : 'text-left'}`}>
+                  <Th key={h} className={`px-4 ${i === 6 ? 'text-right' : 'text-left'}`}>
                     {h}
                   </Th>
                 ))}
@@ -226,16 +226,16 @@ export default function HeartRate({ runs, unit }: Props) {
             <tbody>
               {activeZones.map((zone) => (
                 <tr key={zone.name}>
-                  <td className="px-3 py-3 border-b border-(--line-2) text-sm font-medium text-(--ink)">
+                  <td className="px-4 py-3 border-b border-(--line-2) text-sm font-medium text-(--ink)">
                     <span className="flex items-center gap-2">
                       <ColorDot color={zone.color} className="inline-block" />
                       {zone.name}
                     </span>
                   </td>
-                  <td className="px-3 py-3 border-b border-(--line-2) text-sm font-mono tabular-nums text-(--ink-3)">
+                  <td className="px-4 py-3 border-b border-(--line-2) text-sm font-mono tabular-nums text-(--ink-3)">
                     {rangeLabel(zone)}
                   </td>
-                  <td className="px-3 py-3 border-b border-(--line-2) text-sm font-mono tabular-nums">
+                  <td className="px-4 py-3 border-b border-(--line-2) text-sm font-mono tabular-nums">
                     {zone.bestRun ? (
                       <span className="text-(--accent) font-medium">
                         {formatPace(paceForUnit(zone.bestRun.avgSpeed, unit))}
@@ -245,13 +245,13 @@ export default function HeartRate({ runs, unit }: Props) {
                       <span className="text-(--ink-4)">—</span>
                     )}
                   </td>
-                  <td className="px-3 py-3 border-b border-(--line-2) text-sm font-mono tabular-nums text-(--ink-3)">
+                  <td className="px-4 py-3 border-b border-(--line-2) text-sm font-mono tabular-nums text-(--ink-3)">
                     {zone.avgPace > 0 ? `${formatPace(zone.avgPace)}${unitLabel}` : '—'}
                   </td>
-                  <td className="px-3 py-3 border-b border-(--line-2) text-sm text-(--ink-3)">
+                  <td className="px-4 py-3 border-b border-(--line-2) text-sm text-(--ink-3)">
                     {zone.bestRun?.name ?? '—'}
                   </td>
-                  <td className="px-3 py-3 border-b border-(--line-2) text-sm font-mono tabular-nums text-(--ink-3)">
+                  <td className="px-4 py-3 border-b border-(--line-2) text-sm font-mono tabular-nums text-(--ink-3)">
                     {zone.bestRun
                       ? new Date(zone.bestRun.date).toLocaleDateString('en-GB', {
                           day: 'numeric',
@@ -260,7 +260,7 @@ export default function HeartRate({ runs, unit }: Props) {
                         })
                       : '—'}
                   </td>
-                  <td className="px-3 py-3 border-b border-(--line-2) text-sm font-mono tabular-nums text-(--ink-3) text-right">
+                  <td className="px-4 py-3 border-b border-(--line-2) text-sm font-mono tabular-nums text-(--ink-3) text-right">
                     {zone.count}
                   </td>
                 </tr>

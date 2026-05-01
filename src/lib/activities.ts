@@ -25,11 +25,8 @@ export type BestEffortTimes = {
 export type Activity = {
   id: number
   name: string
-  /** Strava's legacy sport field — always populated. e.g. 'Run', 'Walk', 'Ride'. */
-  type: string
-  /** Strava's modern, more granular sport_type — nullable for older activities.
-   *  e.g. 'Run', 'TrailRun', 'VirtualRun', 'Walk'. */
-  sportType: string | null
+  type: string /** Strava's legacy sport field — always populated. e.g. 'Run', 'Walk', 'Ride'. */
+  sportType: string | null /** Strava's modern, more granular sport_type — nullable for older activities. *  e.g. 'Run', 'TrailRun', 'VirtualRun', 'Walk'. */
   date: string
   distanceMeters: number
   movingTime: number
@@ -39,8 +36,7 @@ export type Activity = {
   cadence: number | null
   elevation: number
   prCount: number
-  /** Best split times for standard distances (from Strava best_efforts). */
-  bestEfforts: BestEffortTimes
+  bestEfforts: BestEffortTimes  /** Best split times for standard distances (from Strava best_efforts). */
 }
 
 /** Distance unit preference. */
@@ -91,4 +87,16 @@ export function paceForUnit(speedMs: number, unit: Unit): number {
 /** Average of a number array, returning 0 for empty arrays. */
 export function avg(nums: number[]): number {
   return nums.length ? nums.reduce((a, b) => a + b, 0) / nums.length : 0
+}
+
+// ── Unit labels ────────────────────────────────────────────────────
+
+/** Display label for a distance value — "km" or "mi". */
+export function distanceUnit(unit: Unit): string {
+  return unit === 'mi' ? 'mi' : 'km'
+}
+
+/** Display label for a pace value — "/km" or "/mi". */
+export function paceUnit(unit: Unit): string {
+  return unit === 'mi' ? '/mi' : '/km'
 }

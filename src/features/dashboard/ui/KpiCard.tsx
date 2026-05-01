@@ -23,18 +23,16 @@ type Props = {
 
 export default function KpiCard({ label, value, unit, detail, accent }: Props) {
   const valueColor =
-    accent === 'positive' ? 'text-(--ok)' : accent === 'negative' ? 'text-(--hr-5)' : ''
+    accent === 'positive' ? 'text-(--ok)' : accent === 'negative' ? 'text-(--bad)' : ''
 
   return (
     <Card className="p-4">
       <div className="text-eyebrow">{label}</div>
-      <div className="font-mono text-[26px] font-medium tracking-tight tabular-nums mt-1.5">
+      <div className="text-stat mt-1.5">
         <span className={valueColor}>{value}</span>
         {unit && <span className="text-sm text-(--ink-3) ml-0.5 font-normal">{unit}</span>}
       </div>
-      {detail && (
-        <div className="font-mono text-[11px] mt-1.5 text-(--ink-3)">{detail}</div>
-      )}
+      {detail && <div className="text-detail mt-1.5">{detail}</div>}
     </Card>
   )
 }

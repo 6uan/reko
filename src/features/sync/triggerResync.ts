@@ -6,7 +6,7 @@
 import { createServerFn } from '@tanstack/react-start'
 import { getSession as frameworkGetSession } from '@tanstack/react-start/server'
 import { sessionConfig, type SessionData } from '@/features/auth/session'
-import { enqueueBackfill, type EnqueueResult } from './backfillActivities.server'
+import { enqueueBackfill, type EnqueueResult } from './api/backfillActivities.server'
 
 export const triggerResync = createServerFn({ method: 'POST' }).handler(
   async (): Promise<EnqueueResult> => {

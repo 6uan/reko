@@ -31,7 +31,7 @@ import {
   type DistanceRecord,
   type RecordEffort,
   type RecordsData,
-} from './distances'
+} from '../distances'
 
 export async function getRecordsData(userId: number): Promise<RecordsData> {
   const db = getDb()
