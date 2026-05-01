@@ -8,7 +8,7 @@
 
 import { useMemo } from 'react'
 import { formatDuration } from '../../../lib/strava'
-import type { DashboardRun, Unit } from '../../../lib/activities'
+import type { Activity, Unit } from '../../../lib/activities'
 import type { DistanceRecord } from '../distances'
 import { paceForDist, formatPace } from './helpers'
 import { Th, Td } from './TablePrimitives'
@@ -25,7 +25,7 @@ const PACE_BUCKETS = [
 
 type Props = {
   distances: DistanceRecord[]
-  runs: DashboardRun[]
+  runs: Activity[]
   unit: Unit
 }
 

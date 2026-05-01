@@ -1,7 +1,7 @@
 /**
  * Shared activity types and helpers.
  *
- * `DashboardRun` is the client-side shape every tab component consumes.
+ * `Activity` is the client-side shape every tab component consumes.
  * Defined here (not in a route file) so features can import it without
  * creating a feature -> route dependency. `activityKind`, `KM_PER_MI`,
  * and `toDisplayDistance` lived duplicated across 5-7 files — single
@@ -12,7 +12,17 @@ import { formatDistanceKm, speedToPaceSeconds } from './strava'
 
 // ── Types ──────────────────────────────────────────────────────────
 
-export type DashboardRun = {
+/** Per-distance split times (elapsed seconds) from Strava's best_efforts. */
+export type BestEffortTimes = {
+  '1k'?: number
+  '1 mile'?: number
+  '5k'?: number
+  '10k'?: number
+  'Half-Marathon'?: number
+  'Marathon'?: number
+}
+
+export type Activity = {
   id: number
   name: string
   /** Strava's legacy sport field — always populated. e.g. 'Run', 'Walk', 'Ride'. */
@@ -29,6 +39,8 @@ export type DashboardRun = {
   cadence: number | null
   elevation: number
   prCount: number
+  /** Best split times for standard distances (from Strava best_efforts). */
+  bestEfforts: BestEffortTimes
 }
 
 /** Distance unit preference. */
@@ -48,7 +60,7 @@ export const KM_PER_MI = 1609.34
  * sport_type is null (older activities pre-dating the sport_type field).
  */
 export function activityKind(
-  a: Pick<DashboardRun, 'type' | 'sportType'>,
+  a: Pick<Activity, 'type' | 'sportType'>,
 ): 'run' | 'walk' | 'other' {
   const sport = a.sportType ?? a.type
   if (sport === 'Run' || sport === 'TrailRun' || sport === 'VirtualRun')

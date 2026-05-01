@@ -16,7 +16,7 @@
 import { useMemo } from 'react'
 import { IoChevronForward } from 'react-icons/io5'
 import { DISTANCE_DEFS, type RecordsData, type DistanceRecord } from './distances'
-import type { DashboardRun, Unit } from '../../lib/activities'
+import type { Activity, Unit } from '../../lib/activities'
 import { parseLocalDate } from './components/helpers'
 import HeroPR from './components/HeroPR'
 import DistanceRow from './components/DistanceRow'
@@ -26,7 +26,7 @@ import PRHistory from './components/PRHistory'
 
 type Props = {
   data: RecordsData
-  runs: DashboardRun[]
+  runs: Activity[]
   unit: Unit
 }
 

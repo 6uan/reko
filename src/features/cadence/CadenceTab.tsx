@@ -1,9 +1,9 @@
 import { useMemo } from 'react'
 import { formatPace } from '../../lib/strava'
-import { paceForUnit, type DashboardRun, type Unit } from '../../lib/activities'
+import { paceForUnit, type Activity, type Unit } from '../../lib/activities'
 
 type Props = {
-  runs: DashboardRun[]
+  runs: Activity[]
   unit: Unit
 }
 

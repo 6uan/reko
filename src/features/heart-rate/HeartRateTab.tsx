@@ -1,8 +1,8 @@
 import { useMemo } from 'react'
 import { formatPace } from '../../lib/strava'
-import { paceForUnit, avg, type DashboardRun, type Unit } from '../../lib/activities'
+import { paceForUnit, avg, type Activity, type Unit } from '../../lib/activities'
 
-type Props = { runs: DashboardRun[]; unit: Unit }
+type Props = { runs: Activity[]; unit: Unit }
 
 // ── Zone definitions ──────────────────────────────────────────────
 
