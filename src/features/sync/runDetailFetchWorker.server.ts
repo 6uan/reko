@@ -26,10 +26,10 @@
  */
 
 import { and, asc, eq, isNull } from 'drizzle-orm'
-import { getDb } from '../../db/client'
-import { activities, syncLog } from '../../db/schema'
-import { publish } from '../../lib/eventBus'
-import { StravaRateLimitedError } from '../../lib/strava'
+import { getDb } from '@/db/client'
+import { activities, syncLog } from '@/db/schema'
+import { publish } from '@/lib/eventBus'
+import { StravaRateLimitedError } from '@/lib/strava'
 import { storeActivityDetail } from './storeActivityDetail.server'
 import { withFreshToken } from './withFreshToken.server'
 

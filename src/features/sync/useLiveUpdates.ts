@@ -45,7 +45,7 @@
 
 import { useEffect } from 'react'
 import { useRouter } from '@tanstack/react-router'
-import type { ActivityEvent } from '../../lib/eventBus'
+import type { ActivityEvent } from '@/lib/eventBus'
 
 const STREAM_URL = '/api/sync/stream'
 

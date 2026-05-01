@@ -163,6 +163,12 @@ body {
   @apply border-2 border-red-500;
 }
 
+/* Eyebrow label — uppercase, tracked, muted. Used for stat-card labels,
+   table column headers, and any "above the title" caption. */
+@utility text-eyebrow {
+  @apply font-mono text-[10px] uppercase tracking-widest text-(--ink-4);
+}
+
 code {
   font-family: var(--font-mono);
   font-size: 0.9em;

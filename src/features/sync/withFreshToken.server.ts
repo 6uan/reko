@@ -8,9 +8,9 @@
  */
 
 import { eq } from 'drizzle-orm'
-import { getDb } from '../../db/client'
-import { tokens } from '../../db/schema'
-import { refreshAccessToken } from '../../lib/strava'
+import { getDb } from '@/db/client'
+import { tokens } from '@/db/schema'
+import { refreshAccessToken } from '@/lib/strava'
 
 const REFRESH_BUFFER_SECONDS = 300 // 5 min
 

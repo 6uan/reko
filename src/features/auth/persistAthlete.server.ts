@@ -10,8 +10,8 @@
  * background code has no access to the request's session cookie.
  */
 
-import { getDb } from '../../db/client'
-import { tokens, users } from '../../db/schema'
+import { getDb } from '@/db/client'
+import { tokens, users } from '@/db/schema'
 
 /** Subset of Strava's `/oauth/token` response we actually use. */
 export type StravaTokenExchange = {

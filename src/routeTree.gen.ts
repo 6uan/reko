@@ -12,6 +12,12 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as DashboardIndexRouteImport } from './routes/dashboard/index'
+import { Route as DashboardRecordsRouteImport } from './routes/dashboard/records'
+import { Route as DashboardPaceRouteImport } from './routes/dashboard/pace'
+import { Route as DashboardHeartRateRouteImport } from './routes/dashboard/heart-rate'
+import { Route as DashboardCadenceRouteImport } from './routes/dashboard/cadence'
+import { Route as DashboardActivitiesRouteImport } from './routes/dashboard/activities'
 import { Route as AuthStravaRouteImport } from './routes/auth/strava'
 import { Route as AuthCallbackRouteImport } from './routes/auth/callback'
 import { Route as ApiSyncStreamRouteImport } from './routes/api/sync/stream'
@@ -31,6 +37,36 @@ const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
+} as any)
+const DashboardIndexRoute = DashboardIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => DashboardRoute,
+} as any)
+const DashboardRecordsRoute = DashboardRecordsRouteImport.update({
+  id: '/records',
+  path: '/records',
+  getParentRoute: () => DashboardRoute,
+} as any)
+const DashboardPaceRoute = DashboardPaceRouteImport.update({
+  id: '/pace',
+  path: '/pace',
+  getParentRoute: () => DashboardRoute,
+} as any)
+const DashboardHeartRateRoute = DashboardHeartRateRouteImport.update({
+  id: '/heart-rate',
+  path: '/heart-rate',
+  getParentRoute: () => DashboardRoute,
+} as any)
+const DashboardCadenceRoute = DashboardCadenceRouteImport.update({
+  id: '/cadence',
+  path: '/cadence',
+  getParentRoute: () => DashboardRoute,
+} as any)
+const DashboardActivitiesRoute = DashboardActivitiesRouteImport.update({
+  id: '/activities',
+  path: '/activities',
+  getParentRoute: () => DashboardRoute,
 } as any)
 const AuthStravaRoute = AuthStravaRouteImport.update({
   id: '/auth/strava',
@@ -55,29 +91,46 @@ const ApiStravaWebhookRoute = ApiStravaWebhookRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/dashboard': typeof DashboardRoute
+  '/dashboard': typeof DashboardRouteWithChildren
   '/profile': typeof ProfileRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/auth/strava': typeof AuthStravaRoute
+  '/dashboard/activities': typeof DashboardActivitiesRoute
+  '/dashboard/cadence': typeof DashboardCadenceRoute
+  '/dashboard/heart-rate': typeof DashboardHeartRateRoute
+  '/dashboard/pace': typeof DashboardPaceRoute
+  '/dashboard/records': typeof DashboardRecordsRoute
+  '/dashboard/': typeof DashboardIndexRoute
   '/api/strava/webhook': typeof ApiStravaWebhookRoute
   '/api/sync/stream': typeof ApiSyncStreamRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/dashboard': typeof DashboardRoute
   '/profile': typeof ProfileRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/auth/strava': typeof AuthStravaRoute
+  '/dashboard/activities': typeof DashboardActivitiesRoute
+  '/dashboard/cadence': typeof DashboardCadenceRoute
+  '/dashboard/heart-rate': typeof DashboardHeartRateRoute
+  '/dashboard/pace': typeof DashboardPaceRoute
+  '/dashboard/records': typeof DashboardRecordsRoute
+  '/dashboard': typeof DashboardIndexRoute
   '/api/strava/webhook': typeof ApiStravaWebhookRoute
   '/api/sync/stream': typeof ApiSyncStreamRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/dashboard': typeof DashboardRoute
+  '/dashboard': typeof DashboardRouteWithChildren
   '/profile': typeof ProfileRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/auth/strava': typeof AuthStravaRoute
+  '/dashboard/activities': typeof DashboardActivitiesRoute
+  '/dashboard/cadence': typeof DashboardCadenceRoute
+  '/dashboard/heart-rate': typeof DashboardHeartRateRoute
+  '/dashboard/pace': typeof DashboardPaceRoute
+  '/dashboard/records': typeof DashboardRecordsRoute
+  '/dashboard/': typeof DashboardIndexRoute
   '/api/strava/webhook': typeof ApiStravaWebhookRoute
   '/api/sync/stream': typeof ApiSyncStreamRoute
 }
@@ -89,15 +142,26 @@ export interface FileRouteTypes {
     | '/profile'
     | '/auth/callback'
     | '/auth/strava'
+    | '/dashboard/activities'
+    | '/dashboard/cadence'
+    | '/dashboard/heart-rate'
+    | '/dashboard/pace'
+    | '/dashboard/records'
+    | '/dashboard/'
     | '/api/strava/webhook'
     | '/api/sync/stream'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
-    | '/dashboard'
     | '/profile'
     | '/auth/callback'
     | '/auth/strava'
+    | '/dashboard/activities'
+    | '/dashboard/cadence'
+    | '/dashboard/heart-rate'
+    | '/dashboard/pace'
+    | '/dashboard/records'
+    | '/dashboard'
     | '/api/strava/webhook'
     | '/api/sync/stream'
   id:
@@ -107,13 +171,19 @@ export interface FileRouteTypes {
     | '/profile'
     | '/auth/callback'
     | '/auth/strava'
+    | '/dashboard/activities'
+    | '/dashboard/cadence'
+    | '/dashboard/heart-rate'
+    | '/dashboard/pace'
+    | '/dashboard/records'
+    | '/dashboard/'
     | '/api/strava/webhook'
     | '/api/sync/stream'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  DashboardRoute: typeof DashboardRoute
+  DashboardRoute: typeof DashboardRouteWithChildren
   ProfileRoute: typeof ProfileRoute
   AuthCallbackRoute: typeof AuthCallbackRoute
   AuthStravaRoute: typeof AuthStravaRoute
@@ -143,6 +213,48 @@ declare module '@tanstack/react-router' {
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/dashboard/': {
+      id: '/dashboard/'
+      path: '/'
+      fullPath: '/dashboard/'
+      preLoaderRoute: typeof DashboardIndexRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/records': {
+      id: '/dashboard/records'
+      path: '/records'
+      fullPath: '/dashboard/records'
+      preLoaderRoute: typeof DashboardRecordsRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/pace': {
+      id: '/dashboard/pace'
+      path: '/pace'
+      fullPath: '/dashboard/pace'
+      preLoaderRoute: typeof DashboardPaceRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/heart-rate': {
+      id: '/dashboard/heart-rate'
+      path: '/heart-rate'
+      fullPath: '/dashboard/heart-rate'
+      preLoaderRoute: typeof DashboardHeartRateRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/cadence': {
+      id: '/dashboard/cadence'
+      path: '/cadence'
+      fullPath: '/dashboard/cadence'
+      preLoaderRoute: typeof DashboardCadenceRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/activities': {
+      id: '/dashboard/activities'
+      path: '/activities'
+      fullPath: '/dashboard/activities'
+      preLoaderRoute: typeof DashboardActivitiesRouteImport
+      parentRoute: typeof DashboardRoute
     }
     '/auth/strava': {
       id: '/auth/strava'
@@ -175,9 +287,31 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface DashboardRouteChildren {
+  DashboardActivitiesRoute: typeof DashboardActivitiesRoute
+  DashboardCadenceRoute: typeof DashboardCadenceRoute
+  DashboardHeartRateRoute: typeof DashboardHeartRateRoute
+  DashboardPaceRoute: typeof DashboardPaceRoute
+  DashboardRecordsRoute: typeof DashboardRecordsRoute
+  DashboardIndexRoute: typeof DashboardIndexRoute
+}
+
+const DashboardRouteChildren: DashboardRouteChildren = {
+  DashboardActivitiesRoute: DashboardActivitiesRoute,
+  DashboardCadenceRoute: DashboardCadenceRoute,
+  DashboardHeartRateRoute: DashboardHeartRateRoute,
+  DashboardPaceRoute: DashboardPaceRoute,
+  DashboardRecordsRoute: DashboardRecordsRoute,
+  DashboardIndexRoute: DashboardIndexRoute,
+}
+
+const DashboardRouteWithChildren = DashboardRoute._addFileChildren(
+  DashboardRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  DashboardRoute: DashboardRoute,
+  DashboardRoute: DashboardRouteWithChildren,
   ProfileRoute: ProfileRoute,
   AuthCallbackRoute: AuthCallbackRoute,
   AuthStravaRoute: AuthStravaRoute,

@@ -39,15 +39,15 @@
  */
 
 import { eq } from 'drizzle-orm'
-import { getDb } from '../../db/client'
+import { getDb } from '@/db/client'
 import {
   activities,
   tokens,
   users,
   webhookEvents,
-} from '../../db/schema'
-import { publish } from '../../lib/eventBus'
-import { fetchActivityDetail } from '../../lib/strava'
+} from '@/db/schema'
+import { publish } from '@/lib/eventBus'
+import { fetchActivityDetail } from '@/lib/strava'
 import { mapStravaActivity } from './mapStravaActivity.server'
 import { withFreshToken } from './withFreshToken.server'
 

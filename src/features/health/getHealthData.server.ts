@@ -12,8 +12,8 @@
  */
 
 import { and, count, desc, eq, gte, isNotNull, or } from 'drizzle-orm'
-import { getDb } from '../../db/client'
-import { activities, syncLog, tokens } from '../../db/schema'
+import { getDb } from '@/db/client'
+import { activities, syncLog, tokens } from '@/db/schema'
 
 export type RecentSync = {
   id: number

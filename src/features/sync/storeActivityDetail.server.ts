@@ -21,21 +21,21 @@
  */
 
 import { eq, sql } from 'drizzle-orm'
-import { getDb } from '../../db/client'
+import { getDb } from '@/db/client'
 import {
   activities,
   bestEfforts,
   streams,
   type NewBestEffort,
   type NewStream,
-} from '../../db/schema'
+} from '@/db/schema'
 import {
   fetchActivityDetail,
   fetchActivityStreams,
   STRAVA_STREAM_TYPES,
   type StravaBestEffort,
   type StravaStreamSet,
-} from '../../lib/strava'
+} from '@/lib/strava'
 
 export type StoreDetailResult = {
   /** How many best_effort rows were upserted (0 for short activities). */

@@ -27,12 +27,12 @@
  */
 
 import { createFileRoute } from '@tanstack/react-router'
-import { getDb } from '../../../db/client'
-import { webhookEvents } from '../../../db/schema'
+import { getDb } from '@/db/client'
+import { webhookEvents } from '@/db/schema'
 import {
   handleWebhookEvent,
   type StravaWebhookPayload,
-} from '../../../features/sync/handleWebhookEvent.server'
+} from '@/features/sync/handleWebhookEvent.server'
 
 // ── Handshake (GET) ──────────────────────────────────────────────────────
 

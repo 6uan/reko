@@ -15,8 +15,8 @@
  */
 
 import { desc, eq } from 'drizzle-orm'
-import { getDb } from '../../db/client'
-import { syncLog } from '../../db/schema'
+import { getDb } from '@/db/client'
+import { syncLog } from '@/db/schema'
 
 export async function getLastSyncTime(
   userId: number,

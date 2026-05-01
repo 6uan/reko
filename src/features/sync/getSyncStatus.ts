@@ -11,9 +11,9 @@
 import { createServerFn } from '@tanstack/react-start'
 import { getSession as frameworkGetSession } from '@tanstack/react-start/server'
 import { and, count, desc, eq, or } from 'drizzle-orm'
-import { getDb } from '../../db/client'
-import { activities, syncLog } from '../../db/schema'
-import { sessionConfig, type SessionData } from '../auth/session'
+import { getDb } from '@/db/client'
+import { activities, syncLog } from '@/db/schema'
+import { sessionConfig, type SessionData } from '@/features/auth/session'
 
 export type SyncStatusValue =
   | 'idle'

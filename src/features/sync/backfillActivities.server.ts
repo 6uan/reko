@@ -20,10 +20,10 @@
  */
 
 import { and, desc, eq, isNotNull, sql } from 'drizzle-orm'
-import { getDb } from '../../db/client'
-import { activities, syncLog } from '../../db/schema'
-import { publish } from '../../lib/eventBus'
-import { fetchAthleteActivities } from '../../lib/strava'
+import { getDb } from '@/db/client'
+import { activities, syncLog } from '@/db/schema'
+import { publish } from '@/lib/eventBus'
+import { fetchAthleteActivities } from '@/lib/strava'
 import { RESYNC_COOLDOWN_MS } from './constants'
 import { mapStravaActivity } from './mapStravaActivity.server'
 import { enqueueDetailFetch } from './runDetailFetchWorker.server'

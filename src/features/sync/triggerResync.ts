@@ -5,7 +5,7 @@
 
 import { createServerFn } from '@tanstack/react-start'
 import { getSession as frameworkGetSession } from '@tanstack/react-start/server'
-import { sessionConfig, type SessionData } from '../auth/session'
+import { sessionConfig, type SessionData } from '@/features/auth/session'
 import { enqueueBackfill, type EnqueueResult } from './backfillActivities.server'
 
 export const triggerResync = createServerFn({ method: 'POST' }).handler(

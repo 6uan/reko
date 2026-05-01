@@ -13,8 +13,8 @@
  * insurance — new Strava fields surface in the DB without a migration.
  */
 
-import type { StravaActivity } from '../../lib/strava'
-import type { NewActivity } from '../../db/schema'
+import type { StravaActivity } from '@/lib/strava'
+import type { NewActivity } from '@/db/schema'
 
 export function mapStravaActivity(
   userId: number,

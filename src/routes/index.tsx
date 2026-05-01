@@ -1,10 +1,10 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { LuLayoutDashboard } from "react-icons/lu";
 import { IoLogoGithub } from "react-icons/io";
-import StravaConnectButton from "../ui/StravaConnectButton";
-import DashboardMockup from "../features/landing/DashboardMockup";
-import StatsStrip from "../features/landing/StatsStrip";
-import OpenSourceSection from "../features/landing/OpenSourceSection";
+import StravaConnectButton from "@/components/StravaConnectButton";
+import DashboardMockup from "@/features/landing/DashboardMockup";
+import StatsStrip from "@/features/landing/StatsStrip";
+import OpenSourceSection from "@/features/landing/OpenSourceSection";
 
 export const Route = createFileRoute("/")({ component: Home });
 
