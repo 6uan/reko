@@ -1,35 +1,27 @@
 import { useMemo } from 'react'
 import { formatPace } from '@/lib/strava'
-import { paceForUnit, avg, paceUnit, type Activity, type Unit } from '@/lib/activities'
+import { paceForUnit, avg, paceUnit, KM_PER_MI, type Activity, type Unit } from '@/lib/activities'
 import { formatDate } from '@/lib/dates'
+import {
+  HR_ZONES,
+  rangeLabel,
+  zoneFor,
+  fallbackWindowsFor,
+  formatWindow,
+} from '@/lib/heartRate'
 import KpiCard from '@/features/dashboard/ui/KpiCard'
 import SectionHeader from '@/features/dashboard/ui/SectionHeader'
 import Card from '@/features/dashboard/ui/Card'
 import Th from '@/features/dashboard/ui/Th'
 import ColorDot from '@/features/dashboard/ui/ColorDot'
 import ZoneBar from '@/features/dashboard/ui/ZoneBar'
+import ActivityLink from '@/features/dashboard/ui/ActivityLink'
 
 type Props = { runs: Activity[]; unit: Unit }
 
-// ── Zone definitions (fixed — not from Strava's /athlete/zones) ──
-
-const ZONES = [
-  { name: 'Z1 Recovery', min: 0, max: 124, color: 'var(--hr-1)' },
-  { name: 'Z2 Aerobic', min: 124, max: 143, color: 'var(--hr-2)' },
-  { name: 'Z3 Tempo', min: 143, max: 162, color: 'var(--hr-3)' },
-  { name: 'Z4 Threshold', min: 162, max: 181, color: 'var(--hr-4)' },
-  { name: 'Z5 VO₂max', min: 181, max: Infinity, color: 'var(--hr-5)' },
-] as const
-
-function zoneFor(hr: number) {
-  return ZONES.find((z) => hr >= z.min && hr < z.max) ?? ZONES[4]
-}
-
-function rangeLabel(zone: (typeof ZONES)[number]) {
-  return zone.max === Infinity ? `${zone.min}+ bpm` : `${zone.min}–${zone.max} bpm`
-}
-
 // ── Component ────────────────────────────────────────────────────
+
+const ZONES = HR_ZONES
 
 export default function HeartRate({ runs, unit }: Props) {
   const unitLabel = paceUnit(unit)
@@ -39,23 +31,45 @@ export default function HeartRate({ runs, unit }: Props) {
     [runs],
   )
 
-  // ── Best pace per zone ─────────────────────────────────────────
-
+  // ── Per-zone summary: avg pace across runs whose AVG HR was in zone,
+  //    plus the global best sustained pace + activity. Each zone tries
+  //    its canonical sustained window first (e.g. 5m for Z4), falling
+  //    back to shorter windows when no run has data at the canonical.
   const zoneData = useMemo(() => {
     return ZONES.map((zone) => {
       const inZone = withHr.filter(
         (r) => r.avgHr! >= zone.min && r.avgHr! < zone.max,
       )
-      if (inZone.length === 0) return { ...zone, bestRun: null, count: 0, avgPace: 0 }
+      const count = inZone.length
+      const avgPace =
+        count > 0 ? avg(inZone.map((r) => paceForUnit(r.avgSpeed, unit))) : 0
 
-      const bestRun = inZone.reduce((best, r) =>
-        r.avgSpeed > best.avgSpeed ? r : best,
-      )
-      const avgPace = avg(inZone.map((r) => paceForUnit(r.avgSpeed, unit)))
+      // Try windows from longest to shortest; show the longest with data.
+      let best: {
+        activity: Activity
+        pace: number
+        windowSec: number
+      } | null = null
+      for (const w of fallbackWindowsFor(zone.name)) {
+        let bestAtWindow: { activity: Activity; pace: number } | null = null
+        for (const r of runs) {
+          const secPerKm = r.hrZoneEfforts[zone.name]?.[w]
+          if (secPerKm === undefined) continue
+          const pace =
+            unit === 'mi' ? secPerKm * (KM_PER_MI / 1000) : secPerKm
+          if (bestAtWindow === null || pace < bestAtWindow.pace) {
+            bestAtWindow = { activity: r, pace }
+          }
+        }
+        if (bestAtWindow !== null) {
+          best = { ...bestAtWindow, windowSec: w }
+          break
+        }
+      }
 
-      return { ...zone, bestRun, count: inZone.length, avgPace }
+      return { ...zone, count, avgPace, best }
     })
-  }, [withHr, unit])
+  }, [withHr, runs, unit])
 
   const activeZones = useMemo(() => zoneData.filter((z) => z.count > 0), [zoneData])
 
@@ -165,24 +179,24 @@ export default function HeartRate({ runs, unit }: Props) {
             </div>
 
             <div className="text-stat text-(--ink) mt-3">
-              {zone.bestRun
-                ? formatPace(paceForUnit(zone.bestRun.avgSpeed, unit))
-                : '—'}
-              {zone.bestRun && (
+              {zone.avgPace > 0 ? formatPace(zone.avgPace) : '—'}
+              {zone.avgPace > 0 && (
                 <span className="text-sm text-(--ink-3) ml-0.5 font-normal">
                   {unitLabel}
                 </span>
               )}
             </div>
 
-            <div className="text-detail mt-1.5 truncate">
-              {zone.bestRun?.name ?? 'No runs'}
-            </div>
-
-            <div className="flex justify-between text-meta mt-3 pt-2.5 border-t border-(--line-2)">
+            <div className="flex justify-between items-baseline text-meta mt-3 pt-2.5 border-t border-(--line-2)">
               <span>{zone.count} run{zone.count !== 1 ? 's' : ''}</span>
-              {zone.avgPace > 0 && (
-                <span>avg {formatPace(zone.avgPace)}</span>
+              {zone.best && (
+                <ActivityLink
+                  activityId={zone.best.activity.id}
+                  className="text-(--ink-3)"
+                >
+                  {formatWindow(zone.best.windowSec)} best{' '}
+                  {formatPace(zone.best.pace)}
+                </ActivityLink>
               )}
             </div>
           </Card>
@@ -237,10 +251,13 @@ export default function HeartRate({ runs, unit }: Props) {
                     {rangeLabel(zone)}
                   </td>
                   <td className="px-4 py-3 border-b border-(--line-2) text-sm font-mono tabular-nums">
-                    {zone.bestRun ? (
+                    {zone.best ? (
                       <span className="text-(--accent) font-medium">
-                        {formatPace(paceForUnit(zone.bestRun.avgSpeed, unit))}
+                        {formatPace(zone.best.pace)}
                         <span className="text-(--ink-3) font-normal ml-0.5">{unitLabel}</span>
+                        <span className="text-(--ink-4) font-normal ml-1.5 text-xs">
+                          {formatWindow(zone.best.windowSec)}
+                        </span>
                       </span>
                     ) : (
                       <span className="text-(--ink-4)">—</span>
@@ -250,10 +267,19 @@ export default function HeartRate({ runs, unit }: Props) {
                     {zone.avgPace > 0 ? `${formatPace(zone.avgPace)}${unitLabel}` : '—'}
                   </td>
                   <td className="px-4 py-3 border-b border-(--line-2) text-sm text-(--ink-3)">
-                    {zone.bestRun?.name ?? '—'}
+                    {zone.best ? (
+                      <ActivityLink
+                        activityId={zone.best.activity.id}
+                        className="text-(--ink-2) no-underline"
+                      >
+                        {zone.best.activity.name}
+                      </ActivityLink>
+                    ) : (
+                      '—'
+                    )}
                   </td>
                   <td className="px-4 py-3 border-b border-(--line-2) text-sm font-mono tabular-nums text-(--ink-3)">
-                    {zone.bestRun ? formatDate(zone.bestRun.date) : '—'}
+                    {zone.best ? formatDate(zone.best.activity.date) : '—'}
                   </td>
                   <td className="px-4 py-3 border-b border-(--line-2) text-sm font-mono tabular-nums text-(--ink-3) text-right">
                     {zone.count}

@@ -9,6 +9,7 @@
  */
 
 import { formatDistanceKm, speedToPaceSeconds } from './strava'
+import type { HrZoneEfforts } from './heartRate'
 
 // ── Types ──────────────────────────────────────────────────────────
 
@@ -36,7 +37,28 @@ export type Activity = {
   cadence: number | null
   elevation: number
   prCount: number
-  bestEfforts: BestEffortTimes  /** Best split times for standard distances (from Strava best_efforts). */
+  /** Best split times for standard distances, as reported by Strava's
+   * best_efforts payload. Empty when Strava didn't compute splits. */
+  bestEfforts: BestEffortTimes
+  /** Best split times computed from our own sliding-window over the
+   * activity's distance/time streams. Always populated when streams
+   * are available, regardless of whether Strava also computed splits. */
+  derivedBestEfforts: BestEffortTimes
+  /** Per-zone fastest sustained pace (seconds per km) for this activity,
+   * computed from streams. Empty when streams are missing or no zone
+   * had a long-enough sustained window. */
+  hrZoneEfforts: HrZoneEfforts
+}
+
+/**
+ * Pick the displayed split value: prefer Strava's number when it exists,
+ * otherwise fall back to our derived computation.
+ */
+export function effectiveBestEffort(
+  activity: Pick<Activity, 'bestEfforts' | 'derivedBestEfforts'>,
+  key: keyof BestEffortTimes,
+): number | undefined {
+  return activity.bestEfforts[key] ?? activity.derivedBestEfforts[key]
 }
 
 /** Distance unit preference. */

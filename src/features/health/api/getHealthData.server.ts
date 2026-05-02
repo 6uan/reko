@@ -14,6 +14,10 @@
 import { and, count, desc, eq, gte, isNotNull, or } from 'drizzle-orm'
 import { getDb } from '@/db/client'
 import { activities, syncLog, tokens } from '@/db/schema'
+import {
+  getComputedDataStatus,
+  type ComputedDataStatus,
+} from './backfillComputed.server'
 
 export type RecentSync = {
   id: number
@@ -44,6 +48,8 @@ export type HealthData = {
   tokenHealthy: boolean
   /** Recent sync events in plain language (newest first). */
   recentSyncs: RecentSync[]
+  /** Coverage of stream-derived data (splits + HR zone efforts). */
+  computedData: ComputedDataStatus
 }
 
 export async function getHealthData(
@@ -57,6 +63,7 @@ export async function getHealthData(
     runResult,
     detailResult,
     tokenRow,
+    computedData,
   ] = await Promise.all([
     // Last 5 sync_log entries (backfill only — detail fetches are invisible plumbing).
     db
@@ -110,6 +117,9 @@ export async function getHealthData(
       .from(tokens)
       .where(eq(tokens.userId, userId))
       .limit(1),
+
+    // Coverage of stream-derived data.
+    getComputedDataStatus(userId),
   ])
 
   const total = totalResult[0]?.value ?? 0
@@ -204,5 +214,6 @@ export async function getHealthData(
     detailCoveragePct,
     tokenHealthy,
     recentSyncs,
+    computedData,
   }
 }

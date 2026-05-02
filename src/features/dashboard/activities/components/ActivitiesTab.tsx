@@ -84,11 +84,24 @@ const DEFAULT_DIR: Partial<Record<SortCol, SortDir>> = {
   'Marathon': 'asc',
 }
 
-function effortVal(run: Activity, key: keyof BestEffortTimes): number {
-  return run.bestEfforts[key] ?? Infinity
+function effortVal(
+  run: Activity,
+  key: keyof BestEffortTimes,
+  showComputed: boolean,
+): number {
+  const t = showComputed
+    ? (run.bestEfforts[key] ?? run.derivedBestEfforts[key])
+    : run.bestEfforts[key]
+  return t ?? Infinity
 }
 
-function sortRuns(runs: Activity[], col: SortCol, dir: SortDir, unit: Unit) {
+function sortRuns(
+  runs: Activity[],
+  col: SortCol,
+  dir: SortDir,
+  unit: Unit,
+  showComputed: boolean,
+) {
   const sorted = [...runs]
   const m = dir === 'asc' ? 1 : -1
   sorted.sort((a, b) => {
@@ -103,7 +116,7 @@ function sortRuns(runs: Activity[], col: SortCol, dir: SortDir, unit: Unit) {
       case 'cadence': return m * ((a.cadence ?? 0) - (b.cadence ?? 0))
       case 'elevation': return m * (a.elevation - b.elevation)
       case '1k': case '1 mile': case '5k': case '10k': case 'Half-Marathon': case 'Marathon':
-        return m * (effortVal(a, col) - effortVal(b, col))
+        return m * (effortVal(a, col, showComputed) - effortVal(b, col, showComputed))
       default: return 0
     }
   })
@@ -159,6 +172,9 @@ export default function Activities({ activities, unit }: Props) {
     () => new Set(DEFAULT_VISIBLE),
   )
   const [filterOpen, setFilterOpen] = useState(false)
+  /** When true, splits Strava didn't provide are filled in with our
+   * sliding-window computation from the activity's streams. */
+  const [showComputed, setShowComputed] = useState(false)
   const filterRef = useRef<HTMLDivElement>(null)
 
   // Draft state for the dropdown — only committed on Apply.
@@ -221,8 +237,8 @@ export default function Activities({ activities, unit }: Props) {
   )
 
   const sorted = useMemo(
-    () => sortRuns(filtered, sortCol, sortDir, unit),
-    [filtered, sortCol, sortDir, unit],
+    () => sortRuns(filtered, sortCol, sortDir, unit, showComputed),
+    [filtered, sortCol, sortDir, unit, showComputed],
   )
 
   const visibleCols = useMemo(
@@ -261,6 +277,21 @@ export default function Activities({ activities, unit }: Props) {
         </p>
 
         <div className="flex gap-2">
+          {/* Estimated-splits toggle: fills missing splits using our
+              sliding-window computation over the activity's streams. */}
+          <button
+            type="button"
+            onClick={() => setShowComputed((v) => !v)}
+            aria-pressed={showComputed}
+            className={`px-3 py-1.5 text-xs rounded-(--radius-s) border bg-(--card) transition-colors cursor-pointer ${
+              showComputed
+                ? 'border-(--accent) text-(--accent)'
+                : 'border-(--line) text-(--ink-3) hover:text-(--ink)'
+            }`}
+          >
+            Estimated splits
+          </button>
+
           {/* Filter dropdown */}
           <div className="relative" ref={filterRef}>
             <button
@@ -448,7 +479,7 @@ export default function Activities({ activities, unit }: Props) {
                             : 'text-left'
                       }`}
                     >
-                      <Cell run={run} col={col.key} unit={unit} unitLabel={unitLabel} paceLabel={paceLabel} />
+                      <Cell run={run} col={col.key} unit={unit} unitLabel={unitLabel} paceLabel={paceLabel} showComputed={showComputed} />
                     </td>
                   ))}
                 </tr>
@@ -479,12 +510,14 @@ function Cell({
   unit,
   unitLabel,
   paceLabel,
+  showComputed,
 }: {
   run: Activity
   col: SortCol
   unit: Unit
   unitLabel: string
   paceLabel: string
+  showComputed: boolean
 }) {
   switch (col) {
     case 'name':
@@ -538,11 +571,21 @@ function Cell({
     case '10k':
     case 'Half-Marathon':
     case 'Marathon': {
-      const t = run.bestEfforts[col]
-      return t !== undefined ? (
-        <span className="font-mono tabular-nums">{formatDuration(t)}</span>
-      ) : (
-        <span className="text-(--ink-4)">{'—'}</span>
+      const stravaTime = run.bestEfforts[col]
+      const computedTime = showComputed ? run.derivedBestEfforts[col] : undefined
+      const t = stravaTime ?? computedTime
+      if (t === undefined) return <span className="text-(--ink-4)">{'—'}</span>
+      // Strava values render plain. Computed fallbacks (only shown when the
+      // checkbox is on) get a bordered chip so they're distinguishable.
+      // Both branches use identical wrapper dimensions to prevent table shift.
+      const isComputed = stravaTime === undefined
+      const borderColor = isComputed ? 'border-(--line)' : 'border-transparent'
+      return (
+        <span
+          className={`inline-block font-mono tabular-nums border ${borderColor} rounded-(--radius-s) px-2 py-0.5`}
+        >
+          {formatDuration(t)}
+        </span>
       )
     }
     default:
@@ -557,3 +600,4 @@ function Mono({ value }: { value: number | null }) {
     </span>
   )
 }
+

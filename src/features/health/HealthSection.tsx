@@ -8,7 +8,9 @@
  */
 
 import { useState } from 'react'
+import { useRouter } from '@tanstack/react-router'
 import type { HealthData } from './api/getHealthData.server'
+import { recomputeData, type RecomputeResult } from './recomputeData'
 
 // ── Helpers ───────────────────────────────────────────────────────
 
@@ -48,6 +50,114 @@ function syncStatusDot(status: string): string {
     default:
       return 'bg-(--ink-3)'
   }
+}
+
+// ── Computed Data subsection ──────────────────────────────────────
+
+function ComputedDataSection({ data }: { data: HealthData }) {
+  const router = useRouter()
+  const { withStreams, withDerivedSplits, withHrZoneEfforts } = data.computedData
+
+  const [running, setRunning] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [lastResult, setLastResult] = useState<RecomputeResult | null>(null)
+
+  async function handleRecompute() {
+    setRunning(true)
+    setError(null)
+    try {
+      const result = await recomputeData()
+      setLastResult(result)
+      // Re-run the route loader so the displayed counts refresh.
+      router.invalidate()
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Recompute failed')
+    } finally {
+      setRunning(false)
+    }
+  }
+
+  const splitsPct =
+    withStreams > 0 ? Math.round((withDerivedSplits / withStreams) * 100) : 0
+  const hrPct =
+    withStreams > 0 ? Math.round((withHrZoneEfforts / withStreams) * 100) : 0
+
+  return (
+    <div>
+      <div className="flex items-baseline justify-between mb-3">
+        <h3 className="text-xs font-medium text-(--ink-3) uppercase tracking-wider">
+          Computed Data
+        </h3>
+        <button
+          type="button"
+          onClick={handleRecompute}
+          disabled={running || withStreams === 0}
+          className="px-3 py-1 text-xs rounded-(--radius-s) border border-(--line) bg-(--card) text-(--ink-3) hover:text-(--ink) transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {running ? 'Recomputing…' : 'Recompute'}
+        </button>
+      </div>
+
+      <div className="grid grid-cols-2 gap-4">
+        <CoverageStat
+          label="Splits"
+          numerator={withDerivedSplits}
+          denominator={withStreams}
+          pct={splitsPct}
+        />
+        <CoverageStat
+          label="HR zones"
+          numerator={withHrZoneEfforts}
+          denominator={withStreams}
+          pct={hrPct}
+        />
+      </div>
+
+      {error && (
+        <p className="mt-3 text-xs text-red-500 font-mono">
+          {error}
+        </p>
+      )}
+      {lastResult && !error && (
+        <p className="mt-3 text-xs text-(--ink-3)">
+          Recomputed {lastResult.splitsRows} split rows ·{' '}
+          {lastResult.hrRows} HR zone rows
+        </p>
+      )}
+    </div>
+  )
+}
+
+function CoverageStat({
+  label,
+  numerator,
+  denominator,
+  pct,
+}: {
+  label: string
+  numerator: number
+  denominator: number
+  pct: number
+}) {
+  return (
+    <div>
+      <span className="text-2xl font-semibold text-(--ink) tabular-nums">
+        {pct}%
+      </span>
+      <span className="text-sm text-(--ink-3) ml-1.5">{label}</span>
+      <p className="text-xs text-(--ink-3) mt-0.5">
+        {numerator} of {denominator} activities
+      </p>
+      {denominator > 0 && (
+        <div className="mt-2 h-1.5 rounded-full bg-(--line) overflow-hidden">
+          <div
+            className="h-full rounded-full bg-emerald-500 transition-all duration-500"
+            style={{ width: `${pct}%` }}
+          />
+        </div>
+      )}
+    </div>
+  )
 }
 
 // ── Main component ────────────────────────────────────────────────
@@ -149,6 +259,9 @@ export default function HealthSection({ data }: { data: HealthData }) {
               </div>
             )}
           </div>
+
+          {/* ── Computed Data ──────────────────────────────────── */}
+          <ComputedDataSection data={data} />
 
           {/* ── Recent Syncs ───────────────────────────────────── */}
           {data.recentSyncs.length > 0 && (

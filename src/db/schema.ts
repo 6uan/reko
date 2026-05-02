@@ -206,6 +206,93 @@ export const bestEfforts = pgTable(
   ],
 );
 
+// ── Derived best efforts (computed from streams when Strava omits them) ─
+//
+// Strava's `best_efforts` field is empty for some activities even when
+// the underlying GPS streams (distance, time) are present — slow paces,
+// pause-heavy runs, GPS quality flags, etc. We compute the same numbers
+// ourselves with a sliding window over the stored streams so every
+// applicable distance has a split.
+//
+// Stored separately from `best_efforts` so we can show "Strava vs
+// derived" comparisons and recompute if the algorithm changes without
+// touching Strava-provided data.
+
+export const derivedBestEfforts = pgTable(
+  "derived_best_efforts",
+  {
+    activityId: bigint("activity_id", { mode: "number" })
+      .notNull()
+      .references(() => activities.id, { onDelete: "cascade" }),
+    userId: integer("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    /** Canonical effort name — same vocabulary as best_efforts.name. */
+    name: text("name").notNull(),
+    /** Target distance in meters (1000, 1609.34, 5000, ...). */
+    distance: real("distance").notNull(),
+    /** Best-effort seconds for this distance over this activity. */
+    elapsedTime: integer("elapsed_time").notNull(),
+    computedAt: timestamp("computed_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("derived_best_efforts_activity_name_uidx").on(
+      t.activityId,
+      t.name,
+    ),
+    index("derived_best_efforts_user_name_time_idx").on(
+      t.userId,
+      t.name,
+      t.elapsedTime,
+    ),
+  ],
+);
+
+// ── HR zone efforts (best sustained pace per zone, computed from streams) ─
+//
+// For each (activity, zone), the fastest pace held over a sustained
+// window (default 5 min) where every heartrate sample stayed in zone.
+// Strava doesn't expose this metric, so we compute it from the streams
+// at ingest time.
+//
+// Stored per-activity-per-zone; the dashboard aggregates to find the
+// global best per zone across all of a user's runs.
+
+export const hrZoneEfforts = pgTable(
+  "hr_zone_efforts",
+  {
+    activityId: bigint("activity_id", { mode: "number" })
+      .notNull()
+      .references(() => activities.id, { onDelete: "cascade" }),
+    userId: integer("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    /** Canonical zone name — e.g. 'Z3 Tempo'. */
+    zoneName: text("zone_name").notNull(),
+    /** Window duration the pace is sustained over (seconds). */
+    windowSeconds: integer("window_seconds").notNull(),
+    /** Best sustained pace, seconds per kilometer. */
+    paceSecondsPerKm: real("pace_seconds_per_km").notNull(),
+    computedAt: timestamp("computed_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("hr_zone_efforts_activity_zone_window_uidx").on(
+      t.activityId,
+      t.zoneName,
+      t.windowSeconds,
+    ),
+    index("hr_zone_efforts_user_zone_pace_idx").on(
+      t.userId,
+      t.zoneName,
+      t.paceSecondsPerKm,
+    ),
+  ],
+);
+
 // ── Webhook events (Strava push subscription, idempotency log) ───────────
 //
 // Strava fires POST /webhook with `{object_type, object_id, aspect_type,
@@ -303,6 +390,10 @@ export type Stream = typeof streams.$inferSelect;
 export type NewStream = typeof streams.$inferInsert;
 export type BestEffort = typeof bestEfforts.$inferSelect;
 export type NewBestEffort = typeof bestEfforts.$inferInsert;
+export type DerivedBestEffort = typeof derivedBestEfforts.$inferSelect;
+export type NewDerivedBestEffort = typeof derivedBestEfforts.$inferInsert;
+export type HrZoneEffort = typeof hrZoneEfforts.$inferSelect;
+export type NewHrZoneEffort = typeof hrZoneEfforts.$inferInsert;
 export type SyncLogRow = typeof syncLog.$inferSelect;
 export type NewSyncLogRow = typeof syncLog.$inferInsert;
 export type WebhookEvent = typeof webhookEvents.$inferSelect;

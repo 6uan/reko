@@ -25,8 +25,12 @@ import { getDb } from '@/db/client'
 import {
   activities,
   bestEfforts,
+  derivedBestEfforts,
+  hrZoneEfforts,
   streams,
   type NewBestEffort,
+  type NewDerivedBestEffort,
+  type NewHrZoneEffort,
   type NewStream,
 } from '@/db/schema'
 import {
@@ -36,10 +40,16 @@ import {
   type StravaBestEffort,
   type StravaStreamSet,
 } from '@/lib/strava'
+import { computeBestEfforts, SPLIT_DISTANCES } from '@/lib/streams'
+import { computeHrZoneEfforts } from '@/lib/heartRate'
 
 export type StoreDetailResult = {
   /** How many best_effort rows were upserted (0 for short activities). */
   bestEffortCount: number
+  /** How many derived (stream-computed) best-effort rows were upserted. */
+  derivedBestEffortCount: number
+  /** How many hr-zone effort rows were upserted (0 if no HR stream / no sustained window). */
+  hrZoneEffortCount: number
   /** How many stream channels were upserted (0 if Strava had none). */
   streamCount: number
   /** Strava API calls this invocation consumed. Always 2. */
@@ -100,6 +110,45 @@ export async function storeActivityDetail(
       })
   }
 
+  // ── derived best_efforts upsert ─────────────────────────────────────
+  // Compute splits from the (distance, time) streams we just fetched, so
+  // every applicable distance has a value even when Strava omits them.
+  const derivedRows = mapDerivedBestEfforts(streamSet, { userId, activityId })
+  if (derivedRows.length > 0) {
+    await db
+      .insert(derivedBestEfforts)
+      .values(derivedRows)
+      .onConflictDoUpdate({
+        target: [derivedBestEfforts.activityId, derivedBestEfforts.name],
+        set: {
+          elapsedTime: sql`excluded.elapsed_time`,
+          distance: sql`excluded.distance`,
+          computedAt: sql`now()`,
+        },
+      })
+  }
+
+  // ── hr_zone_efforts upsert ──────────────────────────────────────────
+  // Best sustained pace per HR zone, derived from heartrate / distance /
+  // time streams over the default sustained window.
+  const hrRows = mapHrZoneEfforts(streamSet, { userId, activityId })
+  if (hrRows.length > 0) {
+    await db
+      .insert(hrZoneEfforts)
+      .values(hrRows)
+      .onConflictDoUpdate({
+        target: [
+          hrZoneEfforts.activityId,
+          hrZoneEfforts.zoneName,
+          hrZoneEfforts.windowSeconds,
+        ],
+        set: {
+          paceSecondsPerKm: sql`excluded.pace_seconds_per_km`,
+          computedAt: sql`now()`,
+        },
+      })
+  }
+
   // Mark the activity as detail-synced so the worker can skip it next run.
   // The summary backfill also bumps syncedAt — that's fine, this row is
   // monotonic and either source of "fresh" is correct.
@@ -110,6 +159,8 @@ export async function storeActivityDetail(
 
   return {
     bestEffortCount: bestEffortRows.length,
+    derivedBestEffortCount: derivedRows.length,
+    hrZoneEffortCount: hrRows.length,
     streamCount: streamRows.length,
     callsUsed: 2,
   }
@@ -135,6 +186,56 @@ function mapBestEfforts(
     startDateLocal: e.start_date_local,
     prRank: e.pr_rank,
   }))
+}
+
+function mapDerivedBestEfforts(
+  streamSet: StravaStreamSet,
+  ctx: { userId: number; activityId: number },
+): NewDerivedBestEffort[] {
+  // `distance` and `time` are scalar streams (number[]). The union type on
+  // `data` exists so `latlng` can be [number, number][]; narrow here.
+  const distance = streamSet.distance?.data as number[] | undefined
+  const time = streamSet.time?.data as number[] | undefined
+  if (!distance || !time) return []
+  const efforts = computeBestEfforts(distance, time)
+  const distanceByName = new Map(SPLIT_DISTANCES.map((d) => [d.key, d.meters]))
+  const rows: NewDerivedBestEffort[] = []
+  for (const [name, elapsedTime] of Object.entries(efforts)) {
+    if (elapsedTime === undefined) continue
+    rows.push({
+      activityId: ctx.activityId,
+      userId: ctx.userId,
+      name,
+      distance: distanceByName.get(name as keyof typeof efforts) ?? 0,
+      elapsedTime: Math.round(elapsedTime),
+    })
+  }
+  return rows
+}
+
+function mapHrZoneEfforts(
+  streamSet: StravaStreamSet,
+  ctx: { userId: number; activityId: number },
+): NewHrZoneEffort[] {
+  const distance = streamSet.distance?.data as number[] | undefined
+  const time = streamSet.time?.data as number[] | undefined
+  const heartrate = streamSet.heartrate?.data as number[] | undefined
+  if (!distance || !time || !heartrate) return []
+  const efforts = computeHrZoneEfforts(distance, time, heartrate)
+  const rows: NewHrZoneEffort[] = []
+  for (const [zoneName, byWindow] of Object.entries(efforts)) {
+    if (!byWindow) continue
+    for (const [windowSec, paceSecondsPerKm] of Object.entries(byWindow)) {
+      rows.push({
+        activityId: ctx.activityId,
+        userId: ctx.userId,
+        zoneName,
+        windowSeconds: Number(windowSec),
+        paceSecondsPerKm,
+      })
+    }
+  }
+  return rows
 }
 
 function mapStreams(

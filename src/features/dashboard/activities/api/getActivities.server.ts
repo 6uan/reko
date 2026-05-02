@@ -11,8 +11,14 @@
 
 import { and, desc, eq, inArray, or } from 'drizzle-orm'
 import { getDb } from '@/db/client'
-import { activities, bestEfforts } from '@/db/schema'
+import {
+  activities,
+  bestEfforts,
+  derivedBestEfforts,
+  hrZoneEfforts,
+} from '@/db/schema'
 import type { BestEffortTimes, Activity } from '@/lib/activities'
+import type { HrZoneEfforts, HrZoneName } from '@/lib/heartRate'
 
 /**
  * Strava stores effort names with inconsistent casing — e.g. "1K" / "5K"
@@ -37,8 +43,9 @@ const CANONICAL_NAME: Record<string, keyof BestEffortTimes> = {
 export async function getActivities(userId: number): Promise<Activity[]> {
   const db = getDb()
 
-  // Fetch activities and best efforts in parallel.
-  const [dbRuns, dbEfforts] = await Promise.all([
+  // Fetch activities, Strava best_efforts, derived splits, and HR zone
+  // efforts in parallel.
+  const [dbRuns, dbEfforts, dbDerived, dbHrZone] = await Promise.all([
     db
       .select()
       .from(activities)
@@ -55,8 +62,7 @@ export async function getActivities(userId: number): Promise<Activity[]> {
       )
       .orderBy(desc(activities.startDate)),
 
-    // Fetch best efforts for all of this user's activities at once.
-    // Filtered to only the distance names we care about.
+    // Strava-provided splits — filtered to the canonical distances.
     db
       .select({
         activityId: bestEfforts.activityId,
@@ -70,6 +76,28 @@ export async function getActivities(userId: number): Promise<Activity[]> {
           inArray(bestEfforts.name, EFFORT_NAMES_QUERY),
         ),
       ),
+
+    // Stream-derived splits — already in canonical names, no filtering needed.
+    db
+      .select({
+        activityId: derivedBestEfforts.activityId,
+        name: derivedBestEfforts.name,
+        elapsedTime: derivedBestEfforts.elapsedTime,
+      })
+      .from(derivedBestEfforts)
+      .where(eq(derivedBestEfforts.userId, userId)),
+
+    // Per-zone best sustained pace at every stored window. The dashboard
+    // picks the longest available window per zone at render time.
+    db
+      .select({
+        activityId: hrZoneEfforts.activityId,
+        zoneName: hrZoneEfforts.zoneName,
+        windowSeconds: hrZoneEfforts.windowSeconds,
+        paceSecondsPerKm: hrZoneEfforts.paceSecondsPerKm,
+      })
+      .from(hrZoneEfforts)
+      .where(eq(hrZoneEfforts.userId, userId)),
   ])
 
   // Group best efforts by activity ID. When an activity has multiple
@@ -91,6 +119,36 @@ export async function getActivities(userId: number): Promise<Activity[]> {
     }
   }
 
+  // Group derived efforts by activity ID. Derived names are already
+  // canonical (we wrote them that way), so no name normalization needed.
+  const derivedByActivity = new Map<number, BestEffortTimes>()
+  for (const d of dbDerived) {
+    const key = d.name as keyof BestEffortTimes
+    let map = derivedByActivity.get(d.activityId)
+    if (!map) {
+      map = {}
+      derivedByActivity.set(d.activityId, map)
+    }
+    map[key] = d.elapsedTime
+  }
+
+  // Group HR zone efforts by activity ID, then by zone, then by window.
+  const hrZoneByActivity = new Map<number, HrZoneEfforts>()
+  for (const h of dbHrZone) {
+    const zoneKey = h.zoneName as HrZoneName
+    let activityMap = hrZoneByActivity.get(h.activityId)
+    if (!activityMap) {
+      activityMap = {}
+      hrZoneByActivity.set(h.activityId, activityMap)
+    }
+    let zoneMap = activityMap[zoneKey]
+    if (!zoneMap) {
+      zoneMap = {}
+      activityMap[zoneKey] = zoneMap
+    }
+    zoneMap[h.windowSeconds] = h.paceSecondsPerKm
+  }
+
   return dbRuns.map((a) => ({
     id: a.id,
     name: a.name,
@@ -106,5 +164,7 @@ export async function getActivities(userId: number): Promise<Activity[]> {
     elevation: a.totalElevationGain,
     prCount: a.prCount,
     bestEfforts: effortsByActivity.get(a.id) ?? {},
+    derivedBestEfforts: derivedByActivity.get(a.id) ?? {},
+    hrZoneEfforts: hrZoneByActivity.get(a.id) ?? {},
   }))
 }
