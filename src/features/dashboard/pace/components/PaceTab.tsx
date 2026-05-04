@@ -8,29 +8,24 @@ import {
   YAxis,
   Tooltip,
 } from 'recharts'
-import { formatPace, formatDuration } from '@/lib/strava'
-import { formatDate, getMonday } from '@/lib/dates'
+import { formatPace } from '@/lib/strava'
 import {
   KM_PER_MI,
-  toDisplayDistance,
   avg,
   paceUnit,
   type Activity,
   type Unit,
 } from '@/lib/activities'
+import { groupByWeek } from '@/lib/aggregations'
 import KpiCard from '@/features/dashboard/ui/KpiCard'
-import {
-  createColumnHelper,
-  useReactTable,
-  getCoreRowModel,
-} from '@tanstack/react-table'
+import { createColumnHelper, useReactTable, getCoreRowModel, type ColumnDef } from '@tanstack/react-table'
 import SectionHeader from '@/features/dashboard/ui/SectionHeader'
 import EmptyState from '@/features/dashboard/ui/EmptyState'
 import Card from '@/features/dashboard/ui/Card'
 import ChartContainer from '@/features/dashboard/ui/ChartContainer'
-import ChartTooltip from '@/features/dashboard/ui/ChartTooltip'
+import { makeTooltip } from '@/features/dashboard/ui/ChartTooltip'
 import Table from '@/features/dashboard/ui/Table'
-import ActivityLink from '@/features/dashboard/ui/ActivityLink'
+import { rankColumn, nameColumn, distanceColumn, timeColumn, avgHrColumn, dateColumn } from '@/features/dashboard/ui/columns'
 
 type Props = { runs: Activity[]; unit: Unit }
 
@@ -107,32 +102,10 @@ export default function Pace({ runs, unit }: Props) {
 
   // ── Weekly trend (all time) ─────────────────────────────────────
 
-  type TrendPoint = { week: string; label: string; avg: number; runs: number }
-
-  const trendData = useMemo<TrendPoint[]>(() => {
-    const buckets = new Map<string, number[]>()
-    runs.forEach((r) => {
-      const mon = getMonday(new Date(r.date))
-      const key = mon.toISOString().slice(0, 10)
-      const p = paceForRun(r, unit)
-      if (p > 0) {
-        if (!buckets.has(key)) buckets.set(key, [])
-        buckets.get(key)!.push(p)
-      }
-    })
-
-    return [...buckets.entries()]
-      .sort(([a], [b]) => a.localeCompare(b))
-      .map(([week, vals]) => {
-        const d = new Date(week)
-        return {
-          week,
-          label: `${d.getMonth() + 1}/${d.getDate()}`,
-          avg: avg(vals),
-          runs: vals.length,
-        }
-      })
-  }, [runs, unit])
+  const trendData = useMemo(
+    () => groupByWeek(runs, (r) => r.date, (r) => paceForRun(r, unit)),
+    [runs, unit],
+  )
 
   // ── Fastest runs (sorted by pace, ascending) ───────────────────
 
@@ -145,23 +118,10 @@ export default function Pace({ runs, unit }: Props) {
 
   const paceCol = createColumnHelper<Activity>()
 
-  const paceColumns = useMemo(() => [
-    paceCol.display({
-      id: 'rank',
-      header: '#',
-      cell: (info) => (
-        <span className="font-mono tabular-nums text-(--ink-3)">{info.row.index + 1}</span>
-      ),
-    }),
-    paceCol.accessor('name', {
-      id: 'name',
-      header: 'Activity',
-      cell: (info) => (
-        <ActivityLink activityId={info.row.original.id} className="truncate max-w-50 inline-block">
-          {info.getValue()}
-        </ActivityLink>
-      ),
-    }),
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const paceColumns = useMemo((): ColumnDef<any, any>[] => [
+    rankColumn(),
+    nameColumn(),
     paceCol.accessor((r) => paceForRun(r, unit), {
       id: 'pace',
       header: 'Pace',
@@ -174,42 +134,10 @@ export default function Pace({ runs, unit }: Props) {
         </span>
       ),
     }),
-    paceCol.accessor('distanceMeters', {
-      id: 'distance',
-      header: 'Distance',
-      cell: (info) => (
-        <span className="font-mono tabular-nums text-(--ink-3) whitespace-nowrap">
-          {toDisplayDistance(info.getValue(), unit)} {unit}
-        </span>
-      ),
-    }),
-    paceCol.accessor('movingTime', {
-      id: 'time',
-      header: 'Time',
-      cell: (info) => (
-        <span className="font-mono tabular-nums text-(--ink-3) whitespace-nowrap">
-          {formatDuration(info.getValue())}
-        </span>
-      ),
-    }),
-    paceCol.accessor('avgHr', {
-      id: 'avgHr',
-      header: 'Avg HR',
-      cell: (info) => (
-        <span className="font-mono tabular-nums text-(--ink-3) whitespace-nowrap">
-          {info.getValue() !== null ? `${Math.round(info.getValue()!)} bpm` : '—'}
-        </span>
-      ),
-    }),
-    paceCol.accessor('date', {
-      id: 'date',
-      header: 'Date',
-      cell: (info) => (
-        <span className="font-mono tabular-nums text-(--ink-3) whitespace-nowrap">
-          {formatDate(info.getValue())}
-        </span>
-      ),
-    }),
+    distanceColumn(unit),
+    timeColumn(),
+    avgHrColumn(),
+    dateColumn(),
   ], [unit, unitLabel])
 
   const paceTable = useReactTable({
@@ -291,7 +219,7 @@ export default function Pace({ runs, unit }: Props) {
                   tickFormatter={(v: number) => formatPace(v)}
                   width={50}
                 />
-                <Tooltip content={<TrendTooltip unitLabel={unitLabel} />} cursor={{ stroke: 'var(--line)', strokeDasharray: '4 4' }} />
+                <Tooltip content={<PaceTrendTooltip />} cursor={{ stroke: 'var(--line)', strokeDasharray: '4 4' }} />
                 <Line
                   type="monotone"
                   dataKey="avg"
@@ -319,53 +247,30 @@ export default function Pace({ runs, unit }: Props) {
   )
 }
 
-// ── Sub-components ────────────────────────────────────────────────
+// ── Tooltips ─────────────────────────────────────────────────────
 
-function HistTooltip({
-  active,
-  payload,
-}: {
-  active?: boolean
-  payload?: Array<{ payload: { label: string; count: number } }>
-}) {
-  if (!active || !payload?.[0]) return null
-  const d = payload[0].payload
-  return (
-    <ChartTooltip>
-      <p className="font-medium text-(--ink) mb-1">~{d.label}</p>
-      <p className="text-(--ink-2)">
+const HistTooltip = makeTooltip<{ label: string; count: number }>((d) => (
+  <>
+    <p className="font-medium text-(--ink) mb-1">~{d.label}</p>
+    <p className="text-(--ink-2)">
+      {d.count} run{d.count !== 1 ? 's' : ''}
+    </p>
+  </>
+))
+
+const PaceTrendTooltip = makeTooltip<{ week: string; avg: number; count: number }>((d) => (
+  <>
+    <p className="font-medium text-(--ink) mb-1">Week of {d.week}</p>
+    <div className="space-y-0.5 text-(--ink-2)">
+      <p>
+        Avg{' '}
+        <span className="text-(--ink) font-mono tabular-nums font-medium">
+          {formatPace(d.avg)}
+        </span>
+      </p>
+      <p>
         {d.count} run{d.count !== 1 ? 's' : ''}
       </p>
-    </ChartTooltip>
-  )
-}
-
-function TrendTooltip({
-  active,
-  payload,
-  unitLabel,
-}: {
-  active?: boolean
-  payload?: Array<{ payload: { week: string; avg: number; runs: number } }>
-  unitLabel: string
-}) {
-  if (!active || !payload?.[0]) return null
-  const d = payload[0].payload
-  return (
-    <ChartTooltip>
-      <p className="font-medium text-(--ink) mb-1">Week of {d.week}</p>
-      <div className="space-y-0.5 text-(--ink-2)">
-        <p>
-          Avg{' '}
-          <span className="text-(--ink) font-mono tabular-nums font-medium">
-            {formatPace(d.avg)}
-          </span>{' '}
-          {unitLabel}
-        </p>
-        <p>
-          {d.runs} run{d.runs !== 1 ? 's' : ''}
-        </p>
-      </div>
-    </ChartTooltip>
-  )
-}
+    </div>
+  </>
+))

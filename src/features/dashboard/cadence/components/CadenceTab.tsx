@@ -10,21 +10,22 @@ import {
   ReferenceLine,
 } from 'recharts'
 import { formatPace } from '@/lib/strava'
-import { paceForUnit, avg, paceUnit, type Activity, type Unit } from '@/lib/activities'
-import { formatDate, getMonday } from '@/lib/dates'
+import { paceForUnit, avg, type Activity, type Unit } from '@/lib/activities'
+import { groupByWeek, trendDelta } from '@/lib/aggregations'
 import KpiCard from '@/features/dashboard/ui/KpiCard'
 import {
   createColumnHelper,
   useReactTable,
   getCoreRowModel,
+  type ColumnDef,
 } from '@tanstack/react-table'
 import SectionHeader from '@/features/dashboard/ui/SectionHeader'
 import EmptyState from '@/features/dashboard/ui/EmptyState'
 import Card from '@/features/dashboard/ui/Card'
 import ChartContainer from '@/features/dashboard/ui/ChartContainer'
-import ChartTooltip from '@/features/dashboard/ui/ChartTooltip'
+import { makeTooltip } from '@/features/dashboard/ui/ChartTooltip'
 import Table from '@/features/dashboard/ui/Table'
-import ActivityLink from '@/features/dashboard/ui/ActivityLink'
+import { nameColumn, paceColumn, dateColumn } from '@/features/dashboard/ui/columns'
 import ZoneBar from '@/features/dashboard/ui/ZoneBar'
 
 type Props = { runs: Activity[]; unit: Unit }
@@ -58,7 +59,6 @@ const CADENCE_ZONES = [
 // ── Component ────────────────────────────────────────────────────
 
 export default function CadenceTab({ runs, unit }: Props) {
-  const unitLabel = paceUnit(unit)
 
   const withCadence = useMemo(
     () => runs.filter((r) => r.cadence != null && r.cadence > 0),
@@ -79,31 +79,12 @@ export default function CadenceTab({ runs, unit }: Props) {
 
   // ── Weekly trend (all time) ────────────────────────────────────
 
-  const { trendData, trendDelta } = useMemo(() => {
-    const buckets = new Map<string, number[]>()
-    for (const r of withCadence) {
-      const key = getMonday(new Date(r.date)).toISOString().slice(0, 10)
-      if (!buckets.has(key)) buckets.set(key, [])
-      buckets.get(key)!.push(r.cadence!)
-    }
+  const trendData = useMemo(
+    () => groupByWeek(withCadence, (r) => r.date, (r) => r.cadence),
+    [withCadence],
+  )
 
-    const sorted = [...buckets.entries()]
-      .sort(([a], [b]) => a.localeCompare(b))
-      .map(([week, vals]) => ({
-        week: new Date(week).toLocaleDateString('en-US', { month: 'numeric', day: 'numeric' }),
-        avg: Math.round(avg(vals)),
-        runs: vals.length,
-      }))
-
-    let delta = 0
-    if (sorted.length >= 2) {
-      const firstWeeks = sorted.slice(0, Math.ceil(sorted.length / 2))
-      const lastWeeks = sorted.slice(Math.ceil(sorted.length / 2))
-      delta = Math.round(avg(lastWeeks.map((w) => w.avg)) - avg(firstWeeks.map((w) => w.avg)))
-    }
-
-    return { trendData: sorted, trendDelta: delta }
-  }, [withCadence])
+  const cadenceDelta = useMemo(() => trendDelta(trendData), [trendData])
 
   // ── Scatter data ─────────────────────────────────────────────
 
@@ -150,16 +131,9 @@ export default function CadenceTab({ runs, unit }: Props) {
 
   const cadCol = createColumnHelper<Activity>()
 
-  const cadenceColumns = useMemo(() => [
-    cadCol.accessor('name', {
-      id: 'name',
-      header: 'Activity',
-      cell: (info) => (
-        <ActivityLink activityId={info.row.original.id} className="truncate max-w-50 inline-block">
-          {info.getValue()}
-        </ActivityLink>
-      ),
-    }),
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const cadenceColumns = useMemo((): ColumnDef<any, any>[] => [
+    nameColumn(),
     cadCol.accessor('cadence', {
       id: 'cadence',
       header: 'Cadence',
@@ -169,25 +143,9 @@ export default function CadenceTab({ runs, unit }: Props) {
         </span>
       ),
     }),
-    cadCol.accessor((r) => paceForUnit(r.avgSpeed, unit), {
-      id: 'pace',
-      header: 'Pace',
-      cell: (info) => (
-        <span className="font-mono tabular-nums text-(--ink-3)">
-          {formatPace(info.getValue())} {unitLabel}
-        </span>
-      ),
-    }),
-    cadCol.accessor('date', {
-      id: 'date',
-      header: 'Date',
-      cell: (info) => (
-        <span className="font-mono tabular-nums text-(--ink-3)">
-          {formatDate(info.getValue())}
-        </span>
-      ),
-    }),
-  ], [unit, unitLabel])
+    paceColumn(unit),
+    dateColumn(),
+  ], [unit])
 
   const cadenceTable = useReactTable({
     data: recentRuns,
@@ -218,17 +176,17 @@ export default function CadenceTab({ runs, unit }: Props) {
           value={
             trendData.length < 2
               ? '—'
-              : `${trendDelta >= 0 ? '+' : ''}${trendDelta}`
+              : `${cadenceDelta >= 0 ? '+' : ''}${cadenceDelta}`
           }
           unit="spm"
           detail={
-            trendDelta > 0
+            cadenceDelta > 0
               ? 'Trending up'
-              : trendDelta < 0
+              : cadenceDelta < 0
                 ? 'Trending down'
                 : 'Holding steady'
           }
-          accent={trendDelta > 0 ? 'positive' : trendDelta < 0 ? 'negative' : undefined}
+          accent={cadenceDelta > 0 ? 'positive' : cadenceDelta < 0 ? 'negative' : undefined}
         />
       </div>
 
@@ -241,7 +199,7 @@ export default function CadenceTab({ runs, unit }: Props) {
             <ChartContainer>
               <LineChart data={trendData} margin={{ top: 4, right: 4, bottom: 0, left: 0 }}>
                 <XAxis
-                  dataKey="week"
+                  dataKey="label"
                   axisLine={false}
                   tickLine={false}
                   tick={{ fontSize: 10, fill: 'var(--ink-4)' }}
@@ -253,7 +211,7 @@ export default function CadenceTab({ runs, unit }: Props) {
                   tick={{ fontSize: 10, fill: 'var(--ink-4)' }}
                   width={42}
                 />
-                <Tooltip content={<TrendTooltip />} cursor={{ stroke: 'var(--line)', strokeDasharray: '4 4' }} />
+                <Tooltip content={<CadenceTrendTooltip />} cursor={{ stroke: 'var(--line)', strokeDasharray: '4 4' }} />
                 <Line
                   type="monotone"
                   dataKey="avg"
@@ -296,7 +254,7 @@ export default function CadenceTab({ runs, unit }: Props) {
                   width={42}
                   name="Cadence"
                 />
-                <Tooltip content={<ScatterTooltip unitLabel={unitLabel} />} cursor={{ stroke: 'var(--line)', strokeDasharray: '4 4' }} />
+                <Tooltip content={<ScatterTooltip />} cursor={{ stroke: 'var(--line)', strokeDasharray: '4 4' }} />
                 <Scatter data={scatterData} fill="var(--accent)" opacity={0.7} r={4} />
                 {regressionLine && (
                   <ReferenceLine
@@ -348,56 +306,33 @@ export default function CadenceTab({ runs, unit }: Props) {
 }
 
 
-function TrendTooltip({
-  active,
-  payload,
-}: {
-  active?: boolean
-  payload?: Array<{ payload: { week: string; avg: number; runs: number } }>
-}) {
-  if (!active || !payload?.[0]) return null
-  const d = payload[0].payload
-  return (
-    <ChartTooltip>
-      <p className="font-medium text-(--ink) mb-1">Week of {d.week}</p>
-      <div className="space-y-0.5 text-(--ink-2)">
-        <p>
-          Avg{' '}
-          <span className="text-(--ink) font-mono tabular-nums font-medium">{d.avg}</span> spm
-        </p>
-        <p>
-          {d.runs} run{d.runs !== 1 ? 's' : ''}
-        </p>
-      </div>
-    </ChartTooltip>
-  )
-}
+const CadenceTrendTooltip = makeTooltip<{ label: string; avg: number; count: number }>((d) => (
+  <>
+    <p className="font-medium text-(--ink) mb-1">Week of {d.label}</p>
+    <div className="space-y-0.5 text-(--ink-2)">
+      <p>
+        Avg{' '}
+        <span className="text-(--ink) font-mono tabular-nums font-medium">{Math.round(d.avg)}</span> spm
+      </p>
+      <p>
+        {d.count} run{d.count !== 1 ? 's' : ''}
+      </p>
+    </div>
+  </>
+))
 
-function ScatterTooltip({
-  active,
-  payload,
-  unitLabel,
-}: {
-  active?: boolean
-  payload?: Array<{ payload: { name: string; cadence: number; pace: number } }>
-  unitLabel: string
-}) {
-  if (!active || !payload?.[0]) return null
-  const d = payload[0].payload
-  return (
-    <ChartTooltip>
-      <p className="font-medium text-(--ink) mb-1">{d.name}</p>
-      <div className="space-y-0.5 text-(--ink-2)">
-        <p>
-          Cadence{' '}
-          <span className="text-(--ink) font-mono tabular-nums font-medium">{d.cadence}</span> spm
-        </p>
-        <p>
-          Pace{' '}
-          <span className="text-(--ink) font-mono tabular-nums font-medium">{formatPace(d.pace)}</span>
-          {unitLabel}
-        </p>
-      </div>
-    </ChartTooltip>
-  )
-}
+const ScatterTooltip = makeTooltip<{ name: string; cadence: number; pace: number }>((d) => (
+  <>
+    <p className="font-medium text-(--ink) mb-1">{d.name}</p>
+    <div className="space-y-0.5 text-(--ink-2)">
+      <p>
+        Cadence{' '}
+        <span className="text-(--ink) font-mono tabular-nums font-medium">{d.cadence}</span> spm
+      </p>
+      <p>
+        Pace{' '}
+        <span className="text-(--ink) font-mono tabular-nums font-medium">{formatPace(d.pace)}</span>
+      </p>
+    </div>
+  </>
+))
