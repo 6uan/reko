@@ -165,7 +165,7 @@ export default function HeartRate({ runs, unit }: Props) {
       header: 'Avg pace',
       cell: (info) => (
         <span className="font-mono tabular-nums text-(--ink-3)">
-          {info.getValue() > 0 ? `${formatPace(info.getValue())}${unitLabel}` : '—'}
+          {info.getValue() > 0 ? `${formatPace(info.getValue())} ${unitLabel}` : '—'}
         </span>
       ),
     }),
@@ -175,7 +175,7 @@ export default function HeartRate({ runs, unit }: Props) {
       cell: (info) => {
         const zone = info.row.original
         return zone.best ? (
-          <ActivityLink activityId={zone.best.activity.id} className="text-(--ink-2) no-underline">
+          <ActivityLink activityId={zone.best.activity.id} className="truncate max-w-50 inline-block">
             {zone.best.activity.name}
           </ActivityLink>
         ) : (

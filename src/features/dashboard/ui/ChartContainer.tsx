@@ -4,6 +4,10 @@
  * fires when the container isn't laid out yet (tab mounts, hidden
  * parents, etc.).
  *
+ * Two-pronged fix:
+ *  1. Defer rendering until the wrapper has positive dimensions (ResizeObserver).
+ *  2. Pass `initialDimension` so ResponsiveContainer never starts at {-1,-1}.
+ *
  *   <ChartContainer height={200}>
  *     <BarChart data={data}>…</BarChart>
  *   </ChartContainer>
@@ -20,22 +24,23 @@ type Props = {
 
 export default function ChartContainer({ children, height = 200, className = 'mt-3' }: Props) {
   const ref = useRef<HTMLDivElement>(null)
-  const [ready, setReady] = useState(false)
+  const [dims, setDims] = useState<{ width: number; height: number } | null>(null)
 
   useEffect(() => {
     const el = ref.current
     if (!el) return
 
-    // If already visible, render immediately.
+    // If already visible, capture dimensions immediately.
     if (el.clientWidth > 0 && el.clientHeight > 0) {
-      setReady(true)
+      setDims({ width: el.clientWidth, height: el.clientHeight })
       return
     }
 
     // Otherwise wait for layout via ResizeObserver.
     const observer = new ResizeObserver(([entry]) => {
-      if (entry.contentRect.width > 0 && entry.contentRect.height > 0) {
-        setReady(true)
+      const { width, height: h } = entry.contentRect
+      if (width > 0 && h > 0) {
+        setDims({ width, height: h })
         observer.disconnect()
       }
     })
@@ -45,8 +50,13 @@ export default function ChartContainer({ children, height = 200, className = 'mt
 
   return (
     <div ref={ref} className={className} style={{ height }}>
-      {ready && (
-        <ResponsiveContainer width="100%" height="100%" minWidth={0}>
+      {dims && (
+        <ResponsiveContainer
+          width="100%"
+          height="100%"
+          minWidth={0}
+          initialDimension={dims}
+        >
           {children}
         </ResponsiveContainer>
       )}

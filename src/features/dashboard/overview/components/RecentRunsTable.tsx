@@ -46,7 +46,7 @@ function buildColumns(unit: Unit) {
       id: 'date',
       header: 'Date',
       cell: (info) => (
-        <span className="text-(--ink-3) whitespace-nowrap">{formatDateShort(info.getValue())}</span>
+        <span className="font-mono tabular-nums text-(--ink-3) whitespace-nowrap">{formatDateShort(info.getValue())}</span>
       ),
     }),
     col.accessor('distanceMeters', {

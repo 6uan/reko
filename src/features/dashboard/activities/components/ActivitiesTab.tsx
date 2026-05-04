@@ -171,7 +171,7 @@ const COLUMNS = [
     sortingFn: (a, b) =>
       new Date(a.original.date).getTime() - new Date(b.original.date).getTime(),
     cell: (info) => (
-      <span className="text-(--ink-3) whitespace-nowrap">{formatDateShort(info.getValue())}</span>
+      <span className="font-mono tabular-nums text-(--ink-3) whitespace-nowrap">{formatDateShort(info.getValue())}</span>
     ),
   }),
   col.accessor('distanceMeters', {
@@ -346,7 +346,7 @@ export default function Activities({ activities, unit }: Props) {
   const hasChanges = hasActiveFilter || hasCustomCols
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="space-y-4">
       {/* Top bar — count + actions */}
       <div className="flex items-center justify-between">
         <p className="text-sm text-(--ink-3)">

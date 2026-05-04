@@ -143,7 +143,7 @@ export default function Records({ data, runs, unit }: Props) {
       header: 'Pace',
       cell: (info) => (
         <span className="font-mono tabular-nums text-(--ink-3)">
-          {formatPace(info.getValue())}{unitLabel}
+          {formatPace(info.getValue())} {unitLabel}
         </span>
       ),
     }),
@@ -151,7 +151,7 @@ export default function Records({ data, runs, unit }: Props) {
       id: 'activity',
       header: 'Activity',
       cell: (info) => (
-        <ActivityLink activityId={info.row.original.activityId} className="text-(--ink-2) no-underline">
+        <ActivityLink activityId={info.row.original.activityId} className="truncate max-w-50 inline-block">
           {info.getValue()}
         </ActivityLink>
       ),
@@ -181,7 +181,7 @@ export default function Records({ data, runs, unit }: Props) {
   )
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="space-y-4">
       {/* Podium for selected distance */}
       {podium.length > 0 ? (
         <Card className="p-5">
@@ -208,7 +208,7 @@ export default function Records({ data, runs, unit }: Props) {
                     {formatDuration(effort.elapsedTime)}
                   </div>
                   <div className="font-mono text-sm tabular-nums text-(--ink-3)">
-                    {formatPace(pace)}{unitLabel}
+                    {formatPace(pace)} {unitLabel}
                   </div>
                   <div className="text-sm text-(--ink-3) truncate max-w-full mt-1">
                     {effort.activityName}

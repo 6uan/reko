@@ -174,7 +174,7 @@ export default function CadenceTab({ runs, unit }: Props) {
       header: 'Pace',
       cell: (info) => (
         <span className="font-mono tabular-nums text-(--ink-3)">
-          {formatPace(info.getValue())}{unitLabel}
+          {formatPace(info.getValue())} {unitLabel}
         </span>
       ),
     }),
@@ -198,7 +198,7 @@ export default function CadenceTab({ runs, unit }: Props) {
   // ── Render ───────────────────────────────────────────────────
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="space-y-4">
       {/* KPIs */}
       <div className="grid grid-cols-2 lg:grid-cols-3 gap-2.5">
         <KpiCard
@@ -244,7 +244,7 @@ export default function CadenceTab({ runs, unit }: Props) {
                   dataKey="week"
                   axisLine={false}
                   tickLine={false}
-                  tick={{ fontSize: 11, fill: 'var(--ink-4)' }}
+                  tick={{ fontSize: 10, fill: 'var(--ink-4)' }}
                 />
                 <YAxis
                   domain={['dataMin - 3', 'dataMax + 3']}
