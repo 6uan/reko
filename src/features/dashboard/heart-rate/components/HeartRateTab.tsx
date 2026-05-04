@@ -10,9 +10,14 @@ import {
   formatWindow,
 } from '@/lib/heartRate'
 import KpiCard from '@/features/dashboard/ui/KpiCard'
+import {
+  createColumnHelper,
+  useReactTable,
+  getCoreRowModel,
+} from '@tanstack/react-table'
 import SectionHeader from '@/features/dashboard/ui/SectionHeader'
 import Card from '@/features/dashboard/ui/Card'
-import Th from '@/features/dashboard/ui/Th'
+import Table from '@/features/dashboard/ui/Table'
 import ColorDot from '@/features/dashboard/ui/ColorDot'
 import ZoneBar from '@/features/dashboard/ui/ZoneBar'
 import ActivityLink from '@/features/dashboard/ui/ActivityLink'
@@ -115,6 +120,96 @@ export default function HeartRate({ runs, unit }: Props) {
       pct: totalTime > 0 ? (totals[i] / totalTime) * 100 : 0,
     }))
   }, [runs])
+
+  type ZoneRow = (typeof activeZones)[number]
+  const zoneCol = createColumnHelper<ZoneRow>()
+
+  const zoneColumns = useMemo(() => [
+    zoneCol.accessor('name', {
+      id: 'zone',
+      header: 'Zone',
+      cell: (info) => (
+        <span className="flex items-center gap-2 font-medium text-(--ink)">
+          <ColorDot color={info.row.original.color} className="inline-block" />
+          {info.getValue()}
+        </span>
+      ),
+    }),
+    zoneCol.display({
+      id: 'hrRange',
+      header: 'HR range',
+      cell: (info) => (
+        <span className="font-mono tabular-nums text-(--ink-3)">{rangeLabel(info.row.original)}</span>
+      ),
+    }),
+    zoneCol.display({
+      id: 'bestPace',
+      header: 'Best pace',
+      cell: (info) => {
+        const zone = info.row.original
+        return zone.best ? (
+          <span className="font-mono tabular-nums text-(--accent) font-medium">
+            {formatPace(zone.best.pace)}
+            <span className="text-(--ink-3) font-normal ml-0.5">{unitLabel}</span>
+            <span className="text-(--ink-4) font-normal ml-1.5 text-xs">
+              {formatWindow(zone.best.windowSec)}
+            </span>
+          </span>
+        ) : (
+          <span className="text-(--ink-4)">—</span>
+        )
+      },
+    }),
+    zoneCol.accessor('avgPace', {
+      id: 'avgPace',
+      header: 'Avg pace',
+      cell: (info) => (
+        <span className="font-mono tabular-nums text-(--ink-3)">
+          {info.getValue() > 0 ? `${formatPace(info.getValue())}${unitLabel}` : '—'}
+        </span>
+      ),
+    }),
+    zoneCol.display({
+      id: 'bestRun',
+      header: 'Best run',
+      cell: (info) => {
+        const zone = info.row.original
+        return zone.best ? (
+          <ActivityLink activityId={zone.best.activity.id} className="text-(--ink-2) no-underline">
+            {zone.best.activity.name}
+          </ActivityLink>
+        ) : (
+          <span className="text-(--ink-3)">—</span>
+        )
+      },
+    }),
+    zoneCol.display({
+      id: 'date',
+      header: 'Date',
+      cell: (info) => {
+        const zone = info.row.original
+        return (
+          <span className="font-mono tabular-nums text-(--ink-3)">
+            {zone.best ? formatDate(zone.best.activity.date) : '—'}
+          </span>
+        )
+      },
+    }),
+    zoneCol.accessor('count', {
+      id: 'runs',
+      header: 'Runs',
+      meta: { align: 'right' },
+      cell: (info) => (
+        <span className="font-mono tabular-nums text-(--ink-3)">{info.getValue()}</span>
+      ),
+    }),
+  ], [unitLabel])
+
+  const zoneTable = useReactTable({
+    data: activeZones,
+    columns: zoneColumns,
+    getCoreRowModel: getCoreRowModel(),
+  })
 
   // ── Render ──────────────────────────────────────────────────────
 
@@ -223,73 +318,11 @@ export default function HeartRate({ runs, unit }: Props) {
       </Card>
 
       {/* Best pace per zone table — only zones with data */}
-      <Card className="overflow-hidden">
-        <div className="px-4 py-3 border-b border-(--line)">
-          <SectionHeader title="Best pace per zone" subtitle={`${activeZones.length} zones with data`} />
-        </div>
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse min-w-[600px]">
-            <thead>
-              <tr>
-                {['Zone', 'HR range', 'Best pace', 'Avg pace', 'Best run', 'Date', 'Runs'].map((h, i) => (
-                  <Th key={h} className={`px-4 ${i === 6 ? 'text-right' : 'text-left'}`}>
-                    {h}
-                  </Th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {activeZones.map((zone) => (
-                <tr key={zone.name}>
-                  <td className="px-4 py-3 border-b border-(--line-2) text-sm font-medium text-(--ink)">
-                    <span className="flex items-center gap-2">
-                      <ColorDot color={zone.color} className="inline-block" />
-                      {zone.name}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 border-b border-(--line-2) text-sm font-mono tabular-nums text-(--ink-3)">
-                    {rangeLabel(zone)}
-                  </td>
-                  <td className="px-4 py-3 border-b border-(--line-2) text-sm font-mono tabular-nums">
-                    {zone.best ? (
-                      <span className="text-(--accent) font-medium">
-                        {formatPace(zone.best.pace)}
-                        <span className="text-(--ink-3) font-normal ml-0.5">{unitLabel}</span>
-                        <span className="text-(--ink-4) font-normal ml-1.5 text-xs">
-                          {formatWindow(zone.best.windowSec)}
-                        </span>
-                      </span>
-                    ) : (
-                      <span className="text-(--ink-4)">—</span>
-                    )}
-                  </td>
-                  <td className="px-4 py-3 border-b border-(--line-2) text-sm font-mono tabular-nums text-(--ink-3)">
-                    {zone.avgPace > 0 ? `${formatPace(zone.avgPace)}${unitLabel}` : '—'}
-                  </td>
-                  <td className="px-4 py-3 border-b border-(--line-2) text-sm text-(--ink-3)">
-                    {zone.best ? (
-                      <ActivityLink
-                        activityId={zone.best.activity.id}
-                        className="text-(--ink-2) no-underline"
-                      >
-                        {zone.best.activity.name}
-                      </ActivityLink>
-                    ) : (
-                      '—'
-                    )}
-                  </td>
-                  <td className="px-4 py-3 border-b border-(--line-2) text-sm font-mono tabular-nums text-(--ink-3)">
-                    {zone.best ? formatDate(zone.best.activity.date) : '—'}
-                  </td>
-                  <td className="px-4 py-3 border-b border-(--line-2) text-sm font-mono tabular-nums text-(--ink-3) text-right">
-                    {zone.count}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </Card>
+      <Table
+        table={zoneTable}
+        title="Best pace per zone"
+        subtitle={`${activeZones.length} zones with data`}
+      />
     </div>
   )
 }

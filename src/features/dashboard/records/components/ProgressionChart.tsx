@@ -11,13 +11,13 @@ import {
   CartesianGrid,
   Line,
   LineChart,
-  ResponsiveContainer,
   Tooltip,
   type TooltipContentProps,
   XAxis,
   YAxis,
 } from 'recharts'
 import { formatDuration } from '@/lib/strava'
+import ChartContainer from '@/features/dashboard/ui/ChartContainer'
 import type { DistanceRecord } from '@/features/dashboard/records/distances'
 import { parseLocalDate, formatDate } from '@/lib/dates'
 
@@ -114,77 +114,75 @@ export default function ProgressionChart({ distances }: Props) {
           % above all-time best per distance
         </span>
       </div>
-      <div style={{ width: '100%', height: 280 }}>
-        <ResponsiveContainer width="100%" height="100%" minWidth={0}>
-          <LineChart
-            data={chartData}
-            margin={{ top: 8, right: 16, bottom: 8, left: 4 }}
-          >
-            <CartesianGrid
-              stroke="var(--line-2)"
-              strokeDasharray="2 4"
-              vertical={false}
-            />
-            <XAxis
-              dataKey="ts"
-              type="number"
-              domain={['dataMin', 'dataMax']}
-              scale="time"
-              tickFormatter={(t: number) => {
-                const d = new Date(t)
-                return `${d.toLocaleDateString('en', {
-                  month: 'short',
-                })} '${String(d.getFullYear()).slice(2)}`
+      <ChartContainer height={280} className="">
+        <LineChart
+          data={chartData}
+          margin={{ top: 8, right: 16, bottom: 8, left: 4 }}
+        >
+          <CartesianGrid
+            stroke="var(--line-2)"
+            strokeDasharray="2 4"
+            vertical={false}
+          />
+          <XAxis
+            dataKey="ts"
+            type="number"
+            domain={['dataMin', 'dataMax']}
+            scale="time"
+            tickFormatter={(t: number) => {
+              const d = new Date(t)
+              return `${d.toLocaleDateString('en', {
+                month: 'short',
+              })} '${String(d.getFullYear()).slice(2)}`
+            }}
+            stroke="var(--line)"
+            tickLine={false}
+            tick={{
+              fontFamily: 'var(--font-mono)',
+              fontSize: 10,
+              fill: 'var(--ink-4)',
+            }}
+            minTickGap={48}
+          />
+          <YAxis
+            tickFormatter={(v: number) =>
+              v < 0.05 ? 'PR' : `+${v.toFixed(0)}%`
+            }
+            stroke="var(--line)"
+            tickLine={false}
+            reversed
+            tick={{
+              fontFamily: 'var(--font-mono)',
+              fontSize: 10,
+              fill: 'var(--ink-4)',
+            }}
+            width={42}
+          />
+          <Tooltip
+            content={renderTooltip}
+            cursor={{ stroke: 'var(--line)', strokeDasharray: '2 4' }}
+          />
+          {withTrend.map((d) => (
+            <Line
+              key={d.key}
+              type="monotone"
+              dataKey={d.key}
+              name={d.label}
+              stroke={DISTANCE_COLORS[d.key] ?? 'var(--ink-3)'}
+              strokeWidth={1.8}
+              dot={{
+                r: 3,
+                fill: 'var(--card)',
+                strokeWidth: 1.8,
+                stroke: DISTANCE_COLORS[d.key] ?? 'var(--ink-3)',
               }}
-              stroke="var(--line)"
-              tickLine={false}
-              tick={{
-                fontFamily: 'var(--font-mono)',
-                fontSize: 10,
-                fill: 'var(--ink-4)',
-              }}
-              minTickGap={48}
+              activeDot={{ r: 5 }}
+              connectNulls
+              isAnimationActive={false}
             />
-            <YAxis
-              tickFormatter={(v: number) =>
-                v < 0.05 ? 'PR' : `+${v.toFixed(0)}%`
-              }
-              stroke="var(--line)"
-              tickLine={false}
-              reversed
-              tick={{
-                fontFamily: 'var(--font-mono)',
-                fontSize: 10,
-                fill: 'var(--ink-4)',
-              }}
-              width={42}
-            />
-            <Tooltip
-              content={renderTooltip}
-              cursor={{ stroke: 'var(--line)', strokeDasharray: '2 4' }}
-            />
-            {withTrend.map((d) => (
-              <Line
-                key={d.key}
-                type="monotone"
-                dataKey={d.key}
-                name={d.label}
-                stroke={DISTANCE_COLORS[d.key] ?? 'var(--ink-3)'}
-                strokeWidth={1.8}
-                dot={{
-                  r: 3,
-                  fill: 'var(--card)',
-                  strokeWidth: 1.8,
-                  stroke: DISTANCE_COLORS[d.key] ?? 'var(--ink-3)',
-                }}
-                activeDot={{ r: 5 }}
-                connectNulls
-                isAnimationActive={false}
-              />
-            ))}
-          </LineChart>
-        </ResponsiveContainer>
-      </div>
+          ))}
+        </LineChart>
+      </ChartContainer>
       <div className="flex gap-4 flex-wrap text-detail mt-3">
         {withTrend.map((d) => (
           <span

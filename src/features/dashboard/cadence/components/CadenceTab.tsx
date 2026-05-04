@@ -7,18 +7,24 @@ import {
   XAxis,
   YAxis,
   Tooltip,
-  ResponsiveContainer,
   ReferenceLine,
 } from 'recharts'
 import { formatPace } from '@/lib/strava'
 import { paceForUnit, avg, paceUnit, type Activity, type Unit } from '@/lib/activities'
 import { formatDate, getMonday } from '@/lib/dates'
 import KpiCard from '@/features/dashboard/ui/KpiCard'
+import {
+  createColumnHelper,
+  useReactTable,
+  getCoreRowModel,
+} from '@tanstack/react-table'
 import SectionHeader from '@/features/dashboard/ui/SectionHeader'
 import EmptyState from '@/features/dashboard/ui/EmptyState'
 import Card from '@/features/dashboard/ui/Card'
+import ChartContainer from '@/features/dashboard/ui/ChartContainer'
 import ChartTooltip from '@/features/dashboard/ui/ChartTooltip'
-import Th from '@/features/dashboard/ui/Th'
+import Table from '@/features/dashboard/ui/Table'
+import ActivityLink from '@/features/dashboard/ui/ActivityLink'
 import ZoneBar from '@/features/dashboard/ui/ZoneBar'
 
 type Props = { runs: Activity[]; unit: Unit }
@@ -142,6 +148,53 @@ export default function CadenceTab({ runs, unit }: Props) {
     [withCadence],
   )
 
+  const cadCol = createColumnHelper<Activity>()
+
+  const cadenceColumns = useMemo(() => [
+    cadCol.accessor('name', {
+      id: 'name',
+      header: 'Activity',
+      cell: (info) => (
+        <ActivityLink activityId={info.row.original.id} className="truncate max-w-50 inline-block">
+          {info.getValue()}
+        </ActivityLink>
+      ),
+    }),
+    cadCol.accessor('cadence', {
+      id: 'cadence',
+      header: 'Cadence',
+      cell: (info) => (
+        <span className="font-mono tabular-nums text-(--ink)">
+          {info.getValue()}<span className="text-(--ink-3) ml-0.5">spm</span>
+        </span>
+      ),
+    }),
+    cadCol.accessor((r) => paceForUnit(r.avgSpeed, unit), {
+      id: 'pace',
+      header: 'Pace',
+      cell: (info) => (
+        <span className="font-mono tabular-nums text-(--ink-3)">
+          {formatPace(info.getValue())}{unitLabel}
+        </span>
+      ),
+    }),
+    cadCol.accessor('date', {
+      id: 'date',
+      header: 'Date',
+      cell: (info) => (
+        <span className="font-mono tabular-nums text-(--ink-3)">
+          {formatDate(info.getValue())}
+        </span>
+      ),
+    }),
+  ], [unit, unitLabel])
+
+  const cadenceTable = useReactTable({
+    data: recentRuns,
+    columns: cadenceColumns,
+    getCoreRowModel: getCoreRowModel(),
+  })
+
   // ── Render ───────────────────────────────────────────────────
 
   return (
@@ -184,87 +237,83 @@ export default function CadenceTab({ runs, unit }: Props) {
         {/* Trend chart */}
         <Card className="p-4">
           <SectionHeader title="Weekly avg cadence" subtitle="All time" />
-          <div className="mt-3 h-[200px]">
-            {trendData.length > 1 ? (
-              <ResponsiveContainer width="100%" height="100%" minWidth={0}>
-                <LineChart data={trendData} margin={{ top: 4, right: 4, bottom: 0, left: 0 }}>
-                  <XAxis
-                    dataKey="week"
-                    axisLine={false}
-                    tickLine={false}
-                    tick={{ fontSize: 11, fill: 'var(--ink-4)' }}
-                  />
-                  <YAxis
-                    domain={['dataMin - 3', 'dataMax + 3']}
-                    axisLine={false}
-                    tickLine={false}
-                    tick={{ fontSize: 10, fill: 'var(--ink-4)' }}
-                    width={42}
-                  />
-                  <Tooltip content={<TrendTooltip />} cursor={{ stroke: 'var(--line)', strokeDasharray: '4 4' }} />
-                  <Line
-                    type="monotone"
-                    dataKey="avg"
-                    stroke="var(--accent)"
-                    strokeWidth={2}
-                    dot={{ r: 4, fill: 'var(--accent)', strokeWidth: 0 }}
-                    activeDot={{ r: 6, fill: 'var(--accent)', strokeWidth: 2, stroke: 'var(--card)' }}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            ) : (
-              <EmptyState>Not enough data yet</EmptyState>
-            )}
-          </div>
+          {trendData.length > 1 ? (
+            <ChartContainer>
+              <LineChart data={trendData} margin={{ top: 4, right: 4, bottom: 0, left: 0 }}>
+                <XAxis
+                  dataKey="week"
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ fontSize: 11, fill: 'var(--ink-4)' }}
+                />
+                <YAxis
+                  domain={['dataMin - 3', 'dataMax + 3']}
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ fontSize: 10, fill: 'var(--ink-4)' }}
+                  width={42}
+                />
+                <Tooltip content={<TrendTooltip />} cursor={{ stroke: 'var(--line)', strokeDasharray: '4 4' }} />
+                <Line
+                  type="monotone"
+                  dataKey="avg"
+                  stroke="var(--accent)"
+                  strokeWidth={2}
+                  dot={{ r: 4, fill: 'var(--accent)', strokeWidth: 0 }}
+                  activeDot={{ r: 6, fill: 'var(--accent)', strokeWidth: 2, stroke: 'var(--card)' }}
+                />
+              </LineChart>
+            </ChartContainer>
+          ) : (
+            <EmptyState>Not enough data yet</EmptyState>
+          )}
         </Card>
 
         {/* Scatter: cadence vs pace */}
         <Card className="p-4">
           <SectionHeader title="Cadence vs pace" subtitle="Each dot = one run" />
-          <div className="mt-3 h-[200px]">
-            {scatterData.length >= 2 ? (
-              <ResponsiveContainer width="100%" height="100%" minWidth={0}>
-                <ScatterChart margin={{ top: 4, right: 4, bottom: 0, left: 0 }}>
-                  <XAxis
-                    dataKey="pace"
-                    type="number"
-                    reversed
-                    domain={['dataMin - 10', 'dataMax + 10']}
-                    axisLine={false}
-                    tickLine={false}
-                    tick={{ fontSize: 10, fill: 'var(--ink-4)' }}
-                    tickFormatter={(v: number) => formatPace(v)}
-                    name="Pace"
+          {scatterData.length >= 2 ? (
+            <ChartContainer>
+              <ScatterChart margin={{ top: 4, right: 4, bottom: 0, left: 0 }}>
+                <XAxis
+                  dataKey="pace"
+                  type="number"
+                  reversed
+                  domain={['dataMin - 10', 'dataMax + 10']}
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ fontSize: 10, fill: 'var(--ink-4)' }}
+                  tickFormatter={(v: number) => formatPace(v)}
+                  name="Pace"
+                />
+                <YAxis
+                  dataKey="cadence"
+                  type="number"
+                  domain={['dataMin - 4', 'dataMax + 4']}
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ fontSize: 10, fill: 'var(--ink-4)' }}
+                  width={42}
+                  name="Cadence"
+                />
+                <Tooltip content={<ScatterTooltip unitLabel={unitLabel} />} cursor={{ stroke: 'var(--line)', strokeDasharray: '4 4' }} />
+                <Scatter data={scatterData} fill="var(--accent)" opacity={0.7} r={4} />
+                {regressionLine && (
+                  <ReferenceLine
+                    segment={[
+                      { x: regressionLine[0].pace, y: regressionLine[0].cadence },
+                      { x: regressionLine[1].pace, y: regressionLine[1].cadence },
+                    ] as const}
+                    stroke="var(--ink-4)"
+                    strokeWidth={1.5}
+                    strokeDasharray="6 4"
                   />
-                  <YAxis
-                    dataKey="cadence"
-                    type="number"
-                    domain={['dataMin - 4', 'dataMax + 4']}
-                    axisLine={false}
-                    tickLine={false}
-                    tick={{ fontSize: 10, fill: 'var(--ink-4)' }}
-                    width={42}
-                    name="Cadence"
-                  />
-                  <Tooltip content={<ScatterTooltip unitLabel={unitLabel} />} cursor={{ stroke: 'var(--line)', strokeDasharray: '4 4' }} />
-                  <Scatter data={scatterData} fill="var(--accent)" opacity={0.7} r={4} />
-                  {regressionLine && (
-                    <ReferenceLine
-                      segment={[
-                        { x: regressionLine[0].pace, y: regressionLine[0].cadence },
-                        { x: regressionLine[1].pace, y: regressionLine[1].cadence },
-                      ] as const}
-                      stroke="var(--ink-4)"
-                      strokeWidth={1.5}
-                      strokeDasharray="6 4"
-                    />
-                  )}
-                </ScatterChart>
-              </ResponsiveContainer>
-            ) : (
-              <EmptyState>Not enough data yet</EmptyState>
-            )}
-          </div>
+                )}
+              </ScatterChart>
+            </ChartContainer>
+          ) : (
+            <EmptyState>Not enough data yet</EmptyState>
+          )}
         </Card>
       </div>
 
@@ -288,51 +337,12 @@ export default function CadenceTab({ runs, unit }: Props) {
       </Card>
 
       {/* Recent runs */}
-      <Card className="overflow-hidden">
-        <div className="px-4 py-3 border-b border-(--line)">
-          <SectionHeader title="Recent runs" subtitle="Latest 20 with cadence data" />
-        </div>
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse min-w-[600px]">
-            <thead>
-              <tr>
-                {['Activity', 'Cadence', 'Pace', 'Date'].map((h) => (
-                  <Th key={h}>{h}</Th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {recentRuns.map((run) => {
-                const pace = paceForUnit(run.avgSpeed, unit)
-                return (
-                  <tr key={run.id}>
-                    <td className="px-4 py-3 border-b border-(--line-2) text-sm font-medium text-(--ink)">
-                      {run.name}
-                    </td>
-                    <td className="px-4 py-3 border-b border-(--line-2) text-sm font-mono tabular-nums text-(--ink)">
-                      {run.cadence}
-                      <span className="text-(--ink-3) ml-0.5">spm</span>
-                    </td>
-                    <td className="px-4 py-3 border-b border-(--line-2) text-sm font-mono tabular-nums text-(--ink-3)">
-                      {formatPace(pace)}{unitLabel}
-                    </td>
-                    <td className="px-4 py-3 border-b border-(--line-2) text-sm font-mono tabular-nums text-(--ink-3)">
-                      {formatDate(run.date)}
-                    </td>
-                  </tr>
-                )
-              })}
-              {recentRuns.length === 0 && (
-                <tr>
-                  <td colSpan={4} className="px-3 py-6 text-center text-sm text-(--ink-3)">
-                    No runs with cadence data
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      </Card>
+      <Table
+        table={cadenceTable}
+        title="Recent runs"
+        subtitle="Latest 20 with cadence data"
+        emptyMessage="No runs with cadence data"
+      />
     </div>
   )
 }

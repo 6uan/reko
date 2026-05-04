@@ -1,4 +1,13 @@
 import { useState, useMemo, useRef, useEffect } from 'react'
+import {
+  createColumnHelper,
+  useReactTable,
+  getCoreRowModel,
+  getSortedRowModel,
+  type SortingState,
+  type VisibilityState,
+  type RowData,
+} from '@tanstack/react-table'
 import { formatPace, formatDuration } from '@/lib/strava'
 import {
   activityKind,
@@ -11,8 +20,21 @@ import {
   type Unit,
 } from '@/lib/activities'
 import { formatDateShort } from '@/lib/dates'
-import Card from '@/features/dashboard/ui/Card'
+import Table from '@/features/dashboard/ui/Table'
 import ActivityLink from '@/features/dashboard/ui/ActivityLink'
+
+// ── Table meta (display-only state, not sort-affecting) ───────────
+
+type TableMeta = { unit: Unit; unitLabel: string; paceLabel: string }
+
+declare module '@tanstack/react-table' {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  interface TableMeta<TData extends RowData> {
+    unit: Unit
+    unitLabel: string
+    paceLabel: string
+  }
+}
 
 type Props = {
   activities: Activity[]
@@ -58,160 +80,226 @@ function applyFilter(list: Activity[], filter: FilterKey) {
   }
 }
 
-// ── Sort ───────────────────────────────────────────────────────────
-
-type SortCol =
-  | 'name' | 'date' | 'distance' | 'time' | 'pace'
-  | 'avgHr' | 'maxHr' | 'cadence' | 'elevation'
-  | '1k' | '1 mile' | '5k' | '10k' | 'Half-Marathon' | 'Marathon'
-
-type SortDir = 'asc' | 'desc'
-
-/**
- * Natural "first click" direction per column.
- * - Best effort times + pace: fastest (lowest) first → asc
- * - Name: alphabetical → asc
- * - Everything else (date, distance, HR, etc.): biggest first → desc
- */
-const DEFAULT_DIR: Partial<Record<SortCol, SortDir>> = {
-  name: 'asc',
-  pace: 'asc',
-  '1k': 'asc',
-  '1 mile': 'asc',
-  '5k': 'asc',
-  '10k': 'asc',
-  'Half-Marathon': 'asc',
-  'Marathon': 'asc',
-}
-
-function effortVal(
-  run: Activity,
-  key: keyof BestEffortTimes,
-  showComputed: boolean,
-): number {
-  const t = showComputed
-    ? (run.bestEfforts[key] ?? run.derivedBestEfforts[key])
-    : run.bestEfforts[key]
-  return t ?? Infinity
-}
-
-function sortRuns(
-  runs: Activity[],
-  col: SortCol,
-  dir: SortDir,
-  unit: Unit,
-  showComputed: boolean,
-) {
-  const sorted = [...runs]
-  const m = dir === 'asc' ? 1 : -1
-  sorted.sort((a, b) => {
-    switch (col) {
-      case 'name': return m * a.name.localeCompare(b.name)
-      case 'date': return m * (new Date(a.date).getTime() - new Date(b.date).getTime())
-      case 'distance': return m * (a.distanceMeters - b.distanceMeters)
-      case 'time': return m * (a.movingTime - b.movingTime)
-      case 'pace': return m * (paceForUnit(a.avgSpeed, unit) - paceForUnit(b.avgSpeed, unit))
-      case 'avgHr': return m * ((a.avgHr ?? 0) - (b.avgHr ?? 0))
-      case 'maxHr': return m * ((a.maxHr ?? 0) - (b.maxHr ?? 0))
-      case 'cadence': return m * ((a.cadence ?? 0) - (b.cadence ?? 0))
-      case 'elevation': return m * (a.elevation - b.elevation)
-      case '1k': case '1 mile': case '5k': case '10k': case 'Half-Marathon': case 'Marathon':
-        return m * (effortVal(a, col, showComputed) - effortVal(b, col, showComputed))
-      default: return 0
-    }
-  })
-  return sorted
-}
-
 // ── Column config ──────────────────────────────────────────────────
 
-type ColDef = {
-  key: SortCol
-  label: string
-  align: 'left' | 'right' | 'center'
-  /** Whether the column is fixed (always visible, not toggleable). */
-  fixed?: boolean
-  /** Whether the column is on by default. */
-  defaultOn?: boolean
-}
+type ColKey =
+  | 'name' | 'date' | 'distance' | 'time' | 'pace'
+  | 'avgHr' | 'maxHr' | 'cadence' | 'elevation'
+  | '1k' | '1mile' | '5k' | '10k' | 'halfMarathon' | 'marathon'
 
-const COLUMNS: ColDef[] = [
-  { key: 'name', label: 'Activity', align: 'left', fixed: true },
-  { key: 'date', label: 'Date', align: 'left', fixed: true },
-  { key: 'distance', label: 'Distance', align: 'right', fixed: true },
-  { key: 'time', label: 'Time', align: 'right', fixed: true },
-  { key: 'pace', label: 'Pace', align: 'right', fixed: true },
-  { key: 'avgHr', label: 'Avg HR', align: 'right', defaultOn: true },
-  { key: 'maxHr', label: 'Max HR', align: 'right', defaultOn: false },
-  { key: 'cadence', label: 'Cadence', align: 'right', defaultOn: true },
-  { key: '1k', label: '1K', align: 'right', defaultOn: true },
-  { key: '1 mile', label: 'Mile', align: 'right', defaultOn: true },
-  { key: '5k', label: '5K', align: 'right', defaultOn: true },
-  { key: '10k', label: '10K', align: 'right', defaultOn: false },
-  { key: 'Half-Marathon', label: 'Half Marathon', align: 'right', defaultOn: false },
-  { key: 'Marathon', label: 'Marathon', align: 'right', defaultOn: false },
-  { key: 'elevation', label: 'Elevation', align: 'right', defaultOn: false },
+type ToggleableDef = { key: ColKey; label: string; defaultOn: boolean }
+
+const TOGGLEABLE_COLS: ToggleableDef[] = [
+  { key: 'avgHr', label: 'Avg HR', defaultOn: true },
+  { key: 'maxHr', label: 'Max HR', defaultOn: false },
+  { key: 'cadence', label: 'Cadence', defaultOn: true },
+  { key: '1k', label: '1K', defaultOn: true },
+  { key: '1mile', label: 'Mile', defaultOn: true },
+  { key: '5k', label: '5K', defaultOn: true },
+  { key: '10k', label: '10K', defaultOn: false },
+  { key: 'halfMarathon', label: 'Half Marathon', defaultOn: false },
+  { key: 'marathon', label: 'Marathon', defaultOn: false },
+  { key: 'elevation', label: 'Elevation', defaultOn: false },
 ]
 
-/** Toggleable columns — everything not fixed. */
-const TOGGLEABLE_COLS = COLUMNS.filter((c) => !c.fixed)
-
-/** Default set of visible toggleable column keys. */
-const DEFAULT_VISIBLE = new Set(
-  TOGGLEABLE_COLS.filter((c) => c.defaultOn).map((c) => c.key),
+const DEFAULT_VISIBILITY: VisibilityState = Object.fromEntries(
+  TOGGLEABLE_COLS.map((c) => [c.key, c.defaultOn]),
 )
+
+// ── Effort key mapping ────────────────────────────────────────────
+
+const EFFORT_KEYS = ['1k', '1mile', '5k', '10k', 'halfMarathon', 'marathon'] as const
+type EffortColKey = (typeof EFFORT_KEYS)[number]
+
+const EFFORT_KEY_MAP: Record<EffortColKey, keyof BestEffortTimes> = {
+  '1k': '1k',
+  '1mile': '1 mile',
+  '5k': '5k',
+  '10k': '10k',
+  halfMarathon: 'Half-Marathon',
+  marathon: 'Marathon',
+}
+
+// ── Pre-resolved effort value per row ─────────────────────────────
+
+type ResolvedEffort = { time: number; isComputed: boolean } | undefined
+type EffortValues = Record<EffortColKey, ResolvedEffort>
+
+type TableRow = Activity & { _efforts: EffortValues }
+
+function resolveEfforts(run: Activity, showComputed: boolean): EffortValues {
+  const out = {} as EffortValues
+  for (const colKey of EFFORT_KEYS) {
+    const effortKey = EFFORT_KEY_MAP[colKey]
+    const strava = run.bestEfforts[effortKey]
+    if (strava != null) {
+      out[colKey] = { time: strava, isComputed: false }
+    } else if (showComputed) {
+      const derived = run.derivedBestEfforts[effortKey]
+      out[colKey] = derived != null ? { time: derived, isComputed: true } : undefined
+    } else {
+      out[colKey] = undefined
+    }
+  }
+  return out
+}
+
+// ── Column definitions (stable — no external state in closures) ───
+
+const col = createColumnHelper<TableRow>()
+
+/**
+ * Columns are defined once. Accessors use raw numeric values (sort-
+ * correct regardless of unit). Cell renderers read `unit` from
+ * table.options.meta for display formatting.
+ */
+const COLUMNS = [
+  col.accessor('name', {
+    id: 'name',
+    header: 'Activity',
+    meta: { align: 'left' },
+    cell: (info) => (
+      <ActivityLink activityId={info.row.original.id} className="truncate max-w-50 inline-block">
+        {info.getValue()}
+      </ActivityLink>
+    ),
+  }),
+  col.accessor('date', {
+    id: 'date',
+    header: 'Date',
+    meta: { align: 'left' },
+    sortingFn: (a, b) =>
+      new Date(a.original.date).getTime() - new Date(b.original.date).getTime(),
+    cell: (info) => (
+      <span className="text-(--ink-3) whitespace-nowrap">{formatDateShort(info.getValue())}</span>
+    ),
+  }),
+  col.accessor('distanceMeters', {
+    id: 'distance',
+    header: 'Distance',
+    meta: { align: 'right' },
+    cell: (info) => {
+      const { unit, unitLabel } = info.table.options.meta as TableMeta
+      return (
+        <span className="font-mono tabular-nums">
+          {toDisplayDistance(info.getValue(), unit)} {unitLabel}
+        </span>
+      )
+    },
+  }),
+  col.accessor('movingTime', {
+    id: 'time',
+    header: 'Time',
+    meta: { align: 'right' },
+    cell: (info) => (
+      <span className="font-mono tabular-nums">{formatDuration(info.getValue())}</span>
+    ),
+  }),
+  // Accessor uses raw avgSpeed (higher = faster). Sort descending
+  // on first click so fastest appears first.
+  col.accessor('avgSpeed', {
+    id: 'pace',
+    header: 'Pace',
+    meta: { align: 'right' },
+    sortDescFirst: true,
+    cell: (info) => {
+      const { unit, paceLabel } = info.table.options.meta as TableMeta
+      return (
+        <span className="font-mono tabular-nums">
+          {formatPace(paceForUnit(info.getValue(), unit))} {paceLabel}
+        </span>
+      )
+    },
+  }),
+  col.accessor('avgHr', {
+    id: 'avgHr',
+    header: 'Avg HR',
+    meta: { align: 'right' },
+    sortUndefined: 'last',
+    cell: (info) => <Mono value={info.getValue()} />,
+  }),
+  col.accessor('maxHr', {
+    id: 'maxHr',
+    header: 'Max HR',
+    meta: { align: 'right' },
+    sortUndefined: 'last',
+    cell: (info) => <Mono value={info.getValue()} />,
+  }),
+  col.accessor('cadence', {
+    id: 'cadence',
+    header: 'Cadence',
+    meta: { align: 'right' },
+    sortUndefined: 'last',
+    cell: (info) => <Mono value={info.getValue()} />,
+  }),
+  // Best-effort columns — read from pre-resolved _efforts
+  ...EFFORT_KEYS.map((key) =>
+    col.accessor((r) => r._efforts[key]?.time, {
+      id: key,
+      header: TOGGLEABLE_COLS.find((c) => c.key === key)!.label,
+      meta: { align: 'right' },
+      sortUndefined: 'last',
+      sortDescFirst: false,
+      cell: (info) => {
+        const effort = info.row.original._efforts[key]
+        if (!effort) return <span className="text-(--ink-4)">—</span>
+        const borderColor = effort.isComputed ? 'border-(--line)' : 'border-transparent'
+        return (
+          <span className={`inline-block font-mono tabular-nums border ${borderColor} rounded-(--radius-s) px-2 py-0.5`}>
+            {formatDuration(effort.time)}
+          </span>
+        )
+      },
+    }),
+  ),
+  col.accessor('elevation', {
+    id: 'elevation',
+    header: 'Elevation',
+    meta: { align: 'right' },
+    cell: (info) => (
+      <span className="font-mono tabular-nums">{Math.round(info.getValue())}m</span>
+    ),
+  }),
+]
 
 // ── Component ──────────────────────────────────────────────────────
 
 export default function Activities({ activities, unit }: Props) {
   const [sportFilter, setSportFilter] = useState<SportFilter>('all')
   const [activeFilter, setActiveFilter] = useState<FilterKey>('all')
-  const [sortCol, setSortCol] = useState<SortCol>('date')
-  const [sortDir, setSortDir] = useState<SortDir>('desc')
-  const [visibleColKeys, setVisibleColKeys] = useState<Set<SortCol>>(
-    () => new Set(DEFAULT_VISIBLE),
-  )
+  const [sorting, setSorting] = useState<SortingState>([{ id: 'date', desc: true }])
+  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>(DEFAULT_VISIBILITY)
   const [filterOpen, setFilterOpen] = useState(false)
-  /** When true, splits Strava didn't provide are filled in with our
-   * sliding-window computation from the activity's streams. */
   const [showComputed, setShowComputed] = useState(false)
   const filterRef = useRef<HTMLDivElement>(null)
 
   // Draft state for the dropdown — only committed on Apply.
   const [draftSport, setDraftSport] = useState<SportFilter>(sportFilter)
   const [draftIntensity, setDraftIntensity] = useState<FilterKey>(activeFilter)
-  const [draftCols, setDraftCols] = useState<Set<SortCol>>(
-    () => new Set(visibleColKeys),
-  )
+  const [draftVisibility, setDraftVisibility] = useState<VisibilityState>(columnVisibility)
 
-  // Sync drafts when dropdown opens.
   function openFilter() {
     setDraftSport(sportFilter)
     setDraftIntensity(activeFilter)
-    setDraftCols(new Set(visibleColKeys))
+    setDraftVisibility({ ...columnVisibility })
     setFilterOpen(true)
   }
 
   function applyDraft() {
     setSportFilter(draftSport)
     setActiveFilter(draftIntensity)
-    setVisibleColKeys(new Set(draftCols))
+    setColumnVisibility({ ...draftVisibility })
     setFilterOpen(false)
   }
 
   function clearAll() {
     setDraftSport('all')
     setDraftIntensity('all')
-    setDraftCols(new Set(DEFAULT_VISIBLE))
+    setDraftVisibility({ ...DEFAULT_VISIBILITY })
   }
 
-  function toggleDraftCol(key: SortCol) {
-    setDraftCols((prev) => {
-      const next = new Set(prev)
-      if (next.has(key)) next.delete(key)
-      else next.add(key)
-      return next
-    })
+  function toggleDraftCol(key: ColKey) {
+    setDraftVisibility((prev) => ({ ...prev, [key]: !prev[key] }))
   }
 
   // Close filter dropdown on outside click.
@@ -226,59 +314,46 @@ export default function Activities({ activities, unit }: Props) {
     return () => document.removeEventListener('mousedown', handleClick)
   }, [filterOpen])
 
-  const bySport = useMemo(
-    () => applySportFilter(activities, sportFilter),
-    [activities, sportFilter],
+  // Pre-resolve effort values into new row objects.
+  // When `showComputed` changes, new objects → TanStack re-sorts.
+  const tableData = useMemo<TableRow[]>(() => {
+    const bySport = applySportFilter(activities, sportFilter)
+    const filtered = applyFilter(bySport, activeFilter)
+    return filtered.map((r) => ({ ...r, _efforts: resolveEfforts(r, showComputed) }))
+  }, [activities, sportFilter, activeFilter, showComputed])
+
+  // Unit passed via meta — cell renderers read it, columns stay stable.
+  const meta = useMemo<TableMeta>(
+    () => ({ unit, unitLabel: distanceUnit(unit), paceLabel: paceUnit(unit) }),
+    [unit],
   )
 
-  const filtered = useMemo(
-    () => applyFilter(bySport, activeFilter),
-    [bySport, activeFilter],
-  )
-
-  const sorted = useMemo(
-    () => sortRuns(filtered, sortCol, sortDir, unit, showComputed),
-    [filtered, sortCol, sortDir, unit, showComputed],
-  )
-
-  const visibleCols = useMemo(
-    () => COLUMNS.filter((c) => c.fixed || visibleColKeys.has(c.key)),
-    [visibleColKeys],
-  )
+  const table = useReactTable({
+    data: tableData,
+    columns: COLUMNS,
+    meta,
+    state: { sorting, columnVisibility },
+    onSortingChange: setSorting,
+    onColumnVisibilityChange: setColumnVisibility,
+    getCoreRowModel: getCoreRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+  })
 
   const hasActiveFilter = sportFilter !== 'all' || activeFilter !== 'all'
-  const hasCustomCols = (() => {
-    if (visibleColKeys.size !== DEFAULT_VISIBLE.size) return true
-    for (const k of DEFAULT_VISIBLE) {
-      if (!visibleColKeys.has(k)) return true
-    }
-    return false
-  })()
+  const hasCustomCols = Object.entries(columnVisibility).some(
+    ([k, v]) => DEFAULT_VISIBILITY[k] !== v,
+  )
   const hasChanges = hasActiveFilter || hasCustomCols
-
-  function handleSort(col: SortCol) {
-    if (col === sortCol) {
-      setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'))
-    } else {
-      setSortCol(col)
-      setSortDir(DEFAULT_DIR[col] ?? 'desc')
-    }
-  }
-
-  const unitLabel = distanceUnit(unit)
-  const paceLabel = paceUnit(unit)
 
   return (
     <div className="flex flex-col gap-4">
       {/* Top bar — count + actions */}
       <div className="flex items-center justify-between">
         <p className="text-sm text-(--ink-3)">
-          {filtered.length} {filtered.length === 1 ? 'activity' : 'activities'}
+          {tableData.length} {tableData.length === 1 ? 'activity' : 'activities'}
         </p>
 
         <div className="flex gap-2">
-          {/* Estimated-splits toggle: fills missing splits using our
-              sliding-window computation over the activity's streams. */}
           <button
             type="button"
             onClick={() => setShowComputed((v) => !v)}
@@ -311,11 +386,8 @@ export default function Activities({ activities, unit }: Props) {
                 <div className="flex divide-x divide-(--line)">
                   {/* Left column — Sport + Intensity */}
                   <div className="w-48 py-2">
-                    {/* Sport */}
                     <div className="px-3 py-1.5">
-                      <span className="text-eyebrow">
-                        Sport
-                      </span>
+                      <span className="text-eyebrow">Sport</span>
                     </div>
                     {SPORT_OPTIONS.map((s) => (
                       <button
@@ -334,11 +406,8 @@ export default function Activities({ activities, unit }: Props) {
 
                     <div className="my-1.5 border-t border-(--line)" />
 
-                    {/* Intensity */}
                     <div className="px-3 py-1.5">
-                      <span className="text-eyebrow">
-                        Intensity
-                      </span>
+                      <span className="text-eyebrow">Intensity</span>
                     </div>
                     {INTENSITY_OPTIONS.map((f) => (
                       <button
@@ -359,18 +428,16 @@ export default function Activities({ activities, unit }: Props) {
                   {/* Right column — Columns (2-col grid) */}
                   <div className="w-64 py-2">
                     <div className="px-3 py-1.5">
-                      <span className="text-eyebrow">
-                        Columns
-                      </span>
+                      <span className="text-eyebrow">Columns</span>
                     </div>
                     <div className="grid grid-cols-2 gap-x-1">
-                      {TOGGLEABLE_COLS.map((col) => {
-                        const checked = draftCols.has(col.key)
+                      {TOGGLEABLE_COLS.map((c) => {
+                        const checked = draftVisibility[c.key] !== false
                         return (
                           <button
-                            key={col.key}
+                            key={c.key}
                             type="button"
-                            onClick={() => toggleDraftCol(col.key)}
+                            onClick={() => toggleDraftCol(c.key)}
                             className="flex items-center gap-2 px-3 py-1.5 text-sm cursor-pointer transition-colors text-(--ink-2) hover:bg-(--bg-2) rounded"
                           >
                             <span
@@ -388,15 +455,11 @@ export default function Activities({ activities, unit }: Props) {
                                   strokeWidth={3}
                                   stroke="currentColor"
                                 >
-                                  <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    d="m4.5 12.75 6 6 9-13.5"
-                                  />
+                                  <path strokeLinecap="round" strokeLinejoin="round" d="m4.5 12.75 6 6 9-13.5" />
                                 </svg>
                               )}
                             </span>
-                            <span className="truncate">{col.label}</span>
+                            <span className="truncate">{c.label}</span>
                           </button>
                         )
                       })}
@@ -435,163 +498,12 @@ export default function Activities({ activities, unit }: Props) {
       </div>
 
       {/* Table */}
-      <Card className="overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="bg-(--card-2) text-(--ink-4) text-left">
-                {visibleCols.map((col) => (
-                  <th
-                    key={col.key}
-                    onClick={() => handleSort(col.key)}
-                    className={`px-4 py-2 font-medium cursor-pointer select-none hover:text-(--ink-2) transition-colors whitespace-nowrap ${
-                      col.align === 'right'
-                        ? 'text-right'
-                        : col.align === 'center'
-                          ? 'text-center'
-                          : 'text-left'
-                    }`}
-                  >
-                    {col.label}
-                    {sortCol === col.key && (
-                      <span className="ml-1 text-(--accent)">
-                        {sortDir === 'asc' ? '↑' : '↓'}
-                      </span>
-                    )}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {sorted.map((run) => (
-                <tr
-                  key={run.id}
-                  className="border-t border-(--line) hover:bg-(--bg-2) transition-colors"
-                >
-                  {visibleCols.map((col) => (
-                    <td
-                      key={col.key}
-                      className={`px-4 py-3 ${
-                        col.align === 'right'
-                          ? 'text-right'
-                          : col.align === 'center'
-                            ? 'text-center'
-                            : 'text-left'
-                      }`}
-                    >
-                      <Cell run={run} col={col.key} unit={unit} unitLabel={unitLabel} paceLabel={paceLabel} showComputed={showComputed} />
-                    </td>
-                  ))}
-                </tr>
-              ))}
-              {sorted.length === 0 && (
-                <tr>
-                  <td
-                    colSpan={visibleCols.length}
-                    className="px-4 py-8 text-center text-(--ink-4)"
-                  >
-                    No activities match this filter
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      </Card>
+      <Table table={table} minWidth="800px" emptyMessage="No activities match this filter" />
     </div>
   )
 }
 
-// ── Cell renderer ──────────────────────────────────────────────────
-
-function Cell({
-  run,
-  col,
-  unit,
-  unitLabel,
-  paceLabel,
-  showComputed,
-}: {
-  run: Activity
-  col: SortCol
-  unit: Unit
-  unitLabel: string
-  paceLabel: string
-  showComputed: boolean
-}) {
-  switch (col) {
-    case 'name':
-      return (
-        <ActivityLink
-          activityId={run.id}
-          className="truncate max-w-50 inline-block"
-        >
-          {run.name}
-        </ActivityLink>
-      )
-    case 'date':
-      return (
-        <span className="text-(--ink-3) whitespace-nowrap">
-          {formatDateShort(run.date)}
-        </span>
-      )
-    case 'distance':
-      return (
-        <span className="font-mono tabular-nums">
-          {toDisplayDistance(run.distanceMeters, unit)} {unitLabel}
-        </span>
-      )
-    case 'time':
-      return (
-        <span className="font-mono tabular-nums">
-          {formatDuration(run.movingTime)}
-        </span>
-      )
-    case 'pace':
-      return (
-        <span className="font-mono tabular-nums">
-          {formatPace(paceForUnit(run.avgSpeed, unit))} {paceLabel}
-        </span>
-      )
-    case 'avgHr':
-      return <Mono value={run.avgHr} />
-    case 'maxHr':
-      return <Mono value={run.maxHr} />
-    case 'cadence':
-      return <Mono value={run.cadence} />
-    case 'elevation':
-      return (
-        <span className="font-mono tabular-nums">
-          {Math.round(run.elevation)}m
-        </span>
-      )
-    case '1k':
-    case '1 mile':
-    case '5k':
-    case '10k':
-    case 'Half-Marathon':
-    case 'Marathon': {
-      const stravaTime = run.bestEfforts[col]
-      const computedTime = showComputed ? run.derivedBestEfforts[col] : undefined
-      const t = stravaTime ?? computedTime
-      if (t === undefined) return <span className="text-(--ink-4)">{'—'}</span>
-      // Strava values render plain. Computed fallbacks (only shown when the
-      // checkbox is on) get a bordered chip so they're distinguishable.
-      // Both branches use identical wrapper dimensions to prevent table shift.
-      const isComputed = stravaTime === undefined
-      const borderColor = isComputed ? 'border-(--line)' : 'border-transparent'
-      return (
-        <span
-          className={`inline-block font-mono tabular-nums border ${borderColor} rounded-(--radius-s) px-2 py-0.5`}
-        >
-          {formatDuration(t)}
-        </span>
-      )
-    }
-    default:
-      return null
-  }
-}
+// ── Helpers ───────────────────────────────────────────────────────
 
 function Mono({ value }: { value: number | null }) {
   return (
@@ -600,4 +512,3 @@ function Mono({ value }: { value: number | null }) {
     </span>
   )
 }
-

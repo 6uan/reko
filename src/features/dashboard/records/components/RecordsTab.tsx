@@ -13,9 +13,14 @@ import { paceUnit, type Activity, type Unit, type BestEffortTimes } from '@/lib/
 import { paceForDist, formatPace } from './helpers'
 import { parseLocalDate, formatDate, formatRelativeTime } from '@/lib/dates'
 import ProgressionChart from './ProgressionChart'
+import {
+  createColumnHelper,
+  useReactTable,
+  getCoreRowModel,
+} from '@tanstack/react-table'
 import Card from '@/features/dashboard/ui/Card'
 import SectionHeader from '@/features/dashboard/ui/SectionHeader'
-import Th from '@/features/dashboard/ui/Th'
+import Table from '@/features/dashboard/ui/Table'
 import ActivityLink from '@/features/dashboard/ui/ActivityLink'
 
 type Props = {
@@ -114,6 +119,60 @@ export default function Records({ data, runs, unit }: Props) {
   const selectedEfforts = effortsByDistance.get(selectedKey) ?? []
   const totalPrs = orderedDistances.filter((d) => d.best).length
 
+  const effortCol = createColumnHelper<DistanceEffort>()
+
+  const effortColumns = useMemo(() => [
+    effortCol.display({
+      id: 'rank',
+      header: '#',
+      cell: (info) => (
+        <span className="font-mono tabular-nums text-(--ink-3)">{info.row.index + 1}</span>
+      ),
+    }),
+    effortCol.accessor('time', {
+      id: 'time',
+      header: 'Time',
+      cell: (info) => (
+        <span className={`font-mono tabular-nums font-medium ${info.row.index === 0 ? 'text-(--accent)' : 'text-(--ink)'}`}>
+          {formatDuration(info.getValue())}
+        </span>
+      ),
+    }),
+    effortCol.accessor((r) => paceForDist(r.time, selected.meters, unit), {
+      id: 'pace',
+      header: 'Pace',
+      cell: (info) => (
+        <span className="font-mono tabular-nums text-(--ink-3)">
+          {formatPace(info.getValue())}{unitLabel}
+        </span>
+      ),
+    }),
+    effortCol.accessor('activityName', {
+      id: 'activity',
+      header: 'Activity',
+      cell: (info) => (
+        <ActivityLink activityId={info.row.original.activityId} className="text-(--ink-2) no-underline">
+          {info.getValue()}
+        </ActivityLink>
+      ),
+    }),
+    effortCol.accessor('date', {
+      id: 'date',
+      header: 'Date',
+      cell: (info) => (
+        <span className="font-mono tabular-nums text-(--ink-3) whitespace-nowrap">
+          {formatRelativeTime(info.getValue(), now)}
+        </span>
+      ),
+    }),
+  ], [selected.meters, unit, unitLabel, now])
+
+  const effortTable = useReactTable({
+    data: selectedEfforts,
+    columns: effortColumns,
+    getCoreRowModel: getCoreRowModel(),
+  })
+
   if (totalPrs === 0) return <EmptyTab />
 
   // Podium entries (top 3)
@@ -206,57 +265,12 @@ export default function Records({ data, runs, unit }: Props) {
 
       {/* Full effort list */}
       {selectedEfforts.length > 0 && (
-        <Card className="overflow-hidden">
-          <div className="px-4 py-3 border-b border-(--line)">
-            <SectionHeader
-              title="All efforts"
-              subtitle={`${selected.label} · sorted by time`}
-            />
-          </div>
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse min-w-[500px]">
-              <thead>
-                <tr>
-                  {['#', 'Time', 'Pace', 'Activity', 'Date'].map((h) => (
-                    <Th key={h}>{h}</Th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {selectedEfforts.map((effort, i) => {
-                  const effortPace = paceForDist(effort.time, selected.meters, unit)
-                  const isBest = i === 0
-                  return (
-                    <tr key={`${effort.activityId}-${i}`}>
-                      <td className="px-4 py-3 border-b border-(--line-2) text-sm font-mono tabular-nums text-(--ink-3) w-14 whitespace-nowrap">
-                        {i + 1}
-                      </td>
-                      <td className="px-4 py-3 border-b border-(--line-2) text-sm font-mono tabular-nums font-medium">
-                        <span className={isBest ? 'text-(--accent)' : 'text-(--ink)'}>
-                          {formatDuration(effort.time)}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 border-b border-(--line-2) text-sm font-mono tabular-nums text-(--ink-3)">
-                        {formatPace(effortPace)}{unitLabel}
-                      </td>
-                      <td className="px-4 py-3 border-b border-(--line-2) text-sm text-(--ink-2)">
-                        <ActivityLink
-                          activityId={effort.activityId}
-                          className="text-(--ink-2) no-underline"
-                        >
-                          {effort.activityName}
-                        </ActivityLink>
-                      </td>
-                      <td className="px-4 py-3 border-b border-(--line-2) text-sm font-mono tabular-nums text-(--ink-3) whitespace-nowrap">
-                        {formatRelativeTime(effort.date, now)}
-                      </td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
-          </div>
-        </Card>
+        <Table
+          table={effortTable}
+          title="All efforts"
+          subtitle={`${selected.label} · sorted by time`}
+          minWidth="500px"
+        />
       )}
     </div>
   )

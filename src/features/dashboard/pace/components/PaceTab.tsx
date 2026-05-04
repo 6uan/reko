@@ -7,7 +7,6 @@ import {
   XAxis,
   YAxis,
   Tooltip,
-  ResponsiveContainer,
 } from 'recharts'
 import { formatPace, formatDuration } from '@/lib/strava'
 import { formatDate, getMonday } from '@/lib/dates'
@@ -20,11 +19,18 @@ import {
   type Unit,
 } from '@/lib/activities'
 import KpiCard from '@/features/dashboard/ui/KpiCard'
+import {
+  createColumnHelper,
+  useReactTable,
+  getCoreRowModel,
+} from '@tanstack/react-table'
 import SectionHeader from '@/features/dashboard/ui/SectionHeader'
 import EmptyState from '@/features/dashboard/ui/EmptyState'
 import Card from '@/features/dashboard/ui/Card'
+import ChartContainer from '@/features/dashboard/ui/ChartContainer'
 import ChartTooltip from '@/features/dashboard/ui/ChartTooltip'
-import Th from '@/features/dashboard/ui/Th'
+import Table from '@/features/dashboard/ui/Table'
+import ActivityLink from '@/features/dashboard/ui/ActivityLink'
 
 type Props = { runs: Activity[]; unit: Unit }
 
@@ -137,6 +143,81 @@ export default function Pace({ runs, unit }: Props) {
       .slice(0, 20)
   }, [runs])
 
+  const paceCol = createColumnHelper<Activity>()
+
+  const paceColumns = useMemo(() => [
+    paceCol.display({
+      id: 'rank',
+      header: '#',
+      cell: (info) => (
+        <span className="font-mono tabular-nums text-(--ink-3)">{info.row.index + 1}</span>
+      ),
+    }),
+    paceCol.accessor('name', {
+      id: 'name',
+      header: 'Activity',
+      cell: (info) => (
+        <ActivityLink activityId={info.row.original.id} className="truncate max-w-50 inline-block">
+          {info.getValue()}
+        </ActivityLink>
+      ),
+    }),
+    paceCol.accessor((r) => paceForRun(r, unit), {
+      id: 'pace',
+      header: 'Pace',
+      cell: (info) => (
+        <span className="font-mono tabular-nums whitespace-nowrap">
+          <span className={info.row.index === 0 ? 'text-(--accent) font-medium' : 'text-(--ink)'}>
+            {formatPace(info.getValue())}
+          </span>
+          <span className="text-(--ink-3) text-xs ml-0.5">{unitLabel}</span>
+        </span>
+      ),
+    }),
+    paceCol.accessor('distanceMeters', {
+      id: 'distance',
+      header: 'Distance',
+      cell: (info) => (
+        <span className="font-mono tabular-nums text-(--ink-3) whitespace-nowrap">
+          {toDisplayDistance(info.getValue(), unit)} {unit}
+        </span>
+      ),
+    }),
+    paceCol.accessor('movingTime', {
+      id: 'time',
+      header: 'Time',
+      cell: (info) => (
+        <span className="font-mono tabular-nums text-(--ink-3) whitespace-nowrap">
+          {formatDuration(info.getValue())}
+        </span>
+      ),
+    }),
+    paceCol.accessor('avgHr', {
+      id: 'avgHr',
+      header: 'Avg HR',
+      cell: (info) => (
+        <span className="font-mono tabular-nums text-(--ink-3) whitespace-nowrap">
+          {info.getValue() !== null ? `${Math.round(info.getValue()!)} bpm` : '—'}
+        </span>
+      ),
+    }),
+    paceCol.accessor('date', {
+      id: 'date',
+      header: 'Date',
+      cell: (info) => (
+        <span className="font-mono tabular-nums text-(--ink-3) whitespace-nowrap">
+          {formatDate(info.getValue())}
+        </span>
+      ),
+    }),
+  ], [unit, unitLabel])
+
+  const paceTable = useReactTable({
+    data: fastestRuns,
+    columns: paceColumns,
+    getCoreRowModel: getCoreRowModel(),
+  })
+
   // ── Trend Y-axis domain ─────────────────────────────────────────
 
   const trendDomain = useMemo(() => {
@@ -165,129 +246,75 @@ export default function Pace({ runs, unit }: Props) {
         {/* Histogram */}
         <Card className="p-4">
           <SectionHeader title="Pace distribution" subtitle={`${runs.length} runs`} />
-          <div className="mt-3 h-[200px]">
-            {histogramData.length > 0 ? (
-              <ResponsiveContainer width="100%" height="100%" minWidth={0}>
-                <BarChart data={histogramData} margin={{ top: 4, right: 4, bottom: 0, left: 0 }}>
-                  <XAxis
-                    dataKey="label"
-                    axisLine={false}
-                    tickLine={false}
-                    tick={{ fontSize: 10, fill: 'var(--ink-4)' }}
-                    interval={1}
-                  />
-                  <YAxis
-                    axisLine={false}
-                    tickLine={false}
-                    tick={{ fontSize: 10, fill: 'var(--ink-4)' }}
-                    allowDecimals={false}
-                  />
-                  <Tooltip content={<HistTooltip />} cursor={{ fill: 'var(--line)', opacity: 0.5 }} />
-                  <Bar dataKey="count" radius={[4, 4, 0, 0]} fill="var(--accent)" opacity={0.7} />
-                </BarChart>
-              </ResponsiveContainer>
-            ) : (
-              <EmptyState>No pace data yet</EmptyState>
-            )}
-          </div>
+          {histogramData.length > 0 ? (
+            <ChartContainer>
+              <BarChart data={histogramData} margin={{ top: 4, right: 4, bottom: 0, left: 0 }}>
+                <XAxis
+                  dataKey="label"
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ fontSize: 10, fill: 'var(--ink-4)' }}
+                  interval={1}
+                />
+                <YAxis
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ fontSize: 10, fill: 'var(--ink-4)' }}
+                  allowDecimals={false}
+                />
+                <Tooltip content={<HistTooltip />} cursor={{ fill: 'var(--line)', opacity: 0.5 }} />
+                <Bar dataKey="count" radius={[4, 4, 0, 0]} fill="var(--accent)" opacity={0.7} />
+              </BarChart>
+            </ChartContainer>
+          ) : (
+            <EmptyState>No pace data yet</EmptyState>
+          )}
         </Card>
 
         {/* Trend line */}
         <Card className="p-4">
           <SectionHeader title="Avg pace trend" subtitle={`${trendData.length} weeks`} />
-          <div className="mt-3 h-[200px]">
-            {trendData.length > 1 ? (
-              <ResponsiveContainer width="100%" height="100%" minWidth={0}>
-                <LineChart data={trendData} margin={{ top: 4, right: 4, bottom: 0, left: 0 }}>
-                  <XAxis
-                    dataKey="label"
-                    axisLine={false}
-                    tickLine={false}
-                    tick={{ fontSize: 10, fill: 'var(--ink-4)' }}
-                  />
-                  <YAxis
-                    domain={trendDomain}
-                    axisLine={false}
-                    tickLine={false}
-                    tick={{ fontSize: 10, fill: 'var(--ink-4)' }}
-                    tickFormatter={(v: number) => formatPace(v)}
-                    width={50}
-                  />
-                  <Tooltip content={<TrendTooltip unitLabel={unitLabel} />} cursor={{ stroke: 'var(--line)', strokeDasharray: '4 4' }} />
-                  <Line
-                    type="monotone"
-                    dataKey="avg"
-                    stroke="var(--accent)"
-                    strokeWidth={2}
-                    dot={{ r: 4, fill: 'var(--accent)', strokeWidth: 0 }}
-                    activeDot={{ r: 6, fill: 'var(--accent)', strokeWidth: 2, stroke: 'var(--card)' }}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            ) : (
-              <EmptyState>Not enough data yet</EmptyState>
-            )}
-          </div>
+          {trendData.length > 1 ? (
+            <ChartContainer>
+              <LineChart data={trendData} margin={{ top: 4, right: 4, bottom: 0, left: 0 }}>
+                <XAxis
+                  dataKey="label"
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ fontSize: 10, fill: 'var(--ink-4)' }}
+                />
+                <YAxis
+                  domain={trendDomain}
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ fontSize: 10, fill: 'var(--ink-4)' }}
+                  tickFormatter={(v: number) => formatPace(v)}
+                  width={50}
+                />
+                <Tooltip content={<TrendTooltip unitLabel={unitLabel} />} cursor={{ stroke: 'var(--line)', strokeDasharray: '4 4' }} />
+                <Line
+                  type="monotone"
+                  dataKey="avg"
+                  stroke="var(--accent)"
+                  strokeWidth={2}
+                  dot={{ r: 4, fill: 'var(--accent)', strokeWidth: 0 }}
+                  activeDot={{ r: 6, fill: 'var(--accent)', strokeWidth: 2, stroke: 'var(--card)' }}
+                />
+              </LineChart>
+            </ChartContainer>
+          ) : (
+            <EmptyState>Not enough data yet</EmptyState>
+          )}
         </Card>
       </div>
 
       {/* Fastest runs table */}
-      <Card className="overflow-hidden">
-        <div className="px-4 py-3 border-b border-(--line)">
-          <SectionHeader title="Fastest runs" subtitle="Sorted by pace, fastest first" />
-        </div>
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm text-left border-collapse min-w-[600px]">
-            <thead>
-              <tr>
-                {['#', 'Activity', 'Pace', 'Distance', 'Time', 'Avg HR', 'Date'].map((h) => (
-                  <Th key={h}>{h}</Th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {fastestRuns.map((run, i) => {
-                const pace = paceForRun(run, unit)
-                return (
-                  <tr key={run.id}>
-                    <td className="px-4 py-3 border-b border-(--line-2) font-mono tabular-nums text-(--ink-3) w-14 whitespace-nowrap">
-                      {i + 1}
-                    </td>
-                    <td className="px-4 py-3 border-b border-(--line-2) font-medium text-(--ink)">
-                      {run.name}
-                    </td>
-                    <td className="px-4 py-3 border-b border-(--line-2) font-mono tabular-nums whitespace-nowrap">
-                      <span className={i === 0 ? 'text-(--accent) font-medium' : 'text-(--ink)'}>
-                        {formatPace(pace)}
-                      </span>
-                      <span className="text-(--ink-3) text-xs ml-0.5">{unitLabel}</span>
-                    </td>
-                    <td className="px-4 py-3 border-b border-(--line-2) font-mono tabular-nums text-(--ink-3) whitespace-nowrap">
-                      {toDisplayDistance(run.distanceMeters, unit)} {unit}
-                    </td>
-                    <td className="px-4 py-3 border-b border-(--line-2) font-mono tabular-nums text-(--ink-3) whitespace-nowrap">
-                      {formatDuration(run.movingTime)}
-                    </td>
-                    <td className="px-4 py-3 border-b border-(--line-2) font-mono tabular-nums text-(--ink-3) whitespace-nowrap">
-                      {run.avgHr !== null ? `${Math.round(run.avgHr)} bpm` : '—'}
-                    </td>
-                    <td className="px-4 py-3 border-b border-(--line-2) font-mono tabular-nums text-(--ink-3) whitespace-nowrap">
-                      {formatDate(run.date)}
-                    </td>
-                  </tr>
-                )
-              })}
-              {fastestRuns.length === 0 && (
-                <tr>
-                  <td colSpan={7} className="px-3 py-6 text-center text-sm text-(--ink-3)">
-                    No pace data yet
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      </Card>
+      <Table
+        table={paceTable}
+        title="Fastest runs"
+        subtitle="Sorted by pace, fastest first"
+        emptyMessage="No pace data yet"
+      />
     </div>
   )
 }

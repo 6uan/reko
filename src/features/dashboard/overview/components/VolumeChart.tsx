@@ -15,11 +15,11 @@ import {
   XAxis,
   YAxis,
   Tooltip,
-  ResponsiveContainer,
 } from 'recharts'
 import { formatPace, formatDuration } from '@/lib/strava'
 import { toDisplayDistance, distanceUnit, paceUnit, type Unit } from '@/lib/activities'
 import Card from '@/features/dashboard/ui/Card'
+import ChartContainer from '@/features/dashboard/ui/ChartContainer'
 import ChartTooltip from '@/features/dashboard/ui/ChartTooltip'
 
 export type MonthBucket = {
@@ -91,37 +91,35 @@ export default function VolumeChart({ data, unit }: Props) {
   return (
     <Card className="p-4">
       <span className="text-eyebrow">Monthly volume</span>
-      <div className="mt-3 h-[180px]">
-        <ResponsiveContainer width="100%" height="100%" minWidth={0}>
-          <BarChart
-            data={data}
-            margin={{ top: 4, right: 4, bottom: 0, left: -20 }}
-          >
-            <XAxis
-              dataKey="label"
-              axisLine={false}
-              tickLine={false}
-              tick={{ fontSize: 11, fill: 'var(--ink-4)' }}
-            />
-            <YAxis
-              axisLine={false}
-              tickLine={false}
-              tick={{ fontSize: 10, fill: 'var(--ink-4)' }}
-              width={45}
-            />
-            <Tooltip
-              content={<CustomTooltip unit={unit} />}
-              cursor={{ fill: 'var(--bg-2)', radius: 6 }}
-            />
-            <Bar
-              dataKey="distance"
-              radius={[6, 6, 0, 0]}
-              fill="var(--accent)"
-              maxBarSize={40}
-            />
-          </BarChart>
-        </ResponsiveContainer>
-      </div>
+      <ChartContainer height={180}>
+        <BarChart
+          data={data}
+          margin={{ top: 4, right: 4, bottom: 0, left: -20 }}
+        >
+          <XAxis
+            dataKey="label"
+            axisLine={false}
+            tickLine={false}
+            tick={{ fontSize: 11, fill: 'var(--ink-4)' }}
+          />
+          <YAxis
+            axisLine={false}
+            tickLine={false}
+            tick={{ fontSize: 10, fill: 'var(--ink-4)' }}
+            width={45}
+          />
+          <Tooltip
+            content={<CustomTooltip unit={unit} />}
+            cursor={{ fill: 'var(--bg-2)', radius: 6 }}
+          />
+          <Bar
+            dataKey="distance"
+            radius={[6, 6, 0, 0]}
+            fill="var(--accent)"
+            maxBarSize={40}
+          />
+        </BarChart>
+      </ChartContainer>
     </Card>
   )
 }
