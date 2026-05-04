@@ -45,7 +45,7 @@ export default function ZoneBar({
       </span>
       <div className="flex-1 h-6 bg-(--card-2) rounded overflow-hidden">
         <div
-          className="h-full rounded transition-all duration-300"
+          className="h-full rounded transition-[width,opacity] duration-300"
           style={{
             width: `${Math.max(pct, active ? 2 : 0)}%`,
             background: color,

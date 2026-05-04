@@ -22,6 +22,7 @@ import {
 import { formatDateShort } from '@/lib/dates'
 import Table from '@/features/dashboard/ui/Table'
 import ActivityLink from '@/features/dashboard/ui/ActivityLink'
+import Button from '@/features/dashboard/ui/Button'
 
 // ── Table meta (display-only state, not sort-affecting) ───────────
 
@@ -354,35 +355,25 @@ export default function Activities({ activities, unit }: Props) {
         </p>
 
         <div className="flex gap-2">
-          <button
-            type="button"
+          <Button
             onClick={() => setShowComputed((v) => !v)}
             aria-pressed={showComputed}
-            className={`px-3 py-1.5 text-xs rounded-(--radius-s) border bg-(--card) transition-colors cursor-pointer ${
-              showComputed
-                ? 'border-(--accent) text-(--accent)'
-                : 'border-(--line) text-(--ink-3) hover:text-(--ink)'
-            }`}
+            active={showComputed}
           >
             Estimated splits
-          </button>
+          </Button>
 
           {/* Filter dropdown */}
           <div className="relative" ref={filterRef}>
-            <button
-              type="button"
+            <Button
               onClick={() => (filterOpen ? setFilterOpen(false) : openFilter())}
-              className={`px-3 py-1.5 text-xs rounded-(--radius-s) border bg-(--card) transition-colors cursor-pointer ${
-                hasChanges
-                  ? 'border-(--accent) text-(--accent)'
-                  : 'border-(--line) text-(--ink-3) hover:text-(--ink)'
-              }`}
+              active={hasChanges}
             >
               Filter
-            </button>
+            </Button>
 
             {filterOpen && (
-              <div className="absolute right-0 top-full mt-1.5 bg-(--card) border border-(--line) rounded-xl shadow-(--shadow-m) z-20">
+              <div className="absolute right-0 top-full mt-1.5 bg-(--card) border border-(--line) rounded-(--radius-m) shadow-(--shadow-m) z-20">
                 <div className="flex divide-x divide-(--line)">
                   {/* Left column — Sport + Intensity */}
                   <div className="w-48 py-2">
@@ -397,7 +388,7 @@ export default function Activities({ activities, unit }: Props) {
                         className={`w-full text-left px-3 py-1.5 text-sm cursor-pointer transition-colors ${
                           draftSport === s.key
                             ? 'text-(--accent) bg-(--accent-soft)/30'
-                            : 'text-(--ink-2) hover:bg-(--bg-2)'
+                            : 'text-(--ink-2) hover:bg-(--card-2)'
                         }`}
                       >
                         {s.label}
@@ -417,7 +408,7 @@ export default function Activities({ activities, unit }: Props) {
                         className={`w-full text-left px-3 py-1.5 text-sm cursor-pointer transition-colors ${
                           draftIntensity === f.key
                             ? 'text-(--accent) bg-(--accent-soft)/30'
-                            : 'text-(--ink-2) hover:bg-(--bg-2)'
+                            : 'text-(--ink-2) hover:bg-(--card-2)'
                         }`}
                       >
                         {f.label}
@@ -438,7 +429,7 @@ export default function Activities({ activities, unit }: Props) {
                             key={c.key}
                             type="button"
                             onClick={() => toggleDraftCol(c.key)}
-                            className="flex items-center gap-2 px-3 py-1.5 text-sm cursor-pointer transition-colors text-(--ink-2) hover:bg-(--bg-2) rounded"
+                            className="flex items-center gap-2 px-3 py-1.5 text-sm cursor-pointer transition-colors text-(--ink-2) hover:bg-(--card-2) rounded"
                           >
                             <span
                               className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 transition-colors ${
@@ -476,24 +467,15 @@ export default function Activities({ activities, unit }: Props) {
                   >
                     Clear filters
                   </button>
-                  <button
-                    type="button"
-                    onClick={applyDraft}
-                    className="px-3 py-1.5 text-xs rounded-(--radius-s) bg-(--accent) text-white font-medium cursor-pointer hover:opacity-90 transition-opacity"
-                  >
+                  <Button variant="solid" onClick={applyDraft}>
                     Apply
-                  </button>
+                  </Button>
                 </div>
               </div>
             )}
           </div>
 
-          <button
-            type="button"
-            className="px-3 py-1.5 text-xs rounded-(--radius-s) border border-(--line) bg-(--card) text-(--ink-3) hover:text-(--ink) transition-colors cursor-pointer"
-          >
-            Export
-          </button>
+          <Button>Export</Button>
         </div>
       </div>
 

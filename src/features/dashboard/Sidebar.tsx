@@ -54,10 +54,10 @@ function NavLink({ tab }: { tab: Tab }) {
   return (
     <Link
       to={tab.to}
-      className={`w-full flex items-center gap-3 px-4 py-3 rounded-(--radius-s) text-base no-underline transition-[background-color,color] duration-150 ${
+      className={`w-full flex items-center gap-3 px-4 py-3 rounded-(--radius-s) text-base no-underline transition-colors ${
         isActive
           ? "bg-(--accent-soft) text-(--ink) font-medium"
-          : "text-(--ink-3) hover:bg-(--line-2) hover:text-(--ink)"
+          : "text-(--ink-3) hover:bg-(--card-2) hover:text-(--ink)"
       }`}
     >
       <Icon size={20} className={isActive ? "text-(--accent)" : "opacity-50"} />

@@ -30,7 +30,7 @@ export default function Topbar({
 
   return (
     <div className="sticky top-0 z-30 bg-(--bg)/80 backdrop-blur-xl border-b border-(--line) px-4 lg:px-7 py-3.5 flex items-center justify-between">
-      <div className="flex items-center gap-3 font-mono text-[12px] text-(--ink-3)">
+      <div className="flex items-center gap-3 font-mono text-xs text-(--ink-3)">
         <IconButton
           onClick={onOpenMobileNav}
           aria-label="Open navigation"
@@ -41,7 +41,7 @@ export default function Topbar({
         <strong className="text-(--ink) font-medium">{activeTab.label}</strong>
       </div>
       <div className="flex items-center gap-2.5">
-        <div className="hidden md:flex items-center gap-1.5 px-2.5 py-1.5 bg-(--card) border border-(--line) rounded-(--radius-s) font-mono text-[12px] text-(--ink-3)">
+        <div className="hidden md:flex items-center gap-1.5 px-2.5 py-1.5 bg-(--card) border border-(--line) rounded-(--radius-s) font-mono text-xs text-(--ink-3)">
           <svg
             width="11"
             height="11"
@@ -56,7 +56,7 @@ export default function Topbar({
           Search runs
           <span className="text-(--ink-4) ml-1.5">⌘K</span>
         </div>
-        <div className="inline-flex p-1 bg-(--card-2) border border-(--line) rounded-(--radius-s) font-mono text-[11px] font-medium">
+        <div className="inline-flex p-1 bg-(--card-2) border border-(--line) rounded-(--radius-s) text-detail font-medium">
           <UnitBtn value="km" />
           <UnitBtn value="mi" />
         </div>

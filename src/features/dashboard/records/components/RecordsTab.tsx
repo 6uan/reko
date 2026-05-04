@@ -240,7 +240,7 @@ export default function Records({ data, runs, unit }: Props) {
               onClick={() => setSelectedKey(rec.key)}
               className={`text-left px-4 py-3.5 rounded-(--radius-m) border cursor-pointer transition-colors ${
                 isActive
-                  ? 'bg-(--card) border-(--accent) shadow-[0_1px_2px_rgba(0,0,0,0.04)]'
+                  ? 'bg-(--card) border-(--accent) shadow-(--shadow-s)'
                   : 'bg-(--card) border-(--line) hover:bg-(--card-2)'
               }`}
             >
@@ -288,7 +288,7 @@ function Disclosure({
   children: React.ReactNode
 }) {
   return (
-    <details className="group bg-(--card) border border-(--line) rounded-2xl overflow-hidden">
+    <details className="group bg-(--card) border border-(--line) rounded-(--radius-l) overflow-hidden">
       <summary className="flex justify-between items-center px-5 py-4 cursor-pointer list-none hover:bg-(--card-2) transition-colors [&::-webkit-details-marker]:hidden">
         <span className="text-sm font-medium text-(--ink) tracking-tight">
           {title}
@@ -308,7 +308,7 @@ function Disclosure({
 
 function EmptyTab() {
   return (
-    <div className="py-20 px-10 text-center border border-dashed border-(--line) rounded-2xl bg-(--card-2)">
+    <div className="py-20 px-10 text-center border border-dashed border-(--line) rounded-(--radius-l) bg-(--card-2)">
       <div className="w-15 h-15 mx-auto mb-5 rounded-full bg-(--accent-soft) grid place-items-center text-(--accent)">
         <svg
           width="28"

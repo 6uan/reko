@@ -266,7 +266,7 @@ export default function HeartRate({ runs, unit }: Props) {
               style={{ backgroundColor: zone.color }}
             />
 
-            <div className="font-mono text-[11px] uppercase tracking-widest text-(--ink-3) mt-1">
+            <div className="text-eyebrow mt-1">
               {zone.name}
             </div>
             <div className="text-meta mt-0.5">
