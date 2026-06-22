@@ -1,8 +1,7 @@
 import { useCallback, useState } from "react";
 import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
-import { getSession as frameworkGetSession } from "@tanstack/react-start/server";
-import { sessionConfig, type SessionData } from "@/features/auth/session";
+import { readSessionOnServer } from "@/features/auth/session";
 import { enqueueBackfill } from "@/features/sync/api/backfillActivities.server";
 import { getActivities } from "@/features/dashboard/activities/api/getActivities.server";
 import { getLastSyncTime } from "@/features/sync/api/getLastSyncTime.server";
@@ -20,9 +19,8 @@ import { useEscapeKey } from "@/hooks/useEscapeKey";
 
 const loadDashboardData = createServerFn({ method: "GET" }).handler(
   async () => {
-    const session = await frameworkGetSession<SessionData>(sessionConfig);
-    const d = session.data;
-    if (!d.userId) throw redirect({ to: "/" });
+    const d = await readSessionOnServer();
+    if (!d?.userId) throw redirect({ to: "/" });
 
     const [activities, records, lastSyncFinishedAt] = await Promise.all([
       getActivities(d.userId),
@@ -56,6 +54,10 @@ export const Route = createFileRoute("/dashboard")({
     if (!context.session) throw redirect({ to: "/" });
   },
   loader: () => loadDashboardData(),
+  // Data is shared across all tabs via DashboardContext. Don't re-fetch
+  // on tab switches — live updates (SSE) handle refreshes when data
+  // actually changes.
+  staleTime: Infinity,
   component: DashboardLayout,
 });
 

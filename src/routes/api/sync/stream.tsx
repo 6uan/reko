@@ -42,12 +42,11 @@
  */
 
 import { createFileRoute } from '@tanstack/react-router'
-import { getSession as frameworkGetSession } from '@tanstack/react-start/server'
 import {
   type ActivityEvent,
   subscribe,
 } from '@/lib/eventBus'
-import { sessionConfig, type SessionData } from '@/features/auth/session'
+import { readSessionOnServer } from '@/features/auth/session'
 
 /**
  * Coolify's Traefik default is a 60s idle timeout; Node's `server.timeout`
@@ -61,8 +60,8 @@ async function handleStream(request: Request): Promise<Response> {
   // this stream and we definitely don't want to register an unkeyed
   // listener. Returning 401 lets EventSource fall through to its
   // `onerror` handler instead of treating the connection as healthy.
-  const session = await frameworkGetSession<SessionData>(sessionConfig)
-  const userId = session.data.userId
+  const session = await readSessionOnServer()
+  const userId = session?.userId
   if (!userId) {
     return new Response('Unauthorized', { status: 401 })
   }

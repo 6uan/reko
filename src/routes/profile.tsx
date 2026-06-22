@@ -1,16 +1,13 @@
 import { createFileRoute, redirect, useNavigate } from '@tanstack/react-router'
 import { createServerFn } from '@tanstack/react-start'
-import { getSession as frameworkGetSession } from '@tanstack/react-start/server'
-import { sessionConfig, type SessionData } from '@/features/auth/session'
-import { clearSessionFn } from '@/features/auth/session'
+import { readSessionOnServer, clearSessionFn } from '@/features/auth/session'
 import { getHealthData } from '@/features/health/api/getHealthData.server'
 import HealthSection from '@/features/health/HealthSection'
 import { Avatar } from '@/components/ui/Avatar'
 
 const loadProfileData = createServerFn({ method: 'GET' }).handler(async () => {
-  const session = await frameworkGetSession<SessionData>(sessionConfig)
-  const d = session.data
-  if (!d.userId) throw redirect({ to: '/' })
+  const d = await readSessionOnServer()
+  if (!d?.userId) throw redirect({ to: '/' })
 
   const health = await getHealthData(d.userId)
   return { health }

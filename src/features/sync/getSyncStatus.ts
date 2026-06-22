@@ -9,11 +9,10 @@
  */
 
 import { createServerFn } from '@tanstack/react-start'
-import { getSession as frameworkGetSession } from '@tanstack/react-start/server'
 import { and, count, desc, eq, or } from 'drizzle-orm'
 import { getDb } from '@/db/client'
 import { activities, syncLog } from '@/db/schema'
-import { sessionConfig, type SessionData } from '@/features/auth/session'
+import { readSessionOnServer } from '@/features/auth/session'
 
 export type SyncStatusValue =
   | 'idle'
@@ -35,8 +34,8 @@ export type SyncStatus = {
 
 export const getSyncStatus = createServerFn({ method: 'GET' }).handler(
   async (): Promise<SyncStatus> => {
-    const session = await frameworkGetSession<SessionData>(sessionConfig)
-    const userId = session.data.userId
+    const session = await readSessionOnServer()
+    const userId = session?.userId
 
     if (!userId) {
       return {

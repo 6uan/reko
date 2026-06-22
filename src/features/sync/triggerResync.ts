@@ -4,14 +4,13 @@
  */
 
 import { createServerFn } from '@tanstack/react-start'
-import { getSession as frameworkGetSession } from '@tanstack/react-start/server'
-import { sessionConfig, type SessionData } from '@/features/auth/session'
+import { readSessionOnServer } from '@/features/auth/session'
 import { enqueueBackfill, type EnqueueResult } from './api/backfillActivities.server'
 
 export const triggerResync = createServerFn({ method: 'POST' }).handler(
   async (): Promise<EnqueueResult> => {
-    const session = await frameworkGetSession<SessionData>(sessionConfig)
-    const userId = session.data.userId
+    const session = await readSessionOnServer()
+    const userId = session?.userId
     if (!userId) {
       throw new Error('Not authenticated')
     }
