@@ -1,18 +1,22 @@
-# Reko — full local stack.
+# Reko — local stack.
 #
-#   docker compose up                  → postgres + migrate + app on :3000
-#   docker compose up postgres         → just postgres on 127.0.0.1:5432
-#                                        (use this if you want `pnpm dev`
-#                                        on the host with hot-reload)
-#   docker compose down                → stop everything (volume preserved)
-#   docker compose down -v             → stop + WIPE the database volume
+#   docker compose up -d db    → just Postgres on 127.0.0.1:5432. Pair with
+#                                `pnpm dev` for hot-reload development.
+#                                THIS is the daily dev path.
+#   docker compose up          → Postgres + the production app image on
+#                                :3000. Use this to self-host, or to smoke-
+#                                test the real prod build locally.
+#   docker compose down        → stop everything (database volume kept)
+#   docker compose down -v     → stop + WIPE the database volume
 #
-# Required: a .env file with STRAVA_CLIENT_ID, STRAVA_CLIENT_SECRET,
+# Coolify (prod) does NOT read this file — it builds the Dockerfile directly.
+#
+# Required: a .env with STRAVA_CLIENT_ID, STRAVA_CLIENT_SECRET,
 # SESSION_SECRET. See .env.example.
 
 services:
   # ── Postgres ─────────────────────────────────────────────────────────
-  postgres:
+  db:
     image: postgres:17-alpine
     restart: unless-stopped
     environment:
@@ -30,24 +34,11 @@ services:
       timeout: 5s
       retries: 10
 
-  # ── One-shot migrations: runs db:push, exits ─────────────────────────
-  migrate:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    command: ["pnpm", "exec", "drizzle-kit", "push", "--force"]
-    environment:
-      # Override .env's DATABASE_URL — inside the compose network, the
-      # postgres service is reachable at hostname "postgres".
-      DATABASE_URL: postgres://reko:${POSTGRES_PASSWORD:-reko_local_dev}@postgres:5432/reko
-    env_file:
-      - .env
-    depends_on:
-      postgres:
-        condition: service_healthy
-    restart: "no"
-
-  # ── App ──────────────────────────────────────────────────────────────
+  # ── App (production image) ───────────────────────────────────────────
+  # Builds the same Dockerfile prod runs. Its start command pushes the
+  # schema (drizzle-kit push) then serves — so migrations happen HERE, once,
+  # and nowhere else. Only started by a bare `docker compose up`;
+  # `docker compose up -d db` leaves it out.
   app:
     build:
       context: .
@@ -56,13 +47,16 @@ services:
     ports:
       - "3000:3000"
     environment:
-      DATABASE_URL: postgres://reko:${POSTGRES_PASSWORD:-reko_local_dev}@postgres:5432/reko
+      # Inside the compose network Postgres is the "db" service. This
+      # overrides any DATABASE_URL from .env (which points at localhost,
+      # only reachable from the host).
+      DATABASE_URL: postgres://reko:${POSTGRES_PASSWORD:-reko_local_dev}@db:5432/reko
       PORT: "3000"
     env_file:
       - .env
     depends_on:
-      migrate:
-        condition: service_completed_successfully
+      db:
+        condition: service_healthy
 
 volumes:
   reko_pgdata:

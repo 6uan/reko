@@ -8,13 +8,27 @@ Self-hosted — your data stays yours.
 
 ---
 
-## Self-host (5 minutes)
+## Local vs production
 
-You need:
-- **Docker Desktop** (or OrbStack / Colima) — that's it. No Node, no
-  Postgres, no toolchain to install.
-- A **Strava API app** of your own (BYOK — Reko never proxies through
-  a shared key).
+Same image, two envelopes — hold these four and the rest follows:
+
+- **One image, both places.** `docker compose up` locally builds the exact
+  image Coolify runs in prod. Dev (`pnpm dev`) is the only thing that *isn't*
+  that image.
+- **You provide the secrets locally; Coolify provides them in prod.** Always
+  needed: `STRAVA_CLIENT_ID`, `STRAVA_CLIENT_SECRET`, `SESSION_SECRET`.
+  `DATABASE_URL` is injected for you everywhere except host-mode `pnpm dev`.
+- **The schema auto-syncs on boot.** The app image runs `drizzle-kit push`
+  before serving — no migration step to run by hand, in any environment.
+- **Strava callback differs:** `localhost` locally (use a second Strava app),
+  your real domain in prod. Webhooks are prod-only — Strava needs public HTTPS.
+
+---
+
+## Run it (self-host)
+
+You need **Docker Desktop** (or OrbStack / Colima) and a **Strava API app**
+of your own (BYOK — Reko never proxies through a shared key).
 
 ### 1. Register a Strava app
 
@@ -47,10 +61,10 @@ cp .env.example .env
 docker compose up
 ```
 
-This brings up three services:
-- `postgres` — Postgres 17, persistent volume at `reko_pgdata`
-- `migrate` — runs Drizzle migrations once and exits
-- `app` — Reko on **http://localhost:3000**
+This brings up two services:
+- `db` — Postgres 17, persistent volume at `reko_pgdata`
+- `app` — Reko on **http://localhost:3000**. Pushes the schema on boot,
+  then serves.
 
 First boot takes a couple of minutes (initial image build). Subsequent
 starts are seconds.
@@ -68,48 +82,46 @@ docker compose down -v       # stop + WIPE database (all activities,
 
 ---
 
-## Local development (with hot-reload)
+## Develop it (hot reload)
 
-If you're hacking on Reko itself you'll want `pnpm dev` for HMR, while
-still using a Dockerised Postgres. Two terminals:
+Hacking on Reko itself? Run Postgres in Docker and the app on your host with
+Vite HMR — edits reload instantly. This is the daily loop.
 
 ```bash
-# Terminal 1: just Postgres (binds to 127.0.0.1:5432)
-docker compose up postgres
-
-# Terminal 2: app on the host with hot-reload
+# one-time
+cp .env.example .env
+#   fill STRAVA_CLIENT_ID, STRAVA_CLIENT_SECRET, SESSION_SECRET
+#   set  DATABASE_URL=postgres://reko:reko_local_dev@localhost:5432/reko
 pnpm install
-DATABASE_URL=postgres://reko:reko_local_dev@localhost:5432/reko pnpm dev
+docker compose up -d db     # Postgres only, in the background (127.0.0.1:5432)
+pnpm db:push                # create the schema in the fresh DB
+
+# every session
+pnpm dev                    # http://localhost:3000, hot reload
 ```
 
-Then visit http://localhost:3000.
+Re-run `pnpm db:push` after editing `src/db/schema.ts`; `pnpm db:studio`
+opens Drizzle Studio to browse the data.
 
-For one-off DB introspection:
-
-```bash
-pnpm db:studio          # opens Drizzle Studio at https://local.drizzle.studio
-pnpm db:push            # apply schema changes to local Postgres
-pnpm db:generate        # generate a SQL migration (for production)
-```
+To avoid re-doing Strava OAuth on every restart, set `DEV_AUTH_BYPASS=true`
+(and optionally `DEV_USER_ID`) in `.env` to auto-login as an existing user.
 
 ---
 
-## Deploy to a public URL
+## Deploy to production
 
-Reko ships with both a `Dockerfile` (any container host) and a
-`nixpacks.toml` (Coolify, Railway, Render). Pick whichever your host
-prefers.
+Reko deploys as a single Docker image — **one build path, the `Dockerfile`.**
+The reference deploy is **Coolify** (Dockerfile build pack) on a Hostinger
+VPS; the same image runs on any Docker host.
 
-You'll need:
-- **Postgres 17** reachable from the app container
-- **`DATABASE_URL`** env var pointing at it
-- **`STRAVA_CLIENT_ID`** / **`STRAVA_CLIENT_SECRET`** / **`SESSION_SECRET`**
-  set on the app
-- The Strava API app's **Authorization Callback Domain** matching your
-  public hostname
+Set on the app in Coolify's **Environment Variables** tab:
+- **`DATABASE_URL`** — Coolify wires this from the Postgres resource.
+- **`STRAVA_CLIENT_ID`** / **`STRAVA_CLIENT_SECRET`** / **`SESSION_SECRET`**.
+- The Strava app's **Authorization Callback Domain** = your public domain.
 
-Reko's reference deploy uses Coolify on a Hostinger VPS; the same image
-runs anywhere Docker does.
+The image runs `drizzle-kit push` on every boot, so deploys need no manual
+migration step. If the push fails the container exits and your previous
+deploy keeps running.
 
 ---
 

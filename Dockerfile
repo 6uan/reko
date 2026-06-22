@@ -61,9 +61,10 @@ COPY src/db ./src/db
 
 EXPOSE 3000
 
-# Migrate-then-serve, inlined from the `start:prod` package.json script
-# so the runtime image doesn't need pnpm. Shell form so `${PORT:-3000}`
-# expands; `exec` on srvx so it replaces the shell as PID 1 — that way
-# SIGTERM from Coolify routes to the Node process directly instead of
-# getting swallowed by an intermediate /bin/sh.
+# Migrate-then-serve — the ONE place migrations run. Inlined here (rather
+# than calling a pnpm script) so the runtime image needs neither pnpm nor
+# corepack. Shell form so `${PORT:-3000}` expands; `exec` on srvx so it
+# replaces the shell as PID 1 — that way SIGTERM from Coolify routes to the
+# Node process directly instead of getting swallowed by an intermediate
+# /bin/sh.
 CMD ["/bin/sh", "-c", "drizzle-kit push --force && exec srvx --prod -s ../client --port ${PORT:-3000} dist/server/server.js"]
