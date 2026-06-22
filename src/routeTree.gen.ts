@@ -20,6 +20,7 @@ import { Route as DashboardCadenceRouteImport } from './routes/dashboard/cadence
 import { Route as DashboardActivitiesRouteImport } from './routes/dashboard/activities'
 import { Route as AuthStravaRouteImport } from './routes/auth/strava'
 import { Route as AuthCallbackRouteImport } from './routes/auth/callback'
+import { Route as DashboardActivityIdRouteImport } from './routes/dashboard/activity.$id'
 import { Route as ApiSyncStreamRouteImport } from './routes/api/sync/stream'
 import { Route as ApiStravaWebhookRouteImport } from './routes/api/strava/webhook'
 
@@ -78,6 +79,11 @@ const AuthCallbackRoute = AuthCallbackRouteImport.update({
   path: '/auth/callback',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DashboardActivityIdRoute = DashboardActivityIdRouteImport.update({
+  id: '/activity/$id',
+  path: '/activity/$id',
+  getParentRoute: () => DashboardRoute,
+} as any)
 const ApiSyncStreamRoute = ApiSyncStreamRouteImport.update({
   id: '/api/sync/stream',
   path: '/api/sync/stream',
@@ -103,6 +109,7 @@ export interface FileRoutesByFullPath {
   '/dashboard/': typeof DashboardIndexRoute
   '/api/strava/webhook': typeof ApiStravaWebhookRoute
   '/api/sync/stream': typeof ApiSyncStreamRoute
+  '/dashboard/activity/$id': typeof DashboardActivityIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -117,6 +124,7 @@ export interface FileRoutesByTo {
   '/dashboard': typeof DashboardIndexRoute
   '/api/strava/webhook': typeof ApiStravaWebhookRoute
   '/api/sync/stream': typeof ApiSyncStreamRoute
+  '/dashboard/activity/$id': typeof DashboardActivityIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -133,6 +141,7 @@ export interface FileRoutesById {
   '/dashboard/': typeof DashboardIndexRoute
   '/api/strava/webhook': typeof ApiStravaWebhookRoute
   '/api/sync/stream': typeof ApiSyncStreamRoute
+  '/dashboard/activity/$id': typeof DashboardActivityIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -150,6 +159,7 @@ export interface FileRouteTypes {
     | '/dashboard/'
     | '/api/strava/webhook'
     | '/api/sync/stream'
+    | '/dashboard/activity/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -164,6 +174,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/api/strava/webhook'
     | '/api/sync/stream'
+    | '/dashboard/activity/$id'
   id:
     | '__root__'
     | '/'
@@ -179,6 +190,7 @@ export interface FileRouteTypes {
     | '/dashboard/'
     | '/api/strava/webhook'
     | '/api/sync/stream'
+    | '/dashboard/activity/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -270,6 +282,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthCallbackRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/dashboard/activity/$id': {
+      id: '/dashboard/activity/$id'
+      path: '/activity/$id'
+      fullPath: '/dashboard/activity/$id'
+      preLoaderRoute: typeof DashboardActivityIdRouteImport
+      parentRoute: typeof DashboardRoute
+    }
     '/api/sync/stream': {
       id: '/api/sync/stream'
       path: '/api/sync/stream'
@@ -294,6 +313,7 @@ interface DashboardRouteChildren {
   DashboardPaceRoute: typeof DashboardPaceRoute
   DashboardRecordsRoute: typeof DashboardRecordsRoute
   DashboardIndexRoute: typeof DashboardIndexRoute
+  DashboardActivityIdRoute: typeof DashboardActivityIdRoute
 }
 
 const DashboardRouteChildren: DashboardRouteChildren = {
@@ -303,6 +323,7 @@ const DashboardRouteChildren: DashboardRouteChildren = {
   DashboardPaceRoute: DashboardPaceRoute,
   DashboardRecordsRoute: DashboardRecordsRoute,
   DashboardIndexRoute: DashboardIndexRoute,
+  DashboardActivityIdRoute: DashboardActivityIdRoute,
 }
 
 const DashboardRouteWithChildren = DashboardRoute._addFileChildren(
