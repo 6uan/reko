@@ -191,30 +191,26 @@ export default function Records({ data, runs, unit }: Props) {
               subtitle={`${selectedEfforts.length} effort${selectedEfforts.length !== 1 ? 's' : ''}`}
             />
           </div>
-          <div className={`grid gap-4 ${
-            podium.length === 1
-              ? 'grid-cols-1 max-w-xs'
-              : podium.length === 2
-                ? 'grid-cols-2'
-                : 'grid-cols-3'
-          }`}>
+          <div className="grid grid-cols-3 gap-4">
             {podium.map((effort, i) => {
               const pace = paceForDist(effort.elapsedTime, selected.meters, unit)
               const style = PODIUM_STYLES[i]
               return (
-                <div key={i} className="flex flex-col items-center text-center gap-2 py-4">
-                  <FaTrophy size={i === 0 ? 28 : 20} style={{ color: style.color }} />
-                  <div className="text-stat text-(--ink) leading-none mt-1">
+                <div key={i} className="flex flex-col items-center text-center">
+                  <FaTrophy size={32} style={{ color: style.color }} />
+                  <div className="text-stat text-(--ink) leading-none mt-3">
                     {formatDuration(effort.elapsedTime)}
                   </div>
-                  <div className="font-mono text-sm tabular-nums text-(--ink-3)">
-                    {formatPace(pace)} {unitLabel}
-                  </div>
-                  <div className="text-sm text-(--ink-3) truncate max-w-full mt-1">
-                    {effort.activityName}
-                  </div>
-                  <div className="text-meta">
-                    {formatDate(effort.startDateLocal)}
+                  <div className="bg-(--card-2) border border-(--line) rounded-(--radius-m) px-4 py-3 mt-3 w-full">
+                    <div className="font-mono text-sm tabular-nums text-(--ink-2)">
+                      {formatPace(pace)} {unitLabel}
+                    </div>
+                    <div className="text-sm text-(--ink-3) truncate mt-1">
+                      {effort.activityName}
+                    </div>
+                    <div className="text-meta mt-1">
+                      {formatDate(effort.startDateLocal)}
+                    </div>
                   </div>
                 </div>
               )

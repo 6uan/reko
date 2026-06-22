@@ -80,7 +80,7 @@ export default function CadenceTab({ runs, unit }: Props) {
   // ── Weekly trend (all time) ────────────────────────────────────
 
   const trendData = useMemo(
-    () => groupByWeek(withCadence, (r) => r.date, (r) => r.cadence),
+    () => groupByWeek(withCadence, (r) => r.date, (r) => r.cadence, { round: true }),
     [withCadence],
   )
 
