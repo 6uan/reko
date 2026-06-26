@@ -12,6 +12,7 @@ import {
 } from '@/lib/activities'
 import KpiCards from './KpiCards'
 import TrainingHeatmap from './TrainingHeatmap'
+import ZoneRingCard from './ZoneRingCard'
 import VolumeChart, { type MonthBucket } from './VolumeChart'
 import PaceChart, { type PacePoint } from './PaceChart'
 import RecentRunsTable from './RecentRunsTable'
@@ -161,16 +162,17 @@ export default function Overview({ runs, unit }: Props) {
         <div className="lg:flex-1 min-w-0">
           <TrainingHeatmap runs={allRuns} unit={unit} />
         </div>
-        <div className="lg:w-80 lg:shrink-0">
+        <div className="lg:shrink-0">
+          <ZoneRingCard zoneSeconds={zoneSeconds} avgHr={avgHr} />
+        </div>
+        <div className="lg:w-52 lg:shrink-0">
           <KpiCards
             stacked
             totalDist={totalDist}
             avgPace={avgPace}
             totalRuns={runs.length}
             totalTime={totalTime}
-            avgHr={avgHr}
             avgCadence={avgCadence}
-            zoneSeconds={zoneSeconds}
             unit={unit}
             period={periodLabel(range)}
           />
