@@ -162,7 +162,7 @@ export default function Overview({ runs, unit }: Props) {
         <div className="lg:flex-1 min-w-0">
           <TrainingHeatmap runs={allRuns} unit={unit} />
         </div>
-        <div className="lg:shrink-0">
+        <div className="lg:w-44 lg:shrink-0">
           <ZoneRingCard zoneSeconds={zoneSeconds} avgHr={avgHr} />
         </div>
         <div className="lg:w-52 lg:shrink-0">
