@@ -49,7 +49,14 @@ export default function ChartContainer({ children, height = 200, className = 'mt
   }, [])
 
   return (
-    <div ref={ref} className={className} style={{ height }}>
+    <div
+      ref={ref}
+      className={className}
+      // pan-y lets a vertical swipe scroll the page while a horizontal drag
+      // is delivered to the chart (so touch scrubbing works without trapping
+      // the page). Harmless for non-interactive charts.
+      style={{ height, touchAction: 'pan-y' }}
+    >
       {dims && (
         <ResponsiveContainer
           width="100%"

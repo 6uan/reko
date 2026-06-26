@@ -458,6 +458,9 @@ export default function ActivityDetailPage({ detail, unit }: Props) {
               margin={CHART_MARGIN}
               onMouseMove={handleChartMove}
               onMouseLeave={clearHover}
+              onTouchStart={handleChartMove}
+              onTouchMove={handleChartMove}
+              onTouchEnd={clearHover}
             >
                   <XAxis
                     dataKey="dist"
@@ -517,6 +520,9 @@ export default function ActivityDetailPage({ detail, unit }: Props) {
               margin={CHART_MARGIN}
               onMouseMove={handleChartMove}
               onMouseLeave={clearHover}
+              onTouchStart={handleChartMove}
+              onTouchMove={handleChartMove}
+              onTouchEnd={clearHover}
             >
               <defs>
                 <linearGradient id="elevGradient" x1="0" y1="0" x2="0" y2="1">
@@ -568,6 +574,9 @@ export default function ActivityDetailPage({ detail, unit }: Props) {
               margin={CHART_MARGIN}
               onMouseMove={handleChartMove}
               onMouseLeave={clearHover}
+              onTouchStart={handleChartMove}
+              onTouchMove={handleChartMove}
+              onTouchEnd={clearHover}
             >
               <XAxis
                 dataKey="dist"
