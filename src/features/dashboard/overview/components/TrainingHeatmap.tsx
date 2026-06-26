@@ -111,26 +111,24 @@ export default function TrainingHeatmap({
         subtitle={`${toDisplayDistance(total, unit)} ${distLabel} over the last year`}
       />
 
+      {/* Fixed-size tiles (constant height); the card hugs them and the whole
+          card scrolls horizontally on narrow widths (overflow on the wrapper
+          in OverviewTab), GitHub-style. */}
       <div className="mt-3 flex gap-2">
-        {/* Weekday labels — stretch to the grid height, 7 even slots. */}
-        <div className="flex shrink-0 flex-col gap-[3px] pt-4 text-[9px] text-(--ink-4)">
+        {/* Weekday labels */}
+        <div className="mt-4 flex shrink-0 flex-col gap-[3px] text-[9px] text-(--ink-4)">
           {WEEKDAYS.map((d, i) => (
-            <div
-              key={d}
-              className="flex flex-1 items-center justify-end pr-1 leading-none"
-            >
+            <div key={d} className="h-[18px] w-7 pr-1 text-right leading-[18px]">
               {i === 0 || i === 2 || i === 4 ? d : ''}
             </div>
           ))}
         </div>
 
-        {/* Months + grid — fills the remaining width; tiles are responsive
-            squares (flex columns + aspect-square) so they wrap the card with
-            no trailing grey, GitHub-style. */}
-        <div className="flex min-w-0 flex-1 flex-col gap-1">
+        {/* Months + grid */}
+        <div className="flex flex-col gap-1">
           <div className="flex h-3 gap-[3px] text-[9px] text-(--ink-4)">
             {monthLabels.map((m, w) => (
-              <div key={w} className="relative flex-1">
+              <div key={w} className="relative w-[18px]">
                 {m && (
                   <span className="absolute left-0 top-0 whitespace-nowrap">{m}</span>
                 )}
@@ -139,12 +137,12 @@ export default function TrainingHeatmap({
           </div>
           <div className="flex gap-[3px]">
             {weeks.map((col, w) => (
-              <div key={w} className="flex flex-1 flex-col gap-[3px]">
+              <div key={w} className="flex flex-col gap-[3px]">
                 {col.map((c) => (
                   <div
                     key={c.key}
                     title={title(c)}
-                    className="aspect-square w-full rounded-[2px]"
+                    className="h-[18px] w-[18px] rounded-[2px]"
                     style={{ backgroundColor: c.future ? 'transparent' : cellColor(c.level) }}
                   />
                 ))}

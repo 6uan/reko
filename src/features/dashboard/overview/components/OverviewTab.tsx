@@ -159,7 +159,7 @@ export default function Overview({ runs, unit }: Props) {
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-col lg:flex-row gap-4 lg:items-stretch">
-        <div className="lg:flex-1 min-w-0">
+        <div className="min-w-0 overflow-x-auto">
           <TrainingHeatmap runs={allRuns} unit={unit} />
         </div>
         <div className="lg:w-44 lg:shrink-0">
