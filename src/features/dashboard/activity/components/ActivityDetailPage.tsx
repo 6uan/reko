@@ -8,6 +8,7 @@
  * or a not-yet-detail-synced activity degrades gracefully.
  */
 
+import { useState } from 'react'
 import {
   Area,
   AreaChart,
@@ -89,6 +90,17 @@ export default function ActivityDetailPage({ detail, unit }: Props) {
   // sec/km → sec/display-unit
   const toUnitPace = (secPerKm: number) =>
     unit === 'mi' ? secPerKm * (KM_PER_MI / 1000) : secPerKm
+
+  // Hover scrubbing: a chart hover sets the distance (meters) the route
+  // map/trace pins to. activeLabel is the x value in display units.
+  const [hoverDist, setHoverDist] = useState<number | null>(null)
+  const handleChartMove = (s: { activeLabel?: string | number }) => {
+    const v = Number(s.activeLabel)
+    if (Number.isFinite(v)) {
+      setHoverDist(unit === 'mi' ? v * KM_PER_MI : v * 1000)
+    }
+  }
+  const clearHover = () => setHoverDist(null)
 
   const chartData: ChartRow[] = series.map((r) => ({
     dist: unit === 'mi' ? r.distM / KM_PER_MI : r.distM / 1000,
@@ -431,7 +443,7 @@ export default function ActivityDetailPage({ detail, unit }: Props) {
         <div className="flex flex-col lg:flex-row items-start gap-3 lg:gap-6">
           {detail.route && (
             <div className="w-full lg:w-[360px] lg:shrink-0">
-              <RouteCard route={detail.route} />
+              <RouteCard route={detail.route} hoverDist={hoverDist} />
             </div>
           )}
           {channels.pace && (
@@ -441,7 +453,12 @@ export default function ActivityDetailPage({ detail, unit }: Props) {
                 subtitle={channels.grade ? 'raw vs grade-adjusted' : undefined}
               />
               <ChartContainer height={detail.route ? 328 : 180}>
-                <LineChart data={chartData} margin={CHART_MARGIN}>
+                <LineChart
+              data={chartData}
+              margin={CHART_MARGIN}
+              onMouseMove={handleChartMove}
+              onMouseLeave={clearHover}
+            >
                   <XAxis
                     dataKey="dist"
                     type="number"
@@ -495,7 +512,12 @@ export default function ActivityDetailPage({ detail, unit }: Props) {
             subtitle={`${Math.round(a.elevationGain)} m gain`}
           />
           <ChartContainer height={180}>
-            <AreaChart data={chartData} margin={CHART_MARGIN}>
+            <AreaChart
+              data={chartData}
+              margin={CHART_MARGIN}
+              onMouseMove={handleChartMove}
+              onMouseLeave={clearHover}
+            >
               <defs>
                 <linearGradient id="elevGradient" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="0%" stopColor="var(--accent)" stopOpacity={0.2} />
@@ -541,7 +563,12 @@ export default function ActivityDetailPage({ detail, unit }: Props) {
             subtitle={a.avgHr !== null ? `avg ${Math.round(a.avgHr)} bpm` : undefined}
           />
           <ChartContainer height={180}>
-            <LineChart data={chartData} margin={CHART_MARGIN}>
+            <LineChart
+              data={chartData}
+              margin={CHART_MARGIN}
+              onMouseMove={handleChartMove}
+              onMouseLeave={clearHover}
+            >
               <XAxis
                 dataKey="dist"
                 type="number"

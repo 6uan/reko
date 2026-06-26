@@ -11,7 +11,13 @@ import RouteTrace from './RouteTrace'
 
 type View = 'map' | 'trace'
 
-export default function RouteCard({ route }: { route: [number, number][] }) {
+export default function RouteCard({
+  route,
+  hoverDist,
+}: {
+  route: { points: [number, number][]; distM: number[] }
+  hoverDist: number | null
+}) {
   const [view, setView] = useState<View>(() => {
     if (typeof window !== 'undefined') {
       return (localStorage.getItem('reko-route-view') as View) || 'map'
@@ -39,9 +45,17 @@ export default function RouteCard({ route }: { route: [number, number][] }) {
       </div>
       <div className="mt-3">
         {view === 'map' ? (
-          <RouteMap route={route} />
+          <RouteMap
+            points={route.points}
+            distM={route.distM}
+            hoverDist={hoverDist}
+          />
         ) : (
-          <RouteTrace route={route} />
+          <RouteTrace
+            points={route.points}
+            distM={route.distM}
+            hoverDist={hoverDist}
+          />
         )}
       </div>
     </Card>

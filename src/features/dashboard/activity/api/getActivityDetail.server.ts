@@ -122,8 +122,8 @@ export type ActivityDetailPayload = {
   splitsStandard: PaceSplit[]
   /** Auto/manual laps. */
   laps: LapRow[]
-  /** Decoded GPS route as [lng, lat] points (downsampled), or null. */
-  route: [number, number][] | null
+  /** Decoded GPS route: [lng,lat] points + cumulative meters per point, or null. */
+  route: { points: [number, number][]; distM: number[] } | null
 }
 
 function mapPaceSplit(s: StravaSplit, i: number): PaceSplit {
@@ -159,21 +159,35 @@ function mapLap(l: StravaLap, i: number): LapRow {
 }
 
 /**
- * Downsample a Strava `latlng` stream ([[lat,lng], …]) to ~target points and
- * flip to [lng,lat] for the map / SVG renderers. Null if absent or too short.
+ * Downsample a Strava `latlng` stream ([[lat,lng], …]) to ~target points,
+ * flip to [lng,lat] for the renderers, and carry each kept point's cumulative
+ * distance (from the index-aligned `distance` stream) so a chart hover can be
+ * matched to a position. Null if absent or too short.
  */
-function buildRoute(data: unknown, target: number): [number, number][] | null {
-  if (!Array.isArray(data) || data.length < 2) return null
-  const step = Math.max(1, Math.floor(data.length / target))
-  const out: [number, number][] = []
-  const push = (p: unknown) => {
+function buildRoute(
+  latlng: unknown,
+  distance: number[] | undefined,
+  target: number,
+): { points: [number, number][]; distM: number[] } | null {
+  if (!Array.isArray(latlng) || latlng.length < 2) return null
+  const step = Math.max(1, Math.floor(latlng.length / target))
+  const points: [number, number][] = []
+  const distM: number[] = []
+  const push = (i: number) => {
+    const p = latlng[i]
     if (Array.isArray(p) && typeof p[0] === 'number' && typeof p[1] === 'number') {
-      out.push([p[1], p[0]]) // [lat,lng] → [lng,lat]
+      points.push([p[1], p[0]]) // [lat,lng] → [lng,lat]
+      const d = distance?.[i]
+      distM.push(
+        typeof d === 'number' && Number.isFinite(d)
+          ? d
+          : (distM[distM.length - 1] ?? 0),
+      )
     }
   }
-  for (let i = 0; i < data.length; i += step) push(data[i])
-  push(data[data.length - 1])
-  return out.length >= 2 ? out : null
+  for (let i = 0; i < latlng.length; i += step) push(i)
+  push(latlng.length - 1)
+  return points.length >= 2 ? { points, distM } : null
 }
 
 /**
@@ -311,6 +325,7 @@ export async function getActivityDetail(
   // scalar `ch` map above; read it straight from the stream rows.
   const route = buildRoute(
     streamRows.find((r) => r.streamType === 'latlng')?.data,
+    distance,
     400,
   )
 
