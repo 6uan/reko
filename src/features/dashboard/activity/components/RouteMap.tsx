@@ -71,7 +71,7 @@ export default function RouteMap({ route }: { route: [number, number][] }) {
   return (
     <div
       ref={ref}
-      className="h-72 w-full rounded-(--radius-m) overflow-hidden border border-(--line)"
+      className="aspect-square w-full rounded-(--radius-m) overflow-hidden border border-(--line)"
     />
   )
 }

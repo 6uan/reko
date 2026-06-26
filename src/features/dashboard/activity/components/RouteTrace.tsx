@@ -18,9 +18,9 @@ export default function RouteTrace({ route }: { route: [number, number][] }) {
   const minY = Math.min(...ys)
   const maxY = Math.max(...ys)
 
-  const W = 600
-  const H = 320
-  const pad = 24
+  const W = 400
+  const H = 400
+  const pad = 28
   const spanX = Math.max(maxX - minX, 1e-9)
   const spanY = Math.max(maxY - minY, 1e-9)
   const s = Math.min((W - 2 * pad) / spanX, (H - 2 * pad) / spanY)
@@ -36,10 +36,10 @@ export default function RouteTrace({ route }: { route: [number, number][] }) {
     .join(' ')
 
   return (
-    <div className="rounded-(--radius-m) border border-(--line) bg-(--card-2) p-4">
+    <div className="aspect-square w-full overflow-hidden rounded-(--radius-m) border border-(--line) bg-(--card-2)">
       <svg
         viewBox={`0 0 ${W} ${H}`}
-        className="w-full h-auto"
+        className="w-full h-full"
         preserveAspectRatio="xMidYMid meet"
       >
         <path

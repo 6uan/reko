@@ -424,17 +424,23 @@ export default function ActivityDetailPage({ detail, unit }: Props) {
         </Card>
       )}
 
-      {/* Route (map ⇄ trace) */}
-      {detail.route && <RouteCard route={detail.route} />}
-
-      {/* Elevation */}
-      {channels.elev && (
-        <Card className="p-4">
-          <SectionHeader
-            title="Elevation"
-            subtitle={`${Math.round(a.elevationGain)} m gain`}
-          />
-          <ChartContainer height={180}>
+      {/* Route (square) + Elevation — paired side by side on wide screens.
+          Square map renders ~328px in the 360px column; the elevation chart
+          matches that height so the two cards line up. */}
+      {(detail.route || channels.elev) && (
+        <div className="flex flex-col lg:flex-row items-start gap-3 lg:gap-6">
+          {detail.route && (
+            <div className="w-full lg:w-[360px] lg:shrink-0">
+              <RouteCard route={detail.route} />
+            </div>
+          )}
+          {channels.elev && (
+            <Card className="p-4 w-full lg:flex-1">
+              <SectionHeader
+                title="Elevation"
+                subtitle={`${Math.round(a.elevationGain)} m gain`}
+              />
+              <ChartContainer height={detail.route ? 328 : 180}>
             <AreaChart data={chartData} margin={CHART_MARGIN}>
               <defs>
                 <linearGradient id="elevGradient" x1="0" y1="0" x2="0" y2="1">
@@ -469,8 +475,10 @@ export default function ActivityDetailPage({ detail, unit }: Props) {
                 connectNulls
               />
             </AreaChart>
-          </ChartContainer>
-        </Card>
+              </ChartContainer>
+            </Card>
+          )}
+        </div>
       )}
 
       {/* Pace (+ GAP overlay) */}
