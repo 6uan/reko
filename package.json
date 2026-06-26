@@ -34,6 +34,7 @@
     "@tanstack/router-plugin": "^1.132.0",
     "clsx": "^2.1.1",
     "drizzle-orm": "^0.45.2",
+    "maplibre-gl": "^5.24.0",
     "pg": "^8.20.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",

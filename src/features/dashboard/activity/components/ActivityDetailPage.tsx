@@ -45,6 +45,7 @@ import ZoneBar from '@/features/dashboard/ui/ZoneBar'
 import Table from '@/features/dashboard/ui/Table'
 import StravaLink from '@/features/dashboard/ui/StravaLink'
 import SyncActivityButton from './SyncActivityButton'
+import RouteCard from './RouteCard'
 import type {
   ActivityDetailPayload,
   LapRow,
@@ -422,6 +423,9 @@ export default function ActivityDetailPage({ detail, unit }: Props) {
           </div>
         </Card>
       )}
+
+      {/* Route (map ⇄ trace) */}
+      {detail.route && <RouteCard route={detail.route} />}
 
       {/* Elevation */}
       {channels.elev && (

@@ -122,6 +122,8 @@ export type ActivityDetailPayload = {
   splitsStandard: PaceSplit[]
   /** Auto/manual laps. */
   laps: LapRow[]
+  /** Decoded GPS route as [lng, lat] points (downsampled), or null. */
+  route: [number, number][] | null
 }
 
 function mapPaceSplit(s: StravaSplit, i: number): PaceSplit {
@@ -154,6 +156,24 @@ function mapLap(l: StravaLap, i: number): LapRow {
     cadenceSpm:
       l.average_cadence != null ? Math.round(l.average_cadence * 2) : null,
   }
+}
+
+/**
+ * Downsample a Strava `latlng` stream ([[lat,lng], …]) to ~target points and
+ * flip to [lng,lat] for the map / SVG renderers. Null if absent or too short.
+ */
+function buildRoute(data: unknown, target: number): [number, number][] | null {
+  if (!Array.isArray(data) || data.length < 2) return null
+  const step = Math.max(1, Math.floor(data.length / target))
+  const out: [number, number][] = []
+  const push = (p: unknown) => {
+    if (Array.isArray(p) && typeof p[0] === 'number' && typeof p[1] === 'number') {
+      out.push([p[1], p[0]]) // [lat,lng] → [lng,lat]
+    }
+  }
+  for (let i = 0; i < data.length; i += step) push(data[i])
+  push(data[data.length - 1])
+  return out.length >= 2 ? out : null
 }
 
 /**
@@ -287,6 +307,13 @@ export async function getActivityDetail(
   const cadence = ch.get('cadence')
   const grade = ch.get('grade_smooth')
 
+  // Decoded GPS route for the map/trace — latlng is nested so it bypasses the
+  // scalar `ch` map above; read it straight from the stream rows.
+  const route = buildRoute(
+    streamRows.find((r) => r.streamType === 'latlng')?.data,
+    400,
+  )
+
   const hasStreams =
     !!time && !!distance && time.length >= 2 && distance.length >= 2
 
@@ -386,5 +413,6 @@ export async function getActivityDetail(
     splitsMetric,
     splitsStandard,
     laps,
+    route,
   }
 }
