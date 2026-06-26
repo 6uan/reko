@@ -67,17 +67,24 @@ export const STRAVA_STREAM_TYPES = [
 export type StravaStreamType = (typeof STRAVA_STREAM_TYPES)[number]
 
 /**
- * Channels worth pulling for the detail backfill. `latlng` and `temp`
- * are intentionally skipped — `latlng` is large and we have no map UX,
- * `temp` is rarely populated. Easy to add later if needed.
+ * Channels pulled for the detail backfill. We request every known channel:
+ * the streams endpoint costs exactly 1 API call regardless of how many keys
+ * are asked for, so the only cost of a wider set is storage. Pulling `latlng`
+ * now (even before a map UX exists) means we never have to re-fetch streams
+ * for a route map later. Channels Strava doesn't have for an activity are
+ * simply absent from the response.
  */
 export const DEFAULT_STREAM_KEYS: readonly StravaStreamType[] = [
   'time',
   'distance',
+  'latlng',
   'altitude',
   'velocity_smooth',
   'heartrate',
   'cadence',
+  'watts',
+  'temp',
+  'moving',
   'grade_smooth',
 ]
 

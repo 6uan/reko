@@ -11,9 +11,10 @@
  * loader that has already authenticated the user.
  */
 
-import { and, count, desc, eq, gte, isNotNull, or } from 'drizzle-orm'
+import { and, count, desc, eq, gte, isNotNull } from 'drizzle-orm'
 import { getDb } from '@/db/client'
 import { activities, syncLog, tokens } from '@/db/schema'
+import { isRunActivity } from '@/db/runFilter'
 import {
   getComputedDataStatus,
   type ComputedDataStatus,
@@ -93,7 +94,7 @@ export async function getHealthData(
       .where(
         and(
           eq(activities.userId, userId),
-          or(eq(activities.type, 'Run'), eq(activities.sportType, 'Run')),
+          isRunActivity(),
         ),
       ),
 
@@ -151,10 +152,7 @@ export async function getHealthData(
               eq(activities.userId, userId),
               gte(activities.syncedAt, row.startedAt),
               // Use finishedAt + 1s buffer for timing edge cases.
-              or(
-                eq(activities.type, 'Run'),
-                eq(activities.sportType, 'Run'),
-              ),
+              isRunActivity(),
             ),
           )
         activitiesSynced = result?.value ?? 0

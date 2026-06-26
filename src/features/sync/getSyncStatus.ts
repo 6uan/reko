@@ -9,9 +9,10 @@
  */
 
 import { createServerFn } from '@tanstack/react-start'
-import { and, count, desc, eq, or } from 'drizzle-orm'
+import { and, count, desc, eq } from 'drizzle-orm'
 import { getDb } from '@/db/client'
 import { activities, syncLog } from '@/db/schema'
+import { isRunActivity } from '@/db/runFilter'
 import { readSessionOnServer } from '@/features/auth/session'
 
 export type SyncStatusValue =
@@ -67,7 +68,7 @@ export const getSyncStatus = createServerFn({ method: 'GET' }).handler(
       .where(
         and(
           eq(activities.userId, userId),
-          or(eq(activities.type, 'Run'), eq(activities.sportType, 'Run')),
+          isRunActivity(),
         ),
       )
 

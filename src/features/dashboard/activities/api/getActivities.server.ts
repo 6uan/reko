@@ -17,6 +17,7 @@ import {
   derivedBestEfforts,
   hrZoneEfforts,
 } from '@/db/schema'
+import { isRunActivity, isWalkActivity } from '@/db/runFilter'
 import type { BestEffortTimes, Activity } from '@/lib/activities'
 import type { HrZoneEfforts, HrZoneName } from '@/lib/heartRate'
 
@@ -52,12 +53,7 @@ export async function getActivities(userId: number): Promise<Activity[]> {
       .where(
         and(
           eq(activities.userId, userId),
-          or(
-            eq(activities.type, 'Run'),
-            eq(activities.sportType, 'Run'),
-            eq(activities.type, 'Walk'),
-            eq(activities.sportType, 'Walk'),
-          ),
+          or(isRunActivity(), isWalkActivity()),
         ),
       )
       .orderBy(desc(activities.startDate)),
