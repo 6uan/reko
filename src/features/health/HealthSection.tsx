@@ -287,10 +287,10 @@ export default function HealthSection({ data }: { data: HealthData }) {
                   {data.detailCoveragePct}%
                 </span>
                 <span className="text-sm text-(--ink-3) ml-1.5">
-                  detail coverage
+                  stream coverage
                 </span>
                 <p className="text-xs text-(--ink-3) mt-0.5">
-                  {data.detailSynced} of {data.totalActivities} with full data
+                  {data.detailSynced} of {data.totalActivities} with stream data
                 </p>
               </div>
             </div>

@@ -11,7 +11,7 @@
  * loader that has already authenticated the user.
  */
 
-import { and, count, desc, eq, gte, isNotNull } from 'drizzle-orm'
+import { and, count, desc, eq, gte } from 'drizzle-orm'
 import { getDb } from '@/db/client'
 import { activities, syncLog, tokens } from '@/db/schema'
 import { isRunActivity } from '@/db/runFilter'
@@ -41,9 +41,9 @@ export type HealthData = {
   totalActivities: number
   /** Total runs specifically. */
   totalRuns: number
-  /** Activities that have had detail + streams fetched. */
+  /** Activities that actually have stream data stored. */
   detailSynced: number
-  /** Percentage of activities with full detail. */
+  /** Percentage of activities with stream data stored. */
   detailCoveragePct: number
   /** Whether the token can auto-refresh (not revoked). */
   tokenHealthy: boolean
@@ -58,14 +58,8 @@ export async function getHealthData(
 ): Promise<HealthData> {
   const db = getDb()
 
-  const [
-    recentSyncRows,
-    totalResult,
-    runResult,
-    detailResult,
-    tokenRow,
-    computedData,
-  ] = await Promise.all([
+  const [recentSyncRows, totalResult, runResult, tokenRow, computedData] =
+    await Promise.all([
     // Last 5 sync_log entries (backfill only — detail fetches are invisible plumbing).
     db
       .select({
@@ -98,17 +92,6 @@ export async function getHealthData(
         ),
       ),
 
-    // Detail-synced activities.
-    db
-      .select({ value: count() })
-      .from(activities)
-      .where(
-        and(
-          eq(activities.userId, userId),
-          isNotNull(activities.detailSyncedAt),
-        ),
-      ),
-
     // Token health — just check if it exists and isn't ancient.
     db
       .select({
@@ -125,7 +108,10 @@ export async function getHealthData(
 
   const total = totalResult[0]?.value ?? 0
   const runs = runResult[0]?.value ?? 0
-  const detail = detailResult[0]?.value ?? 0
+  // Coverage reflects real stored streams, not detailSyncedAt: an activity can
+  // be detail-synced yet have no streams (manual / no-GPS entries), and must
+  // not count as "covered" — otherwise this reads 100% while charts are empty.
+  const detail = computedData.withStreams
   const token = tokenRow[0]
 
   const detailCoveragePct =

@@ -1,6 +1,7 @@
 import { Link, useLocation } from "@tanstack/react-router";
 import ProfileCard from "@/components/ProfileCard";
 import IconButton from "@/components/ui/IconButton";
+import RunTypeToggles from "./RunTypeToggles";
 import { TABS, isTabActive } from "./tabs";
 import { HiOutlineXMark } from "react-icons/hi2";
 
@@ -58,6 +59,13 @@ export default function MobileNav({
           })}
         </div>
       </nav>
+
+      <div className="mx-4 mb-3 pt-3 border-t border-(--line)">
+        <p className="text-[10px] font-medium uppercase tracking-wider text-(--ink-4) mb-1 px-2">
+          Run types
+        </p>
+        <RunTypeToggles />
+      </div>
 
       <div className="mx-4 mb-2">
         <Link

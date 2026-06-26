@@ -36,6 +36,12 @@ import { withFreshToken } from './withFreshToken.server'
 /** Default pause when Strava sends a 429 without a Retry-After header. */
 const DEFAULT_RETRY_AFTER_MS = 15 * 60 * 1000
 
+/** A 'running' detail row that hasn't heartbeat in this long is treated as a
+ *  dead worker (crash / deploy mid-run) and reclaimed by the next enqueue.
+ *  Comfortably above a single activity's fetch time; 429 pauses set
+ *  status='rate_limited' (not 'running'), so they never trip this. */
+const STALE_LOCK_MS = 10 * 60 * 1000
+
 export type EnqueueDetailResult = {
   syncLogId: number | null
   alreadyRunning: boolean
@@ -49,7 +55,11 @@ export async function enqueueDetailFetch(
   // Idempotency: don't double-run. A previous detail sync still in flight
   // will eventually finish and pick up any straggler activities.
   const [active] = await db
-    .select({ id: syncLog.id })
+    .select({
+      id: syncLog.id,
+      heartbeatAt: syncLog.heartbeatAt,
+      startedAt: syncLog.startedAt,
+    })
     .from(syncLog)
     .where(
       and(
@@ -61,7 +71,24 @@ export async function enqueueDetailFetch(
     .limit(1)
 
   if (active) {
-    return { syncLogId: active.id, alreadyRunning: true }
+    const lastBeat = (active.heartbeatAt ?? active.startedAt).getTime()
+    if (Date.now() - lastBeat < STALE_LOCK_MS) {
+      return { syncLogId: active.id, alreadyRunning: true }
+    }
+    // Stale: the previous worker died mid-run without releasing the row, which
+    // would otherwise block every future detail fetch. Mark it errored so a
+    // fresh worker can take over below.
+    await db
+      .update(syncLog)
+      .set({
+        status: 'error',
+        error: 'stale lock reclaimed (worker died mid-run)',
+        finishedAt: new Date(),
+      })
+      .where(eq(syncLog.id, active.id))
+    console.warn(
+      `[detail worker] reclaimed stale lock ${active.id} for user ${userId}`,
+    )
   }
 
   const [{ id: syncLogId }] = await db
@@ -70,6 +97,7 @@ export async function enqueueDetailFetch(
       userId,
       kind: 'detail',
       status: 'running',
+      heartbeatAt: new Date(),
     })
     .returning({ id: syncLog.id })
 
@@ -176,7 +204,7 @@ async function runDetailFetchWorker(
         // can show "X activities processed, Y calls used."
         await db
           .update(syncLog)
-          .set({ callsUsed })
+          .set({ callsUsed, heartbeatAt: new Date() })
           .where(eq(syncLog.id, syncLogId))
 
         // Live-updates fan-out: nudge open dashboards each time a new
@@ -206,7 +234,7 @@ async function runDetailFetchWorker(
 
           await db
             .update(syncLog)
-            .set({ status: 'running' })
+            .set({ status: 'running', heartbeatAt: new Date() })
             .where(eq(syncLog.id, syncLogId))
           // Loop continues — the same activity will be picked up again
           // because detailSyncedAt is still NULL.

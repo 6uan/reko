@@ -391,6 +391,10 @@ export const syncLog = pgTable(
       .defaultNow(),
     finishedAt: timestamp("finished_at", { withTimezone: true }),
     callsUsed: integer("calls_used").notNull().default(0),
+    /** Bumped by the detail worker each activity + on 429 resume, so a worker
+     *  that died mid-run can be detected as stale and reclaimed by the next
+     *  enqueue (see runDetailFetchWorker.enqueueDetailFetch). */
+    heartbeatAt: timestamp("heartbeat_at", { withTimezone: true }),
     status: syncStatusEnum("status").notNull().default("running"),
     error: text("error"),
   },
