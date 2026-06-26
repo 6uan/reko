@@ -10,6 +10,7 @@ import {
   type Unit,
 } from '@/lib/activities'
 import KpiCards from './KpiCards'
+import TrainingHeatmap from './TrainingHeatmap'
 import VolumeChart, { type MonthBucket } from './VolumeChart'
 import PaceChart, { type PacePoint } from './PaceChart'
 import RecentRunsTable from './RecentRunsTable'
@@ -30,7 +31,7 @@ const MONTH_NAMES_FULL = [
 ]
 
 export default function Overview({ runs, unit }: Props) {
-  const { range } = useDashboard()
+  const { range, allRuns } = useDashboard()
 
   // ── KPI data (scoped to selected range) ───────────────────────────
 
@@ -143,6 +144,8 @@ export default function Overview({ runs, unit }: Props) {
         unit={unit}
         period={periodLabel(range)}
       />
+
+      <TrainingHeatmap runs={allRuns} unit={unit} />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-2.5">
         <VolumeChart data={monthlyBuckets} unit={unit} />
