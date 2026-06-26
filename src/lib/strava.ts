@@ -116,6 +116,19 @@ export type StravaStreamData = {
  */
 export type StravaStreamSet = Partial<Record<StravaStreamType, StravaStreamData>>
 
+/** Strava DetailedGear (GET /gear/{id}) — a shoe or bike. */
+export type StravaGear = {
+  id: string
+  primary: boolean
+  name: string
+  nickname?: string | null
+  brand_name?: string | null
+  model_name?: string | null
+  /** Lifetime distance in meters. */
+  distance: number
+  retired?: boolean
+}
+
 /**
  * Thrown when Strava returns 429. Surfaced as a typed error so the
  * detail-fetch worker can pause until the next rate-limit window
@@ -289,6 +302,32 @@ export async function fetchActivityStreams(
   if (!response.ok) {
     throw new Error(
       `Strava streams fetch failed (${response.status}) for activity ${activityId}`,
+    )
+  }
+
+  return response.json()
+}
+
+/**
+ * Fetch one gear item (shoe / bike) by its Strava id. 1 API call. Works with
+ * the standard read scope — it's the authenticated athlete's own gear.
+ */
+export async function fetchGear(
+  accessToken: string,
+  gearId: string,
+): Promise<StravaGear> {
+  const response = await fetch(`${STRAVA_API}/gear/${gearId}`, {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  })
+
+  if (response.status === 429) {
+    throw new StravaRateLimitedError(
+      parseRetryAfter(response.headers.get('retry-after')),
+    )
+  }
+  if (!response.ok) {
+    throw new Error(
+      `Strava gear fetch failed (${response.status}) for gear ${gearId}`,
     )
   }
 

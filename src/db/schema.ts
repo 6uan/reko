@@ -401,6 +401,38 @@ export const syncLog = pgTable(
   (t) => [index("sync_log_user_started_idx").on(t.userId, t.startedAt)],
 );
 
+// ── Gear (shoes / bikes — read-only mirror of Strava's gear) ─────────────
+//
+// Strava's API has no write endpoint for gear, so this is a one-way cache:
+// syncGear pulls each gear item referenced by the user's activities. Keyed by
+// Strava's own gear id (e.g. "g1234567").
+
+export const gear = pgTable(
+  "gear",
+  {
+    id: text("id").primaryKey(),
+    userId: integer("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    brandName: text("brand_name"),
+    modelName: text("model_name"),
+    nickname: text("nickname"),
+    /** Strava's primary-gear flag. */
+    isPrimary: boolean("is_primary").notNull().default(false),
+    retired: boolean("retired").notNull().default(false),
+    /** Lifetime distance in meters, as tracked by Strava. */
+    distance: real("distance").notNull().default(0),
+    fetchedAt: timestamp("fetched_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [index("gear_user_idx").on(t.userId)],
+);
+
+export type Gear = typeof gear.$inferSelect;
+export type NewGear = typeof gear.$inferInsert;
+
 // ── Convenience type exports ─────────────────────────────────────────────
 
 export type User = typeof users.$inferSelect;

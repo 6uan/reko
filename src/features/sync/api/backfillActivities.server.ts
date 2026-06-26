@@ -30,6 +30,7 @@ import {
   enqueueDetailFetch,
   requeueStreamlessActivities,
 } from './runDetailFetchWorker.server'
+import { syncGear } from './syncGear.server'
 import { withFreshToken } from './withFreshToken.server'
 
 const PAGE_SIZE = 200 // Strava's max
@@ -207,6 +208,12 @@ async function runBackfillWorker(
     // filters on kind='backfill' so this background work stays invisible.
     enqueueDetailFetch(userId).catch((err) => {
       console.error('[backfill worker] failed to enqueue detail fetch:', err)
+    })
+
+    // Mirror the user's gear (shoes/bikes) from Strava — read-only, a few
+    // calls. Fire-and-forget; gear_ids are already set from the summary upsert.
+    syncGear(userId).catch((err) => {
+      console.error('[backfill worker] gear sync failed:', err)
     })
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err)

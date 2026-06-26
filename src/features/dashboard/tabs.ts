@@ -4,6 +4,7 @@ import {
   LuList,
   LuCircleGauge,
   LuHeartPulse,
+  LuFootprints,
 } from "react-icons/lu";
 import { FaPersonRunning } from "react-icons/fa6";
 import { FaTrophy } from "react-icons/fa";
@@ -16,6 +17,7 @@ export const TABS: Tab[] = [
   { to: "/dashboard/pace", icon: LuCircleGauge, label: "Pace" },
   { to: "/dashboard/heart-rate", icon: LuHeartPulse, label: "Heart rate" },
   { to: "/dashboard/cadence", icon: FaPersonRunning, label: "Cadence" },
+  { to: "/dashboard/gear", icon: LuFootprints, label: "Gear" },
   { to: "/dashboard/records", icon: FaTrophy, label: "Personal records" },
 ];
 

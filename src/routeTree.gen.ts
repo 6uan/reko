@@ -16,6 +16,7 @@ import { Route as DashboardIndexRouteImport } from './routes/dashboard/index'
 import { Route as DashboardRecordsRouteImport } from './routes/dashboard/records'
 import { Route as DashboardPaceRouteImport } from './routes/dashboard/pace'
 import { Route as DashboardHeartRateRouteImport } from './routes/dashboard/heart-rate'
+import { Route as DashboardGearRouteImport } from './routes/dashboard/gear'
 import { Route as DashboardCadenceRouteImport } from './routes/dashboard/cadence'
 import { Route as DashboardActivitiesRouteImport } from './routes/dashboard/activities'
 import { Route as AuthStravaRouteImport } from './routes/auth/strava'
@@ -57,6 +58,11 @@ const DashboardPaceRoute = DashboardPaceRouteImport.update({
 const DashboardHeartRateRoute = DashboardHeartRateRouteImport.update({
   id: '/heart-rate',
   path: '/heart-rate',
+  getParentRoute: () => DashboardRoute,
+} as any)
+const DashboardGearRoute = DashboardGearRouteImport.update({
+  id: '/gear',
+  path: '/gear',
   getParentRoute: () => DashboardRoute,
 } as any)
 const DashboardCadenceRoute = DashboardCadenceRouteImport.update({
@@ -103,6 +109,7 @@ export interface FileRoutesByFullPath {
   '/auth/strava': typeof AuthStravaRoute
   '/dashboard/activities': typeof DashboardActivitiesRoute
   '/dashboard/cadence': typeof DashboardCadenceRoute
+  '/dashboard/gear': typeof DashboardGearRoute
   '/dashboard/heart-rate': typeof DashboardHeartRateRoute
   '/dashboard/pace': typeof DashboardPaceRoute
   '/dashboard/records': typeof DashboardRecordsRoute
@@ -118,6 +125,7 @@ export interface FileRoutesByTo {
   '/auth/strava': typeof AuthStravaRoute
   '/dashboard/activities': typeof DashboardActivitiesRoute
   '/dashboard/cadence': typeof DashboardCadenceRoute
+  '/dashboard/gear': typeof DashboardGearRoute
   '/dashboard/heart-rate': typeof DashboardHeartRateRoute
   '/dashboard/pace': typeof DashboardPaceRoute
   '/dashboard/records': typeof DashboardRecordsRoute
@@ -135,6 +143,7 @@ export interface FileRoutesById {
   '/auth/strava': typeof AuthStravaRoute
   '/dashboard/activities': typeof DashboardActivitiesRoute
   '/dashboard/cadence': typeof DashboardCadenceRoute
+  '/dashboard/gear': typeof DashboardGearRoute
   '/dashboard/heart-rate': typeof DashboardHeartRateRoute
   '/dashboard/pace': typeof DashboardPaceRoute
   '/dashboard/records': typeof DashboardRecordsRoute
@@ -153,6 +162,7 @@ export interface FileRouteTypes {
     | '/auth/strava'
     | '/dashboard/activities'
     | '/dashboard/cadence'
+    | '/dashboard/gear'
     | '/dashboard/heart-rate'
     | '/dashboard/pace'
     | '/dashboard/records'
@@ -168,6 +178,7 @@ export interface FileRouteTypes {
     | '/auth/strava'
     | '/dashboard/activities'
     | '/dashboard/cadence'
+    | '/dashboard/gear'
     | '/dashboard/heart-rate'
     | '/dashboard/pace'
     | '/dashboard/records'
@@ -184,6 +195,7 @@ export interface FileRouteTypes {
     | '/auth/strava'
     | '/dashboard/activities'
     | '/dashboard/cadence'
+    | '/dashboard/gear'
     | '/dashboard/heart-rate'
     | '/dashboard/pace'
     | '/dashboard/records'
@@ -254,6 +266,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardHeartRateRouteImport
       parentRoute: typeof DashboardRoute
     }
+    '/dashboard/gear': {
+      id: '/dashboard/gear'
+      path: '/gear'
+      fullPath: '/dashboard/gear'
+      preLoaderRoute: typeof DashboardGearRouteImport
+      parentRoute: typeof DashboardRoute
+    }
     '/dashboard/cadence': {
       id: '/dashboard/cadence'
       path: '/cadence'
@@ -309,6 +328,7 @@ declare module '@tanstack/react-router' {
 interface DashboardRouteChildren {
   DashboardActivitiesRoute: typeof DashboardActivitiesRoute
   DashboardCadenceRoute: typeof DashboardCadenceRoute
+  DashboardGearRoute: typeof DashboardGearRoute
   DashboardHeartRateRoute: typeof DashboardHeartRateRoute
   DashboardPaceRoute: typeof DashboardPaceRoute
   DashboardRecordsRoute: typeof DashboardRecordsRoute
@@ -319,6 +339,7 @@ interface DashboardRouteChildren {
 const DashboardRouteChildren: DashboardRouteChildren = {
   DashboardActivitiesRoute: DashboardActivitiesRoute,
   DashboardCadenceRoute: DashboardCadenceRoute,
+  DashboardGearRoute: DashboardGearRoute,
   DashboardHeartRateRoute: DashboardHeartRateRoute,
   DashboardPaceRoute: DashboardPaceRoute,
   DashboardRecordsRoute: DashboardRecordsRoute,
