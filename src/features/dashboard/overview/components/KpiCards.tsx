@@ -17,6 +17,9 @@ type Props = {
   period: string
   /** Vertical stat-rail layout (beside the heatmap) instead of the 4-up grid. */
   stacked?: boolean
+  /** Avg HR / cadence across the runs — shown in the stacked rail only. */
+  avgHr?: number | null
+  avgCadence?: number | null
 }
 
 export default function KpiCards({
@@ -27,6 +30,8 @@ export default function KpiCards({
   unit,
   period,
   stacked = false,
+  avgHr = null,
+  avgCadence = null,
 }: Props) {
   const unitLabel = distanceUnit(unit)
   const paceLabel = paceUnit(unit)
@@ -35,20 +40,25 @@ export default function KpiCards({
   // "Total Runs" (the run count already rides under Total Distance).
   if (stacked) {
     return (
-      <Card className="h-full p-4 flex flex-col justify-center divide-y divide-(--line)">
-        <div className="pb-4">
+      <Card className="h-full p-4 flex flex-col justify-center">
+        <div className="grid grid-cols-2 gap-x-4 gap-y-6">
           <Stat
             label="Total Distance"
             value={toDisplayDistance(totalDist, unit)}
             unit={unitLabel}
             detail={`${totalRuns} run${totalRuns !== 1 ? 's' : ''}`}
           />
-        </div>
-        <div className="py-4">
-          <Stat label="Avg Pace" value={formatPace(avgPace)} unit={paceLabel} detail="All runs" />
-        </div>
-        <div className="pt-4">
-          <Stat label="Total Time" value={formatDuration(totalTime)} detail={period} />
+          <Stat label="Avg Pace" value={formatPace(avgPace)} unit={paceLabel} />
+          <Stat
+            label="Avg HR"
+            value={avgHr ?? '—'}
+            unit={avgHr != null ? 'bpm' : undefined}
+          />
+          <Stat
+            label="Avg Cadence"
+            value={avgCadence ?? '—'}
+            unit={avgCadence != null ? 'spm' : undefined}
+          />
         </div>
       </Card>
     )
@@ -87,15 +97,15 @@ function Stat({
   detail?: string
 }) {
   return (
-    <div>
+    <div className="min-w-0">
       <div className="text-eyebrow">{label}</div>
-      <div className="text-stat mt-1">
+      <div className="mt-1 truncate text-2xl font-semibold tabular-nums text-(--ink)">
         {value}
         {unit && (
-          <span className="text-sm text-(--ink-3) ml-0.5 font-normal">{unit}</span>
+          <span className="ml-0.5 text-xs font-normal text-(--ink-3)">{unit}</span>
         )}
       </div>
-      {detail && <div className="text-detail mt-1">{detail}</div>}
+      {detail && <div className="text-detail mt-0.5">{detail}</div>}
     </div>
   )
 }

@@ -46,6 +46,16 @@ export default function Overview({ runs, unit }: Props) {
     return avg(valid.map((r) => paceForUnit(r.avgSpeed, unit)))
   }, [runs, unit])
 
+  const avgHr = useMemo(() => {
+    const v = runs.map((r) => r.avgHr).filter((h): h is number => h != null)
+    return v.length ? Math.round(avg(v)) : null
+  }, [runs])
+
+  const avgCadence = useMemo(() => {
+    const v = runs.map((r) => r.cadence).filter((c): c is number => c != null)
+    return v.length ? Math.round(avg(v)) : null
+  }, [runs])
+
   const totalTime = useMemo(
     () => runs.reduce((s, r) => s + r.movingTime, 0),
     [runs],
@@ -140,13 +150,15 @@ export default function Overview({ runs, unit }: Props) {
         <div className="lg:flex-1 min-w-0">
           <TrainingHeatmap runs={allRuns} unit={unit} />
         </div>
-        <div className="lg:w-64 lg:shrink-0">
+        <div className="lg:w-72 lg:shrink-0">
           <KpiCards
             stacked
             totalDist={totalDist}
             avgPace={avgPace}
             totalRuns={runs.length}
             totalTime={totalTime}
+            avgHr={avgHr}
+            avgCadence={avgCadence}
             unit={unit}
             period={periodLabel(range)}
           />
