@@ -105,13 +105,13 @@ export default function TrainingHeatmap({
   }
 
   return (
-    <Card className="p-4">
+    <Card className="p-4 h-full flex flex-col">
       <SectionHeader
         title="Training"
         subtitle={`${toDisplayDistance(total, unit)} ${distLabel} over the last year`}
       />
 
-      <div className="mt-3 overflow-x-auto">
+      <div className="mt-3 flex-1 flex items-center overflow-x-auto">
         <div className="inline-flex gap-2">
           {/* Weekday labels */}
           <div className="mt-4 flex flex-col gap-[3px] text-[9px] text-(--ink-4)">

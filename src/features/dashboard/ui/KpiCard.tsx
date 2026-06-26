@@ -19,14 +19,15 @@ type Props = {
   unit?: string
   detail?: string
   accent?: 'positive' | 'negative'
+  className?: string
 }
 
-export default function KpiCard({ label, value, unit, detail, accent }: Props) {
+export default function KpiCard({ label, value, unit, detail, accent, className }: Props) {
   const valueColor =
     accent === 'positive' ? 'text-(--ok)' : accent === 'negative' ? 'text-(--bad)' : ''
 
   return (
-    <Card className="p-4">
+    <Card className={`p-4${className ? ` ${className}` : ''}`}>
       <div className="text-eyebrow">{label}</div>
       <div className="text-stat mt-1.5">
         <span className={valueColor}>{value}</span>

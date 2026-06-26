@@ -136,16 +136,22 @@ export default function Overview({ runs, unit }: Props) {
 
   return (
     <div className="flex flex-col gap-4">
-      <KpiCards
-        totalDist={totalDist}
-        avgPace={avgPace}
-        totalRuns={runs.length}
-        totalTime={totalTime}
-        unit={unit}
-        period={periodLabel(range)}
-      />
-
-      <TrainingHeatmap runs={allRuns} unit={unit} />
+      <div className="flex flex-col lg:flex-row gap-4 lg:items-stretch">
+        <div className="lg:flex-1 min-w-0">
+          <TrainingHeatmap runs={allRuns} unit={unit} />
+        </div>
+        <div className="lg:w-64 lg:shrink-0">
+          <KpiCards
+            stacked
+            totalDist={totalDist}
+            avgPace={avgPace}
+            totalRuns={runs.length}
+            totalTime={totalTime}
+            unit={unit}
+            period={periodLabel(range)}
+          />
+        </div>
+      </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-2.5">
         <VolumeChart data={monthlyBuckets} unit={unit} />
