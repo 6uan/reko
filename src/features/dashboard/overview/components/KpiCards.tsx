@@ -44,7 +44,7 @@ export default function KpiCards({
   // "Total Runs" (the run count already rides under Total Distance).
   if (stacked) {
     return (
-      <Card className="h-full p-4 flex items-center gap-5">
+      <Card className="p-4 flex items-center gap-5">
         <div className="flex shrink-0 flex-col items-center gap-1.5">
           <HrZoneRing
             zoneSeconds={zoneSeconds}
@@ -61,7 +61,7 @@ export default function KpiCards({
             Time in zones
           </span>
         </div>
-        <div className="flex flex-1 flex-col gap-4 min-w-0">
+        <div className="flex flex-1 flex-col gap-3 min-w-0">
           <Stat
             label="Total Distance"
             value={toDisplayDistance(totalDist, unit)}
@@ -114,7 +114,7 @@ function Stat({
   return (
     <div className="min-w-0">
       <div className="text-eyebrow">{label}</div>
-      <div className="mt-1 truncate text-2xl font-semibold tabular-nums text-(--ink)">
+      <div className="mt-1 truncate text-xl font-semibold tabular-nums text-(--ink)">
         {value}
         {unit && (
           <span className="ml-0.5 text-xs font-normal text-(--ink-3)">{unit}</span>

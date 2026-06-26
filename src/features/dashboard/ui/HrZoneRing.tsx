@@ -23,8 +23,11 @@ export default function HrZoneRing({ zoneSeconds, center, size = 100 }: Props) {
 
   let start = 0
   const segs = zoneSeconds.map((s, i) => {
+    const z = HR_ZONES[i]
     const len = total > 0 ? (s / total) * C : 0
-    const seg = { color: HR_ZONES[i].color, name: HR_ZONES[i].name, len, start }
+    const pct = total > 0 ? Math.round((s / total) * 100) : 0
+    const range = z.max === Infinity ? `${z.min}+ bpm` : `${z.min}–${z.max} bpm`
+    const seg = { color: z.color, label: `${z.name} · ${range} · ${pct}%`, len, start }
     start += len
     return seg
   })
@@ -54,7 +57,7 @@ export default function HrZoneRing({ zoneSeconds, center, size = 100 }: Props) {
               strokeDasharray={`${Math.max(seg.len - gap, 0.001)} ${C}`}
               transform={`rotate(${(seg.start / C) * 360} 50 50)`}
             >
-              <title>{seg.name}</title>
+              <title>{seg.label}</title>
             </circle>
           ) : null,
         )}

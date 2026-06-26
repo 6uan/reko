@@ -105,7 +105,7 @@ export default function TrainingHeatmap({
   }
 
   return (
-    <Card className="p-4 h-full flex flex-col">
+    <Card className="p-4">
       <SectionHeader
         title="Training"
         subtitle={`${toDisplayDistance(total, unit)} ${distLabel} over the last year`}
