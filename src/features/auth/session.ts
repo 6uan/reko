@@ -19,10 +19,21 @@ export type SessionData = {
 }
 
 // ── Config ─────────────────────────────────────────────────────────
-export const sessionConfig = {
-  password: process.env.SESSION_SECRET!,
-  name: 'reko',
-  maxAge: 60 * 60 * 24 * 30, // 30 days
+const SESSION_MAX_AGE = 60 * 60 * 24 * 30 // 30 days
+
+/**
+ * Cookie-session config, built lazily so the SESSION_SECRET check runs only on
+ * the server. This module is in the client graph (__root.tsx imports
+ * `getSession`), where env vars are undefined — asserting at module top level
+ * would crash the browser bundle, and a missing secret would otherwise
+ * silently disable cookie encryption. Every caller below is server-only.
+ */
+function serverSessionConfig() {
+  const password = process.env.SESSION_SECRET
+  if (!password) {
+    throw new Error('SESSION_SECRET is not set — refusing to read/write sessions')
+  }
+  return { password, name: 'reko', maxAge: SESSION_MAX_AGE }
 }
 
 // ── Dev auth bypass ────────────────────────────────────────────────
@@ -33,6 +44,8 @@ export const sessionConfig = {
  */
 async function getDevBypassSession(): Promise<SessionData | null> {
   try {
+    // Never allow the auth bypass in production, whatever the env says.
+    if (process.env.NODE_ENV === 'production') return null
     if (process.env.DEV_AUTH_BYPASS !== 'true') return null
 
     const { getDb } = await import('@/db/client')
@@ -84,7 +97,7 @@ export async function readSessionOnServer(): Promise<SessionData | null> {
   const { getSession: frameworkGetSession } = await import(
     '@tanstack/react-start/server'
   )
-  const session = await frameworkGetSession<SessionData>(sessionConfig)
+  const session = await frameworkGetSession<SessionData>(serverSessionConfig())
   const d = session.data
   if (!d.accessToken || !d.athleteId) return null
   return d as SessionData
@@ -113,13 +126,13 @@ export const setSession = createServerFn({ method: 'POST' })
   )
   .handler(async ({ data }) => {
     const { updateSession } = await import('@tanstack/react-start/server')
-    await updateSession<SessionData>(sessionConfig, data)
+    await updateSession<SessionData>(serverSessionConfig(), data)
   })
 
 /** Clear the session (logout) */
 export const clearSessionFn = createServerFn({ method: 'POST' }).handler(
   async () => {
     const { clearSession } = await import('@tanstack/react-start/server')
-    await clearSession(sessionConfig)
+    await clearSession(serverSessionConfig())
   },
 )

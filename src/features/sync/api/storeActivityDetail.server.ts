@@ -149,9 +149,10 @@ export async function storeActivityDetail(
       })
   }
 
-  // Mark the activity as detail-synced so the worker can skip it next run.
-  // The summary backfill also bumps syncedAt — that's fine, this row is
-  // monotonic and either source of "fresh" is correct.
+  // Bump syncedAt to mark the row freshly updated. NOTE: this does *not* set
+  // detailSyncedAt — the detail-fetch worker stamps that after we return (see
+  // runDetailFetchWorker). Any caller invoking this outside the worker must set
+  // detailSyncedAt itself, or the activity stays in the worker's NULL queue.
   await db
     .update(activities)
     .set({ syncedAt: new Date() })

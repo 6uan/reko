@@ -8,19 +8,28 @@
 
 import { createContext, useContext, useMemo, useState } from 'react'
 import { activityKind, type Activity, type Unit } from '@/lib/activities'
+import { filterByRange, type RangeKey } from './range'
 import type { RecordsData } from './records/distances'
 
 type DashboardContextValue = {
-  /** All activities (runs + walks). */
+  /** Activities (runs + walks) scoped to the selected time range. */
   activities: Activity[]
-  /** Runs only — filtered from activities. */
+  /** Runs only, scoped to the selected time range. */
   runs: Activity[]
-  /** Pre-aggregated records data. */
+  /** All activities, ignoring the range — for inherently all-time views. */
+  allActivities: Activity[]
+  /** All runs, ignoring the range (e.g. Records PR progression). */
+  allRuns: Activity[]
+  /** Pre-aggregated records data (all-time by nature). */
   records: RecordsData
   /** Current distance unit. */
   unit: Unit
   /** Switch between km / mi. Persists to localStorage. */
   toggleUnit: (u: Unit) => void
+  /** Selected time range. Persists to localStorage. */
+  range: RangeKey
+  /** Change the active time range. */
+  setRange: (r: RangeKey) => void
 }
 
 const Ctx = createContext<DashboardContextValue | null>(null)
@@ -50,14 +59,43 @@ export function DashboardProvider({ activities, records, children }: ProviderPro
     if (typeof window !== 'undefined') localStorage.setItem('reko-unit', u)
   }
 
-  const runs = useMemo(
+  const [range, setRangeState] = useState<RangeKey>(() => {
+    if (typeof window !== 'undefined') {
+      return (localStorage.getItem('reko-range') as RangeKey) || 'all'
+    }
+    return 'all'
+  })
+
+  const setRange = (r: RangeKey) => {
+    setRangeState(r)
+    if (typeof window !== 'undefined') localStorage.setItem('reko-range', r)
+  }
+
+  const allRuns = useMemo(
     () => activities.filter((a) => activityKind(a) === 'run'),
     [activities],
   )
 
+  // Range-scoped views — what the analytical tabs consume by default.
+  const scopedActivities = useMemo(
+    () => filterByRange(activities, range),
+    [activities, range],
+  )
+  const scopedRuns = useMemo(() => filterByRange(allRuns, range), [allRuns, range])
+
   const value = useMemo<DashboardContextValue>(
-    () => ({ activities, runs, records, unit, toggleUnit }),
-    [activities, runs, records, unit],
+    () => ({
+      activities: scopedActivities,
+      runs: scopedRuns,
+      allActivities: activities,
+      allRuns,
+      records,
+      unit,
+      toggleUnit,
+      range,
+      setRange,
+    }),
+    [scopedActivities, scopedRuns, activities, allRuns, records, unit, range],
   )
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>

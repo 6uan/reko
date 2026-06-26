@@ -21,6 +21,8 @@ import Table from '@/features/dashboard/ui/Table'
 import ColorDot from '@/features/dashboard/ui/ColorDot'
 import ZoneBar from '@/features/dashboard/ui/ZoneBar'
 import ActivityLink from '@/features/dashboard/ui/ActivityLink'
+import { useDashboard } from '@/features/dashboard/DashboardContext'
+import { periodLabel } from '@/features/dashboard/range'
 
 type Props = { runs: Activity[]; unit: Unit }
 
@@ -29,6 +31,7 @@ type Props = { runs: Activity[]; unit: Unit }
 const ZONES = HR_ZONES
 
 export default function HeartRate({ runs, unit }: Props) {
+  const { range } = useDashboard()
   const unitLabel = paceUnit(unit)
 
   const withHr = useMemo(
@@ -300,7 +303,7 @@ export default function HeartRate({ runs, unit }: Props) {
 
       {/* Zone time distribution — bar chart matching CadenceTab pattern */}
       <Card className="p-4">
-        <SectionHeader title="Time in zones" subtitle="All time" />
+        <SectionHeader title="Time in zones" subtitle={periodLabel(range)} />
         <div className="mt-4 flex flex-col gap-2">
           {zoneDistribution.map((zone) => (
             <ZoneBar

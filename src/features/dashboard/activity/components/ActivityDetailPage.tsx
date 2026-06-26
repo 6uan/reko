@@ -275,7 +275,9 @@ export default function ActivityDetailPage({ detail, unit }: Props) {
       {!detail.hasStreams && (
         <Card className="p-10">
           <EmptyState>
-            Detailed stream data hasn't synced for this activity yet.
+            {detail.detailSynced
+              ? 'No detailed data was recorded for this activity.'
+              : "Detailed stream data hasn't synced for this activity yet."}
           </EmptyState>
         </Card>
       )}

@@ -7,19 +7,18 @@ import {
   createColumnHelper,
   useReactTable,
   getCoreRowModel,
+  type ColumnDef,
 } from '@tanstack/react-table'
-import { formatPace, formatDuration } from '@/lib/strava'
-import {
-  toDisplayDistance,
-  paceForUnit,
-  distanceUnit,
-  paceUnit,
-  type Activity,
-  type Unit,
-} from '@/lib/activities'
-import { formatDateShort } from '@/lib/dates'
+import { type Activity, type Unit } from '@/lib/activities'
 import Table from '@/features/dashboard/ui/Table'
-import ActivityLink from '@/features/dashboard/ui/ActivityLink'
+import {
+  nameColumn,
+  dateColumn,
+  distanceColumn,
+  timeColumn,
+  paceColumn,
+  avgHrColumn,
+} from '@/features/dashboard/ui/columns'
 
 type Props = {
   runs: Activity[]
@@ -28,65 +27,20 @@ type Props = {
 
 const col = createColumnHelper<Activity>()
 
-function buildColumns(unit: Unit) {
-  const unitLabel = distanceUnit(unit)
-  const paceLabel = paceUnit(unit)
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- factory columns are any-typed; matches the other tab tables
+function buildColumns(unit: Unit): ColumnDef<any, any>[] {
+  // Right-aligned, default-color cells with a raw avg-HR value — these opts
+  // preserve this table's existing look while the factory owns the shared
+  // formatting. Elevation + PR are bespoke to this table, so stay inline.
+  const right = { align: 'right' as const, muted: false }
 
   return [
-    col.accessor('name', {
-      id: 'name',
-      header: 'Activity',
-      cell: (info) => (
-        <ActivityLink activityId={info.row.original.id} className="truncate max-w-50 inline-block">
-          {info.getValue()}
-        </ActivityLink>
-      ),
-    }),
-    col.accessor('date', {
-      id: 'date',
-      header: 'Date',
-      cell: (info) => (
-        <span className="font-mono tabular-nums text-(--ink-3) whitespace-nowrap">{formatDateShort(info.getValue())}</span>
-      ),
-    }),
-    col.accessor('distanceMeters', {
-      id: 'distance',
-      header: 'Distance',
-      meta: { align: 'right' },
-      cell: (info) => (
-        <span className="font-mono tabular-nums">
-          {toDisplayDistance(info.getValue(), unit)} {unitLabel}
-        </span>
-      ),
-    }),
-    col.accessor('movingTime', {
-      id: 'time',
-      header: 'Time',
-      meta: { align: 'right' },
-      cell: (info) => (
-        <span className="font-mono tabular-nums">{formatDuration(info.getValue())}</span>
-      ),
-    }),
-    col.accessor((r) => paceForUnit(r.avgSpeed, unit), {
-      id: 'pace',
-      header: 'Pace',
-      meta: { align: 'right' },
-      cell: (info) => (
-        <span className="font-mono tabular-nums">
-          {formatPace(info.getValue())} {paceLabel}
-        </span>
-      ),
-    }),
-    col.accessor('avgHr', {
-      id: 'avgHr',
-      header: 'Avg HR',
-      meta: { align: 'right' },
-      cell: (info) => (
-        <span className="font-mono tabular-nums">
-          {info.getValue() !== null ? info.getValue() : '—'}
-        </span>
-      ),
-    }),
+    nameColumn(),
+    dateColumn(true),
+    distanceColumn(unit, right),
+    timeColumn(right),
+    paceColumn(unit, right),
+    avgHrColumn({ ...right, raw: true }),
     col.accessor('elevation', {
       id: 'elevation',
       header: 'Elev',

@@ -26,6 +26,8 @@ import ChartContainer from '@/features/dashboard/ui/ChartContainer'
 import { makeTooltip } from '@/features/dashboard/ui/ChartTooltip'
 import Table from '@/features/dashboard/ui/Table'
 import { rankColumn, nameColumn, distanceColumn, timeColumn, avgHrColumn, dateColumn } from '@/features/dashboard/ui/columns'
+import { useDashboard } from '@/features/dashboard/DashboardContext'
+import { periodLabel } from '@/features/dashboard/range'
 
 type Props = { runs: Activity[]; unit: Unit }
 
@@ -44,6 +46,7 @@ function paceForRun(run: Activity, unit: Unit) {
 // ── Component ─────────────────────────────────────────────────────
 
 export default function Pace({ runs, unit }: Props) {
+  const { range } = useDashboard()
   const unitLabel = paceUnit(unit)
 
   // ── KPI calculations ────────────────────────────────────────────
@@ -164,7 +167,7 @@ export default function Pace({ runs, unit }: Props) {
       {/* KPI row */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5">
         <KpiCard label="Avg pace" value={formatPace(currentAvgPace)} unit={unitLabel} detail={`${runs.length} runs`} />
-        <KpiCard label="Fastest ever" value={formatPace(fastestPace)} unit={unitLabel} detail="All-time best" />
+        <KpiCard label="Fastest" value={formatPace(fastestPace)} unit={unitLabel} detail={periodLabel(range)} />
         <KpiCard label="Easy avg" value={formatPace(easyAvg)} unit={unitLabel} detail="Avg HR < 150 bpm" />
         <KpiCard label="Tempo avg" value={formatPace(tempoAvg)} unit={unitLabel} detail="Avg HR ≥ 155 bpm" />
       </div>
@@ -258,9 +261,9 @@ const HistTooltip = makeTooltip<{ label: string; count: number }>((d) => (
   </>
 ))
 
-const PaceTrendTooltip = makeTooltip<{ week: string; avg: number; count: number }>((d) => (
+const PaceTrendTooltip = makeTooltip<{ label: string; avg: number; count: number }>((d) => (
   <>
-    <p className="font-medium text-(--ink) mb-1">Week of {d.week}</p>
+    <p className="font-medium text-(--ink) mb-1">Week of {d.label}</p>
     <div className="space-y-0.5 text-(--ink-2)">
       <p>
         Avg{' '}

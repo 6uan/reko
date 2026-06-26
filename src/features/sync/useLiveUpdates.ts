@@ -92,7 +92,7 @@ export function useLiveUpdates(): void {
     const onMessage = (e: MessageEvent) => {
       // Defensive parse — EventSource hands us strings, and a future
       // server-side bug shouldn't crash the dashboard.
-      let payload: ActivityEvent | null = null
+      let payload: ActivityEvent | null
       try {
         payload = JSON.parse(e.data) as ActivityEvent
       } catch {

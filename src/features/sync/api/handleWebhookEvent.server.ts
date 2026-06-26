@@ -50,6 +50,7 @@ import { publish } from '@/lib/eventBus'
 import { fetchActivityDetail } from '@/lib/strava'
 import { mapStravaActivity } from './mapStravaActivity.server'
 import { withFreshToken } from './withFreshToken.server'
+import { enqueueDetailFetch } from './runDetailFetchWorker.server'
 
 export type StravaWebhookPayload = {
   object_type: 'activity' | 'athlete' | string
@@ -191,6 +192,13 @@ async function handleActivityEvent(
     console.log(
       `[webhook] ${payload.aspect_type === 'create' ? 'inserted' : 'updated'} activity ${activityId} for user ${userId}`,
     )
+
+    // The upsert leaves detailSyncedAt = NULL; kick the (idempotent) detail
+    // worker so best_efforts + streams get pulled now rather than waiting for
+    // the next manual backfill. Fire-and-forget, like the backfill path.
+    enqueueDetailFetch(userId).catch((err) => {
+      console.error('[webhook] enqueueDetailFetch failed:', err)
+    })
     return
   }
 
@@ -231,10 +239,12 @@ async function handleAthleteEvent(
  */
 async function purgeUser(userId: number): Promise<void> {
   const db = getDb()
-  // Order matters only loosely — tokens has no children, activities
-  // cascades to best_efforts/streams. Both are owned by user_id.
-  await db.delete(tokens).where(eq(tokens.userId, userId))
-  await db.delete(activities).where(eq(activities.userId, userId))
+  // Atomic: a partial purge could leave a revoked user's OAuth tokens behind.
+  // activities cascades to best_efforts/streams; both are owned by user_id.
+  await db.transaction(async (tx) => {
+    await tx.delete(tokens).where(eq(tokens.userId, userId))
+    await tx.delete(activities).where(eq(activities.userId, userId))
+  })
   console.log(`[webhook] purged tokens + activities for user ${userId} (deauthorized)`)
 }
 

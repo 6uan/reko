@@ -25,7 +25,7 @@
  *   (any activity with detailSyncedAt = NULL).
  */
 
-import { and, asc, eq, isNull } from 'drizzle-orm'
+import { and, asc, eq, isNull, sql } from 'drizzle-orm'
 import { getDb } from '@/db/client'
 import { activities, syncLog } from '@/db/schema'
 import { publish } from '@/lib/eventBus'
@@ -80,6 +80,40 @@ export async function enqueueDetailFetch(
   })
 
   return { syncLogId, alreadyRunning: false }
+}
+
+/**
+ * Re-queue activities that were stamped detail-synced but ended up with zero
+ * stream rows — e.g. a transient Strava 404 on the streams endpoint left the
+ * activity marked "done" with nothing stored, so the worker (which filters on
+ * detailSyncedAt IS NULL) never revisits it. Resetting detailSyncedAt = NULL
+ * puts it back in the queue for the next worker pass.
+ *
+ * Skips Strava `manual` activities: those legitimately have no streams, so
+ * re-fetching them would just 404 on every resync. Returns the count reset.
+ */
+export async function requeueStreamlessActivities(
+  userId: number,
+): Promise<number> {
+  const db = getDb()
+  const result = await db.execute(sql`
+    UPDATE activities a
+    SET detail_synced_at = NULL
+    WHERE a.user_id = ${userId}
+      AND a.detail_synced_at IS NOT NULL
+      AND COALESCE(a.raw->>'manual', 'false') <> 'true'
+      AND NOT EXISTS (
+        SELECT 1 FROM streams s WHERE s.activity_id = a.id
+      )
+    RETURNING a.id
+  `)
+  const count = result.rows.length
+  if (count > 0) {
+    console.log(
+      `[detail worker] re-queued ${count} stream-less activities for user ${userId}`,
+    )
+  }
+  return count
 }
 
 const sleep = (ms: number) =>

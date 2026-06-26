@@ -65,6 +65,12 @@ export type ActivityDetailPayload = {
   }
   /** Whether time + distance streams are present (charts can render). */
   hasStreams: boolean
+  /**
+   * Whether the detail-fetch worker has already processed this activity. Lets
+   * the UI tell "still syncing" apart from "synced, but Strava had no stream
+   * data" (manual entries, no-GPS treadmill runs) when hasStreams is false.
+   */
+  detailSynced: boolean
   /** Which optional channels exist — gates each section client-side. */
   channels: {
     elev: boolean
@@ -274,6 +280,7 @@ export async function getActivityDetail(
       elevationGain: activity.totalElevationGain,
     },
     hasStreams,
+    detailSynced: activity.detailSyncedAt !== null,
     channels,
     series,
     stats,

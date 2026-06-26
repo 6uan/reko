@@ -7,6 +7,8 @@ export const Route = createFileRoute('/dashboard/records')({
 })
 
 function DashboardRecords() {
-  const { runs, records, unit } = useDashboard()
-  return <RecordsTab data={records} runs={runs} unit={unit} />
+  // Records are all-time by nature — use the unscoped runs so the global
+  // time-range toggle doesn't truncate PR history.
+  const { allRuns, records, unit } = useDashboard()
+  return <RecordsTab data={records} runs={allRuns} unit={unit} />
 }

@@ -27,6 +27,8 @@ import { makeTooltip } from '@/features/dashboard/ui/ChartTooltip'
 import Table from '@/features/dashboard/ui/Table'
 import { nameColumn, paceColumn, dateColumn } from '@/features/dashboard/ui/columns'
 import ZoneBar from '@/features/dashboard/ui/ZoneBar'
+import { useDashboard } from '@/features/dashboard/DashboardContext'
+import { periodLabel } from '@/features/dashboard/range'
 
 type Props = { runs: Activity[]; unit: Unit }
 
@@ -59,6 +61,7 @@ const CADENCE_ZONES = [
 // ── Component ────────────────────────────────────────────────────
 
 export default function CadenceTab({ runs, unit }: Props) {
+  const { range } = useDashboard()
 
   const withCadence = useMemo(
     () => runs.filter((r) => r.cadence != null && r.cadence > 0),
@@ -194,7 +197,7 @@ export default function CadenceTab({ runs, unit }: Props) {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-2.5">
         {/* Trend chart */}
         <Card className="p-4">
-          <SectionHeader title="Weekly avg cadence" subtitle="All time" />
+          <SectionHeader title="Weekly avg cadence" subtitle={periodLabel(range)} />
           {trendData.length > 1 ? (
             <ChartContainer>
               <LineChart data={trendData} margin={{ top: 4, right: 4, bottom: 0, left: 0 }}>

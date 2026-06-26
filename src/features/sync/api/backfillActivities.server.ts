@@ -26,7 +26,10 @@ import { publish } from '@/lib/eventBus'
 import { fetchAthleteActivities } from '@/lib/strava'
 import { RESYNC_COOLDOWN_MS } from '../constants'
 import { mapStravaActivity } from './mapStravaActivity.server'
-import { enqueueDetailFetch } from './runDetailFetchWorker.server'
+import {
+  enqueueDetailFetch,
+  requeueStreamlessActivities,
+} from './runDetailFetchWorker.server'
 import { withFreshToken } from './withFreshToken.server'
 
 const PAGE_SIZE = 200 // Strava's max
@@ -189,6 +192,14 @@ async function runBackfillWorker(
     // and invalidates then), but covers the multi-tab case — only one
     // tab runs the banner's poller, every tab is subscribed to the bus.
     publish(userId, { type: 'activity-changed', reason: 'backfill' })
+
+    // Recover activities that were marked detail-synced but never got streams
+    // stored (e.g. a transient Strava streams 404) so the worker re-pulls them
+    // this pass. Awaited so the reset lands before the worker picks its first
+    // activity. Failure here shouldn't block the (more important) detail fetch.
+    await requeueStreamlessActivities(userId).catch((err) => {
+      console.error('[backfill worker] requeue stream-less failed:', err)
+    })
 
     // Kick off the detail-fetch worker now that the summary cache is
     // current. Fire-and-forget — this can take a long time (rate limits)

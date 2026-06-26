@@ -5,7 +5,7 @@ import {
   gradeAdjustedPace,
   gradeFactor,
   aerobicDecoupling,
-} from './metrics'
+} from '@/features/dashboard/activity/metrics'
 
 describe('gradeFactor (Minetti)', () => {
   it('is 1 on the flat', () => {

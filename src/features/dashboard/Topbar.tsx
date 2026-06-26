@@ -1,5 +1,7 @@
+import { useMemo } from "react";
 import { useLocation } from "@tanstack/react-router";
 import { useDashboard } from "./DashboardContext";
+import { RANGE_PRESETS, yearsInData, type RangeKey } from "./range";
 import { TABS, isTabActive } from "./tabs";
 import IconButton from "@/components/ui/IconButton";
 import type { Unit } from "@/lib/activities";
@@ -10,10 +12,11 @@ export default function Topbar({
 }: {
   onOpenMobileNav: () => void;
 }) {
-  const { unit, toggleUnit } = useDashboard();
+  const { unit, toggleUnit, range, setRange, allActivities } = useDashboard();
   const pathname = useLocation({ select: (l) => l.pathname });
 
   const activeTab = TABS.find((t) => isTabActive(t, pathname)) ?? TABS[0];
+  const years = useMemo(() => yearsInData(allActivities), [allActivities]);
 
   const UnitBtn = ({ value }: { value: Unit }) => (
     <button
@@ -55,6 +58,36 @@ export default function Topbar({
           </svg>
           Search runs
           <span className="text-(--ink-4) ml-1.5">⌘K</span>
+        </div>
+        <div className="relative">
+          <select
+            value={range}
+            onChange={(e) => setRange(e.target.value as RangeKey)}
+            aria-label="Time range"
+            className="appearance-none pl-2.5 pr-7 py-1.5 bg-(--card) border border-(--line) rounded-(--radius-s) font-mono text-xs text-(--ink-3) cursor-pointer focus:outline-none"
+          >
+            {RANGE_PRESETS.map((p) => (
+              <option key={p.key} value={p.key}>
+                {p.label}
+              </option>
+            ))}
+            {years.map((y) => (
+              <option key={y} value={String(y)}>
+                {y}
+              </option>
+            ))}
+          </select>
+          <svg
+            width="12"
+            height="7"
+            viewBox="0 0 12 7"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-(--ink-3)"
+          >
+            <path d="M1 1l5 5 5-5" />
+          </svg>
         </div>
         <div className="inline-flex p-1 bg-(--card-2) border border-(--line) rounded-(--radius-s) text-detail font-medium">
           <UnitBtn value="km" />

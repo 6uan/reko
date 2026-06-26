@@ -1,5 +1,5 @@
 /**
- * Four KPI cards for the overview tab — all-time summary stats.
+ * Four KPI cards for the overview tab — summary stats for the selected period.
  */
 
 import { formatPace, formatDuration } from '@/lib/strava'
@@ -12,6 +12,8 @@ type Props = {
   totalRuns: number
   totalTime: number
   unit: Unit
+  /** Label for the active time range, e.g. "All time" / "2024". */
+  period: string
 }
 
 export default function KpiCards({
@@ -20,6 +22,7 @@ export default function KpiCards({
   totalRuns,
   totalTime,
   unit,
+  period,
 }: Props) {
   const unitLabel = distanceUnit(unit)
   const paceLabel = paceUnit(unit)
@@ -38,8 +41,8 @@ export default function KpiCards({
         unit={paceLabel}
         detail="All runs"
       />
-      <KpiCard label="Total Runs" value={totalRuns} detail="All time" />
-      <KpiCard label="Total Time" value={formatDuration(totalTime)} detail="All time" />
+      <KpiCard label="Total Runs" value={totalRuns} detail={period} />
+      <KpiCard label="Total Time" value={formatDuration(totalTime)} detail={period} />
     </div>
   )
 }

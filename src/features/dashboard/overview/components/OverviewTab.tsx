@@ -1,5 +1,7 @@
 import { useMemo } from 'react'
-import { getMonday } from '@/lib/dates'
+import { useDashboard } from '@/features/dashboard/DashboardContext'
+import { monthWindow, periodLabel } from '@/features/dashboard/range'
+import { groupByWeek } from '@/lib/aggregations'
 import {
   KM_PER_MI,
   paceForUnit,
@@ -28,7 +30,9 @@ const MONTH_NAMES_FULL = [
 ]
 
 export default function Overview({ runs, unit }: Props) {
-  // ── KPI data (all time) ───────────────────────────────────────────
+  const { range } = useDashboard()
+
+  // ── KPI data (scoped to selected range) ───────────────────────────
 
   const totalDist = useMemo(
     () => runs.reduce((s, r) => s + r.distanceMeters, 0),
@@ -46,19 +50,19 @@ export default function Overview({ runs, unit }: Props) {
     [runs],
   )
 
-  // ── Volume chart data (all months with data) ─────────────────────
+  // ── Volume chart data (months within the selected range) ─────────
 
   const monthlyBuckets = useMemo<MonthBucket[]>(() => {
     if (!runs.length) return []
 
     const sorted = [...runs].sort((a, b) => a.date.localeCompare(b.date))
     const first = new Date(sorted[0].date)
-    const now = new Date()
+    const { start, end } = monthWindow(range, first)
 
     const buckets: MonthBucket[] = []
-    const d = new Date(first.getFullYear(), first.getMonth(), 1)
+    const d = new Date(start)
 
-    while (d <= now) {
+    while (d <= end) {
       const year = d.getFullYear()
       const month = d.getMonth()
       const label = MONTH_NAMES_SHORT[month]
@@ -91,38 +95,31 @@ export default function Overview({ runs, unit }: Props) {
     }
 
     return buckets
-  }, [runs, unit])
+  }, [runs, unit, range])
 
   // ── Pace chart data (all weeks with data) ─────────────────────────
 
-  const paceData = useMemo<PacePoint[]>(() => {
-    if (!runs.length) return []
-
-    const buckets = new Map<number, { runs: Activity[]; mon: Date }>()
-    for (const r of runs) {
-      const mon = getMonday(new Date(r.date))
-      const key = mon.getTime()
-      if (!buckets.has(key)) buckets.set(key, { runs: [], mon })
-      buckets.get(key)!.runs.push(r)
-    }
-
-    return [...buckets.values()]
-      .sort((a, b) => a.mon.getTime() - b.mon.getTime())
-      .map(({ runs: weekRuns, mon }) => {
-        const sun = new Date(mon)
-        sun.setDate(sun.getDate() + 6)
-        const weekAvg =
-          weekRuns.reduce((s, r) => s + paceForUnit(r.avgSpeed, unit), 0) /
-          weekRuns.length
-
-        return {
-          label: `${mon.getMonth() + 1}/${mon.getDate()}`,
-          fullLabel: `${MONTH_NAMES_SHORT[mon.getMonth()]} ${mon.getDate()} – ${MONTH_NAMES_SHORT[sun.getMonth()]} ${sun.getDate()}`,
-          pace: weekAvg,
-          runs: weekRuns.length,
-        }
-      })
-  }, [runs, unit])
+  const paceData = useMemo<PacePoint[]>(
+    () =>
+      // Same Monday-bucketed weekly average as PaceTab's trend — shared via
+      // groupByWeek so the two pace charts can't drift (it also skips
+      // zero/negative paces). fullLabel (the tooltip's date range) is derived
+      // from the bucket's Monday so it stays in sync with the short label.
+      groupByWeek(runs, (r) => r.date, (r) => paceForUnit(r.avgSpeed, unit)).map(
+        (b) => {
+          const mon = new Date(b.week)
+          const sun = new Date(mon)
+          sun.setDate(sun.getDate() + 6)
+          return {
+            label: b.label,
+            fullLabel: `${MONTH_NAMES_SHORT[mon.getMonth()]} ${mon.getDate()} – ${MONTH_NAMES_SHORT[sun.getMonth()]} ${sun.getDate()}`,
+            pace: b.avg,
+            runs: b.count,
+          }
+        },
+      ),
+    [runs, unit],
+  )
 
   // ── Recent runs (last 8) ──────────────────────────────────────────
 
@@ -144,6 +141,7 @@ export default function Overview({ runs, unit }: Props) {
         totalRuns={runs.length}
         totalTime={totalTime}
         unit={unit}
+        period={periodLabel(range)}
       />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-2.5">
