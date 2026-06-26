@@ -9,6 +9,7 @@
 
 import { useState } from 'react'
 import { useRouter } from '@tanstack/react-router'
+import { LuRefreshCw } from 'react-icons/lu'
 import type { HealthData } from './api/getHealthData.server'
 import { recomputeData, type RecomputeResult } from './recomputeData'
 
@@ -58,22 +59,24 @@ function ComputedDataSection({ data }: { data: HealthData }) {
   const router = useRouter()
   const { withStreams, withDerivedSplits, withHrZoneEfforts } = data.computedData
 
-  const [running, setRunning] = useState(false)
+  const [status, setStatus] = useState<'idle' | 'running' | 'done' | 'error'>(
+    'idle',
+  )
   const [error, setError] = useState<string | null>(null)
   const [lastResult, setLastResult] = useState<RecomputeResult | null>(null)
 
   async function handleRecompute() {
-    setRunning(true)
+    setStatus('running')
     setError(null)
     try {
       const result = await recomputeData()
       setLastResult(result)
       // Re-run the route loader so the displayed counts refresh.
-      router.invalidate()
+      await router.invalidate()
+      setStatus('done')
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Recompute failed')
-    } finally {
-      setRunning(false)
+      setStatus('error')
     }
   }
 
@@ -84,19 +87,29 @@ function ComputedDataSection({ data }: { data: HealthData }) {
 
   return (
     <div>
-      <div className="flex items-baseline justify-between mb-3">
+      <div className="flex items-start justify-between gap-4 mb-1">
         <h3 className="text-xs font-medium text-(--ink-3) uppercase tracking-wider">
           Computed Data
         </h3>
         <button
           type="button"
           onClick={handleRecompute}
-          disabled={running || withStreams === 0}
-          className="px-3 py-1 text-xs rounded-(--radius-s) border border-(--line) bg-(--card) text-(--ink-3) hover:text-(--ink) transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+          disabled={status === 'running' || withStreams === 0}
+          className="shrink-0 inline-flex items-center gap-1.5 px-3 py-1 text-xs rounded-(--radius-s) border border-(--line) bg-(--card) text-(--ink-3) hover:text-(--ink) transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {running ? 'Recomputing…' : 'Recompute'}
+          <LuRefreshCw
+            size={11}
+            className={status === 'running' ? 'animate-spin' : ''}
+          />
+          {status === 'running' ? 'Recomputing…' : 'Recompute'}
         </button>
       </div>
+
+      <p className="text-xs text-(--ink-4) mb-3 max-w-prose">
+        Re-derives split times &amp; HR-zone efforts from your stored streams.
+        Safe to run anytime — the coverage below only moves when new activities
+        have synced.
+      </p>
 
       <div className="grid grid-cols-2 gap-4">
         <CoverageStat
@@ -113,19 +126,51 @@ function ComputedDataSection({ data }: { data: HealthData }) {
         />
       </div>
 
-      {error && (
-        <p className="mt-3 text-xs text-red-500 font-mono">
-          {error}
-        </p>
+      {status === 'done' && lastResult && (
+        <div className="mt-3 flex items-start gap-2.5 rounded-(--radius-s) border border-emerald-500/20 bg-emerald-500/10 px-3 py-2.5">
+          <span className="mt-px flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-emerald-500 text-[10px] leading-none text-white">
+            ✓
+          </span>
+          <div className="text-xs leading-relaxed text-(--ink-2)">
+            <span className="font-medium text-emerald-600 dark:text-emerald-400">
+              Recompute complete
+            </span>{' '}
+            <span className="text-(--ink-4)">· just now</span>
+            <div className="mt-0.5">
+              Refreshed <Count n={lastResult.splitsRows} /> split times and{' '}
+              <Count n={lastResult.hrRows} /> HR-zone efforts, and updated{' '}
+              <Count n={lastResult.richFieldsUpdated} /> activities with the
+              latest Strava fields.
+            </div>
+          </div>
+        </div>
       )}
-      {lastResult && !error && (
-        <p className="mt-3 text-xs text-(--ink-3)">
-          Recomputed {lastResult.splitsRows} split rows ·{' '}
-          {lastResult.hrRows} HR zone rows ·{' '}
-          {lastResult.richFieldsUpdated} activities updated
-        </p>
+
+      {status === 'error' && error && (
+        <div className="mt-3 flex items-start gap-2.5 rounded-(--radius-s) border border-red-500/20 bg-red-500/10 px-3 py-2.5">
+          <span className="mt-px flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-red-500 text-[10px] leading-none text-white">
+            !
+          </span>
+          <div className="text-xs leading-relaxed text-(--ink-2)">
+            <span className="font-medium text-red-600 dark:text-red-400">
+              Recompute failed
+            </span>
+            <div className="mt-0.5 font-mono text-(--ink-3) break-all">
+              {error}
+            </div>
+          </div>
+        </div>
       )}
     </div>
+  )
+}
+
+/** Emphasised number inside the recompute confirmation copy. */
+function Count({ n }: { n: number }) {
+  return (
+    <span className="font-medium text-(--ink) tabular-nums">
+      {n.toLocaleString()}
+    </span>
   )
 }
 

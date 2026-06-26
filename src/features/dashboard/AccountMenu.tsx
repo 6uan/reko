@@ -1,7 +1,7 @@
 /**
  * Account / preferences popover, anchored to the sidebar ProfileCard. Opens
- * upward (it lives at the bottom of the sidebar). Holds client-side dashboard
- * prefs — run-type inclusion + units — plus profile / logout.
+ * upward (it lives at the bottom of the sidebar). Holds the client-side
+ * run-type inclusion prefs, plus profile / logout. (Units live in the topbar.)
  *
  * Note: the run-type toggles affect the analytics tabs (which filter client
  * side from DashboardContext); the Records tab is server-pre-aggregated and
@@ -16,8 +16,6 @@ import { clearSessionFn } from '@/features/auth/session'
 
 export default function AccountMenu() {
   const {
-    unit,
-    toggleUnit,
     includeTrail,
     setIncludeTrail,
     includeTreadmill,
@@ -64,18 +62,6 @@ export default function AccountMenu() {
               checked={includeTreadmill}
               onChange={setIncludeTreadmill}
             />
-
-            <Divider />
-
-            <SectionLabel>Units</SectionLabel>
-            <div className="flex gap-1 px-1 pb-1">
-              <UnitChip active={unit === 'mi'} onClick={() => toggleUnit('mi')}>
-                Miles
-              </UnitChip>
-              <UnitChip active={unit === 'km'} onClick={() => toggleUnit('km')}>
-                Kilometers
-              </UnitChip>
-            </div>
 
             <Divider />
 
@@ -143,26 +129,3 @@ function ToggleRow({
   )
 }
 
-function UnitChip({
-  active,
-  onClick,
-  children,
-}: {
-  active: boolean
-  onClick: () => void
-  children: React.ReactNode
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`flex-1 px-2 py-1 rounded-md text-xs transition-colors cursor-pointer ${
-        active
-          ? 'bg-(--accent-soft) text-(--ink)'
-          : 'text-(--ink-3) hover:bg-(--card-2)'
-      }`}
-    >
-      {children}
-    </button>
-  )
-}
