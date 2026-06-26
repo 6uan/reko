@@ -44,6 +44,7 @@ import EmptyState from '@/features/dashboard/ui/EmptyState'
 import ZoneBar from '@/features/dashboard/ui/ZoneBar'
 import Table from '@/features/dashboard/ui/Table'
 import StravaLink from '@/features/dashboard/ui/StravaLink'
+import SyncActivityButton from './SyncActivityButton'
 import type {
   ActivityDetailPayload,
   SplitRow,
@@ -249,12 +250,15 @@ export default function ActivityDetailPage({ detail, unit }: Props) {
               {formatDate(a.date)} · {a.sportType ?? a.type}
             </div>
           </div>
-          <StravaLink
-            activityId={a.id}
-            className="text-sm text-(--ink-3) shrink-0 no-underline"
-          >
-            View on Strava ↗
-          </StravaLink>
+          <div className="flex items-center gap-2 shrink-0">
+            <SyncActivityButton activityId={a.id} variant="ghost" label="Sync" />
+            <StravaLink
+              activityId={a.id}
+              className="text-sm text-(--ink-3) no-underline"
+            >
+              View on Strava ↗
+            </StravaLink>
+          </div>
         </div>
       </div>
 
@@ -274,11 +278,14 @@ export default function ActivityDetailPage({ detail, unit }: Props) {
 
       {!detail.hasStreams && (
         <Card className="p-10">
-          <EmptyState>
-            {detail.detailSynced
-              ? 'No detailed data was recorded for this activity.'
-              : "Detailed stream data hasn't synced for this activity yet."}
-          </EmptyState>
+          <div className="flex flex-col items-center gap-4">
+            <EmptyState>
+              {detail.detailSynced
+                ? 'No detailed data was recorded for this activity.'
+                : "Detailed stream data hasn't synced for this activity yet."}
+            </EmptyState>
+            <SyncActivityButton activityId={a.id} />
+          </div>
         </Card>
       )}
 
