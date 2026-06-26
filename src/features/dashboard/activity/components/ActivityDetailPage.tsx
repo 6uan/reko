@@ -424,23 +424,77 @@ export default function ActivityDetailPage({ detail, unit }: Props) {
         </Card>
       )}
 
-      {/* Route (square) + Elevation — paired side by side on wide screens.
-          Square map renders ~328px in the 360px column; the elevation chart
+      {/* Route (square) + Pace — paired side by side on wide screens.
+          Square map renders ~328px in the 360px column; the pace chart
           matches that height so the two cards line up. */}
-      {(detail.route || channels.elev) && (
+      {(detail.route || channels.pace) && (
         <div className="flex flex-col lg:flex-row items-start gap-3 lg:gap-6">
           {detail.route && (
             <div className="w-full lg:w-[360px] lg:shrink-0">
               <RouteCard route={detail.route} />
             </div>
           )}
-          {channels.elev && (
+          {channels.pace && (
             <Card className="p-4 w-full lg:flex-1">
               <SectionHeader
-                title="Elevation"
-                subtitle={`${Math.round(a.elevationGain)} m gain`}
+                title="Pace"
+                subtitle={channels.grade ? 'raw vs grade-adjusted' : undefined}
               />
               <ChartContainer height={detail.route ? 328 : 180}>
+                <LineChart data={chartData} margin={CHART_MARGIN}>
+                  <XAxis
+                    dataKey="dist"
+                    type="number"
+                    domain={[0, maxDist]}
+                    axisLine={false}
+                    tickLine={false}
+                    tick={AXIS_TICK}
+                    tickFormatter={(v: number) => v.toFixed(1)}
+                  />
+                  <YAxis
+                    reversed
+                    domain={paceDomain}
+                    axisLine={false}
+                    tickLine={false}
+                    tick={AXIS_TICK}
+                    width={50}
+                    tickFormatter={(v: number) => formatPace(v)}
+                  />
+                  <Tooltip content={<PaceTip />} cursor={CURSOR} />
+                  <Line
+                    type="monotone"
+                    dataKey="pace"
+                    stroke="var(--accent)"
+                    strokeWidth={2}
+                    dot={false}
+                    connectNulls
+                  />
+                  {channels.grade && (
+                    <Line
+                      type="monotone"
+                      dataKey="gap"
+                      stroke="var(--ink-4)"
+                      strokeWidth={1.5}
+                      strokeDasharray="6 4"
+                      dot={false}
+                      connectNulls
+                    />
+                  )}
+                </LineChart>
+              </ChartContainer>
+            </Card>
+          )}
+        </div>
+      )}
+
+      {/* Elevation */}
+      {channels.elev && (
+        <Card className="p-4">
+          <SectionHeader
+            title="Elevation"
+            subtitle={`${Math.round(a.elevationGain)} m gain`}
+          />
+          <ChartContainer height={180}>
             <AreaChart data={chartData} margin={CHART_MARGIN}>
               <defs>
                 <linearGradient id="elevGradient" x1="0" y1="0" x2="0" y2="1">
@@ -475,60 +529,6 @@ export default function ActivityDetailPage({ detail, unit }: Props) {
                 connectNulls
               />
             </AreaChart>
-              </ChartContainer>
-            </Card>
-          )}
-        </div>
-      )}
-
-      {/* Pace (+ GAP overlay) */}
-      {channels.pace && (
-        <Card className="p-4">
-          <SectionHeader
-            title="Pace"
-            subtitle={channels.grade ? 'raw vs grade-adjusted' : undefined}
-          />
-          <ChartContainer height={180}>
-            <LineChart data={chartData} margin={CHART_MARGIN}>
-              <XAxis
-                dataKey="dist"
-                type="number"
-                domain={[0, maxDist]}
-                axisLine={false}
-                tickLine={false}
-                tick={AXIS_TICK}
-                tickFormatter={(v: number) => v.toFixed(1)}
-              />
-              <YAxis
-                reversed
-                domain={paceDomain}
-                axisLine={false}
-                tickLine={false}
-                tick={AXIS_TICK}
-                width={50}
-                tickFormatter={(v: number) => formatPace(v)}
-              />
-              <Tooltip content={<PaceTip />} cursor={CURSOR} />
-              <Line
-                type="monotone"
-                dataKey="pace"
-                stroke="var(--accent)"
-                strokeWidth={2}
-                dot={false}
-                connectNulls
-              />
-              {channels.grade && (
-                <Line
-                  type="monotone"
-                  dataKey="gap"
-                  stroke="var(--ink-4)"
-                  strokeWidth={1.5}
-                  strokeDasharray="6 4"
-                  dot={false}
-                  connectNulls
-                />
-              )}
-            </LineChart>
           </ChartContainer>
         </Card>
       )}
