@@ -116,7 +116,7 @@ export default function TrainingHeatmap({
           {/* Weekday labels */}
           <div className="mt-4 flex flex-col gap-[3px] text-[9px] text-(--ink-4)">
             {WEEKDAYS.map((d, i) => (
-              <div key={d} className="h-[11px] w-7 pr-1 text-right leading-[11px]">
+              <div key={d} className="h-[13px] w-7 pr-1 text-right leading-[13px]">
                 {i === 0 || i === 2 || i === 4 ? d : ''}
               </div>
             ))}
@@ -126,7 +126,7 @@ export default function TrainingHeatmap({
           <div className="flex flex-col gap-1">
             <div className="flex h-[12px] gap-[3px] text-[9px] text-(--ink-4)">
               {monthLabels.map((m, w) => (
-                <div key={w} className="relative w-[11px]">
+                <div key={w} className="relative w-[13px]">
                   {m && <span className="absolute left-0 top-0 whitespace-nowrap">{m}</span>}
                 </div>
               ))}
@@ -138,7 +138,7 @@ export default function TrainingHeatmap({
                     <div
                       key={c.key}
                       title={title(c)}
-                      className="h-[11px] w-[11px] rounded-[2px]"
+                      className="h-[13px] w-[13px] rounded-[2px]"
                       style={{ backgroundColor: c.future ? 'transparent' : cellColor(c.level) }}
                     />
                   ))}
@@ -150,12 +150,12 @@ export default function TrainingHeatmap({
       </div>
 
       {/* Legend */}
-      <div className="mt-3 flex items-center justify-end gap-1.5 text-[10px] text-(--ink-4)">
+      <div className="mt-2 flex items-center justify-end gap-1.5 text-[10px] text-(--ink-4)">
         Less
         {[0, 1, 2, 3, 4].map((l) => (
           <span
             key={l}
-            className="inline-block h-[11px] w-[11px] rounded-[2px]"
+            className="inline-block h-[13px] w-[13px] rounded-[2px]"
             style={{ backgroundColor: cellColor(l) }}
           />
         ))}

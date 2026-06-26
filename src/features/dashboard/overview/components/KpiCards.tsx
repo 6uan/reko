@@ -44,7 +44,7 @@ export default function KpiCards({
   // "Total Runs" (the run count already rides under Total Distance).
   if (stacked) {
     return (
-      <Card className="p-4 flex items-center gap-5">
+      <Card className="h-full p-4 flex items-center gap-5">
         <div className="flex shrink-0 flex-col items-center gap-1.5">
           <HrZoneRing
             zoneSeconds={zoneSeconds}
