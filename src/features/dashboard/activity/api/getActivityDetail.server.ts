@@ -19,6 +19,7 @@ import {
   activities,
   bestEfforts,
   derivedBestEfforts,
+  gear,
   streams,
 } from '@/db/schema'
 import { SPLIT_DISTANCES } from '@/lib/streams'
@@ -63,6 +64,8 @@ export type ActivityDetailPayload = {
     cadenceSpm: number | null
     elevationGain: number
   }
+  /** The gear (shoe) this activity used, with lifetime mileage, or null. */
+  gear: { name: string; distanceMeters: number } | null
   /** Whether time + distance streams are present (charts can render). */
   hasStreams: boolean
   /**
@@ -148,6 +151,21 @@ export async function getActivityDetail(
     .limit(1)
 
   if (!activity) return null
+
+  // Gear (shoe) used, if this activity is tagged with any.
+  const gearRow = activity.gearId
+    ? (
+        await db
+          .select({
+            name: gear.name,
+            nickname: gear.nickname,
+            distance: gear.distance,
+          })
+          .from(gear)
+          .where(eq(gear.id, activity.gearId))
+          .limit(1)
+      )[0]
+    : undefined
 
   // 2. Streams + splits in parallel (ownership already proven).
   const [streamRows, dbEfforts, dbDerived] = await Promise.all([
@@ -279,6 +297,12 @@ export async function getActivityDetail(
         : null,
       elevationGain: activity.totalElevationGain,
     },
+    gear: gearRow
+      ? {
+          name: gearRow.nickname || gearRow.name,
+          distanceMeters: gearRow.distance,
+        }
+      : null,
     hasStreams,
     detailSynced: activity.detailSyncedAt !== null,
     channels,

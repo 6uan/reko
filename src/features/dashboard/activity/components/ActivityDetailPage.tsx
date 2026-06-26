@@ -248,6 +248,7 @@ export default function ActivityDetailPage({ detail, unit }: Props) {
             <h2 className="text-section text-(--ink)">{a.name}</h2>
             <div className="text-meta">
               {formatDate(a.date)} · {a.sportType ?? a.type}
+              {detail.gear && ` · 👟 ${detail.gear.name}`}
             </div>
           </div>
           <div className="flex items-center gap-2 shrink-0">
