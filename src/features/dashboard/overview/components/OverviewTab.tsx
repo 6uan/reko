@@ -2,6 +2,7 @@ import { useMemo } from 'react'
 import { useDashboard } from '@/features/dashboard/DashboardContext'
 import { monthWindow, periodLabel } from '@/features/dashboard/range'
 import { groupByWeek } from '@/lib/aggregations'
+import { HR_ZONES, zoneFor } from '@/lib/heartRate'
 import {
   KM_PER_MI,
   paceForUnit,
@@ -54,6 +55,16 @@ export default function Overview({ runs, unit }: Props) {
   const avgCadence = useMemo(() => {
     const v = runs.map((r) => r.cadence).filter((c): c is number => c != null)
     return v.length ? Math.round(avg(v)) : null
+  }, [runs])
+
+  // Time-in-zone (approx): attribute each run's moving time to its avg-HR zone.
+  const zoneSeconds = useMemo(() => {
+    const totals = HR_ZONES.map(() => 0)
+    for (const r of runs) {
+      if (r.avgHr == null) continue
+      totals[HR_ZONES.indexOf(zoneFor(r.avgHr))] += r.movingTime
+    }
+    return totals
   }, [runs])
 
   const totalTime = useMemo(
@@ -150,7 +161,7 @@ export default function Overview({ runs, unit }: Props) {
         <div className="lg:flex-1 min-w-0">
           <TrainingHeatmap runs={allRuns} unit={unit} />
         </div>
-        <div className="lg:w-72 lg:shrink-0">
+        <div className="lg:w-80 lg:shrink-0">
           <KpiCards
             stacked
             totalDist={totalDist}
@@ -159,6 +170,7 @@ export default function Overview({ runs, unit }: Props) {
             totalTime={totalTime}
             avgHr={avgHr}
             avgCadence={avgCadence}
+            zoneSeconds={zoneSeconds}
             unit={unit}
             period={periodLabel(range)}
           />
