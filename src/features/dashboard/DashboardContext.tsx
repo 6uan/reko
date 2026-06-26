@@ -30,6 +30,12 @@ type DashboardContextValue = {
   range: RangeKey
   /** Change the active time range. */
   setRange: (r: RangeKey) => void
+  /** Include TrailRun activities in run views. Persists to localStorage. */
+  includeTrail: boolean
+  setIncludeTrail: (v: boolean) => void
+  /** Include VirtualRun (treadmill) activities in run views. */
+  includeTreadmill: boolean
+  setIncludeTreadmill: (v: boolean) => void
 }
 
 const Ctx = createContext<DashboardContextValue | null>(null)
@@ -71,9 +77,41 @@ export function DashboardProvider({ activities, records, children }: ProviderPro
     if (typeof window !== 'undefined') localStorage.setItem('reko-range', r)
   }
 
+  // Run-type inclusion toggles (default on, so behaviour matches "all runs").
+  const [includeTrail, setIncludeTrailState] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('reko-include-trail') !== 'false'
+    }
+    return true
+  })
+  const setIncludeTrail = (v: boolean) => {
+    setIncludeTrailState(v)
+    if (typeof window !== 'undefined')
+      localStorage.setItem('reko-include-trail', String(v))
+  }
+
+  const [includeTreadmill, setIncludeTreadmillState] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('reko-include-treadmill') !== 'false'
+    }
+    return true
+  })
+  const setIncludeTreadmill = (v: boolean) => {
+    setIncludeTreadmillState(v)
+    if (typeof window !== 'undefined')
+      localStorage.setItem('reko-include-treadmill', String(v))
+  }
+
   const allRuns = useMemo(
-    () => activities.filter((a) => activityKind(a) === 'run'),
-    [activities],
+    () =>
+      activities.filter((a) => {
+        if (activityKind(a) !== 'run') return false
+        const sport = a.sportType ?? a.type
+        if (!includeTrail && sport === 'TrailRun') return false
+        if (!includeTreadmill && sport === 'VirtualRun') return false
+        return true
+      }),
+    [activities, includeTrail, includeTreadmill],
   )
 
   // Range-scoped views — what the analytical tabs consume by default.
@@ -94,8 +132,22 @@ export function DashboardProvider({ activities, records, children }: ProviderPro
       toggleUnit,
       range,
       setRange,
+      includeTrail,
+      setIncludeTrail,
+      includeTreadmill,
+      setIncludeTreadmill,
     }),
-    [scopedActivities, scopedRuns, activities, allRuns, records, unit, range],
+    [
+      scopedActivities,
+      scopedRuns,
+      activities,
+      allRuns,
+      records,
+      unit,
+      range,
+      includeTrail,
+      includeTreadmill,
+    ],
   )
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>

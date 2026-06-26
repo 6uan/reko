@@ -1,5 +1,6 @@
 import { Link, useLocation } from "@tanstack/react-router";
 import ProfileCard from "@/components/ProfileCard";
+import AccountMenu from "./AccountMenu";
 import { TABS, isTabActive, type Tab } from "./tabs";
 
 type SidebarProps = {
@@ -35,13 +36,16 @@ export default function Sidebar({
       </nav>
 
       <div className="mt-auto px-3 pb-4 flex flex-col gap-3">
-        <ProfileCard
-          firstname={athlete.firstname}
-          lastname={athlete.lastname}
-          activityCount={activityCount}
-          lastSyncFinishedAt={lastSyncFinishedAt}
-          onResyncTriggered={onResync}
-        />
+        <div className="relative">
+          <ProfileCard
+            firstname={athlete.firstname}
+            lastname={athlete.lastname}
+            activityCount={activityCount}
+            lastSyncFinishedAt={lastSyncFinishedAt}
+            onResyncTriggered={onResync}
+          />
+          <AccountMenu />
+        </div>
         <a
           href="https://www.strava.com"
           target="_blank"
