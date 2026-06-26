@@ -23,6 +23,11 @@ import {
   streams,
 } from '@/db/schema'
 import { SPLIT_DISTANCES } from '@/lib/streams'
+import type {
+  StravaActivityDetail,
+  StravaLap,
+  StravaSplit,
+} from '@/lib/strava'
 import { effectiveBestEffort, type BestEffortTimes } from '@/lib/activities'
 import type { HrZoneName } from '@/lib/heartRate'
 import {
@@ -44,6 +49,27 @@ export type SplitRow = {
   seconds: number
   /** True when only our derived computation had it (Strava reported none). */
   derived: boolean
+}
+
+/** A per-unit pace split (per-km or per-mile) for the splits table. SI units. */
+export type PaceSplit = {
+  index: number
+  distanceM: number
+  seconds: number
+  paceSecPerKm: number
+  elevM: number | null
+  hr: number | null
+}
+
+/** A lap row for the laps table. SI units. */
+export type LapRow = {
+  index: number
+  name: string | null
+  distanceM: number
+  seconds: number
+  paceSecPerKm: number
+  hr: number | null
+  cadenceSpm: number | null
 }
 
 export type ActivityDetailPayload = {
@@ -90,6 +116,44 @@ export type ActivityDetailPayload = {
     timeInZones: Record<HrZoneName, number> | null
   }
   splits: SplitRow[]
+  /** Per-km splits (Strava splits_metric), mapped to SI. */
+  splitsMetric: PaceSplit[]
+  /** Per-mile splits (Strava splits_standard), mapped to SI. */
+  splitsStandard: PaceSplit[]
+  /** Auto/manual laps. */
+  laps: LapRow[]
+}
+
+function mapPaceSplit(s: StravaSplit, i: number): PaceSplit {
+  const distanceM = s.distance
+  const seconds = s.moving_time
+  const paceSecPerKm =
+    s.average_speed > 0
+      ? 1000 / s.average_speed
+      : seconds > 0 && distanceM > 0
+        ? seconds / (distanceM / 1000)
+        : 0
+  return {
+    index: s.split ?? i + 1,
+    distanceM,
+    seconds,
+    paceSecPerKm,
+    elevM: s.elevation_difference ?? null,
+    hr: s.average_heartrate ?? null,
+  }
+}
+
+function mapLap(l: StravaLap, i: number): LapRow {
+  return {
+    index: l.lap_index ?? i + 1,
+    name: l.name ?? null,
+    distanceM: l.distance,
+    seconds: l.moving_time,
+    paceSecPerKm: l.average_speed > 0 ? 1000 / l.average_speed : 0,
+    hr: l.average_heartrate ?? null,
+    cadenceSpm:
+      l.average_cadence != null ? Math.round(l.average_cadence * 2) : null,
+  }
 }
 
 /**
@@ -166,6 +230,16 @@ export async function getActivityDetail(
           .limit(1)
       )[0]
     : undefined
+
+  // Laps + per-unit splits come straight from the stored detail payload
+  // (storeActivityDetail mirrors the full detail into `raw`).
+  const rawDetail =
+    activity.raw && typeof activity.raw === 'object'
+      ? (activity.raw as StravaActivityDetail)
+      : null
+  const splitsMetric = (rawDetail?.splits_metric ?? []).map(mapPaceSplit)
+  const splitsStandard = (rawDetail?.splits_standard ?? []).map(mapPaceSplit)
+  const laps = (rawDetail?.laps ?? []).map(mapLap)
 
   // 2. Streams + splits in parallel (ownership already proven).
   const [streamRows, dbEfforts, dbDerived] = await Promise.all([
@@ -309,5 +383,8 @@ export async function getActivityDetail(
     series,
     stats,
     splits,
+    splitsMetric,
+    splitsStandard,
+    laps,
   }
 }

@@ -57,10 +57,39 @@ export type StravaBestEffort = {
   achievements?: unknown[]
 }
 
+/** A single auto/manual lap within a DetailedActivity. */
+export type StravaLap = {
+  lap_index: number
+  name?: string | null
+  distance: number
+  elapsed_time: number
+  moving_time: number
+  average_speed: number
+  max_speed?: number
+  average_heartrate?: number
+  average_cadence?: number
+  pace_zone?: number
+}
+
+/** A per-unit split: `splits_metric` is per km, `splits_standard` per mile. */
+export type StravaSplit = {
+  split: number
+  distance: number
+  elapsed_time: number
+  moving_time: number
+  elevation_difference: number | null
+  average_speed: number
+  average_heartrate?: number
+  pace_zone?: number
+}
+
 /** GET /activities/{id} — superset of the list-endpoint payload. */
 export type StravaActivityDetail = StravaActivity & {
   best_efforts?: StravaBestEffort[]
   description?: string | null
+  laps?: StravaLap[]
+  splits_metric?: StravaSplit[]
+  splits_standard?: StravaSplit[]
 }
 
 /** Stream channels we know about. Mirrors `streamTypeEnum` in the DB. */

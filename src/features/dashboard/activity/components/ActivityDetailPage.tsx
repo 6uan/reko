@@ -47,6 +47,8 @@ import StravaLink from '@/features/dashboard/ui/StravaLink'
 import SyncActivityButton from './SyncActivityButton'
 import type {
   ActivityDetailPayload,
+  LapRow,
+  PaceSplit,
   SplitRow,
 } from '@/features/dashboard/activity/api/getActivityDetail.server'
 
@@ -75,6 +77,8 @@ function niceDomain(vals: number[], pad: number): [number, number] {
 }
 
 const splitCol = createColumnHelper<SplitRow>()
+const paceSplitCol = createColumnHelper<PaceSplit>()
+const lapCol = createColumnHelper<LapRow>()
 
 export default function ActivityDetailPage({ detail, unit }: Props) {
   const { activity: a, stats, channels, series } = detail
@@ -142,6 +146,135 @@ export default function ActivityDetailPage({ detail, unit }: Props) {
           </span>
         ),
       }),
+    ],
+    getCoreRowModel: getCoreRowModel(),
+  })
+
+  // Per-unit splits (km or mi) + laps — hooks must run unconditionally.
+  const unitSplits = unit === 'mi' ? detail.splitsStandard : detail.splitsMetric
+  const splitsHaveHr = unitSplits.some((s) => s.hr !== null)
+  const splitsHaveElev = unitSplits.some((s) => s.elevM !== null)
+
+  const paceSplitTable = useReactTable({
+    data: unitSplits,
+    columns: [
+      paceSplitCol.accessor('index', {
+        header: 'Split',
+        cell: (i) => (
+          <span className="font-mono tabular-nums text-(--ink-2)">
+            {i.getValue()}
+          </span>
+        ),
+      }),
+      paceSplitCol.accessor('paceSecPerKm', {
+        header: 'Pace',
+        meta: { align: 'right' },
+        cell: (i) => (
+          <span className="font-mono tabular-nums text-(--ink) whitespace-nowrap">
+            {formatPace(toUnitPace(i.getValue()))}
+          </span>
+        ),
+      }),
+      paceSplitCol.accessor('seconds', {
+        header: 'Time',
+        meta: { align: 'right' },
+        cell: (i) => (
+          <span className="font-mono tabular-nums text-(--ink-3) whitespace-nowrap">
+            {formatDuration(i.getValue())}
+          </span>
+        ),
+      }),
+      ...(splitsHaveHr
+        ? [
+            paceSplitCol.accessor('hr', {
+              header: 'HR',
+              meta: { align: 'right' },
+              cell: (i) => {
+                const v = i.getValue()
+                return (
+                  <span className="font-mono tabular-nums text-(--ink-3)">
+                    {v !== null ? Math.round(v) : '—'}
+                  </span>
+                )
+              },
+            }),
+          ]
+        : []),
+      ...(splitsHaveElev
+        ? [
+            paceSplitCol.accessor('elevM', {
+              header: 'Elev',
+              meta: { align: 'right' },
+              cell: (i) => {
+                const v = i.getValue()
+                return (
+                  <span className="font-mono tabular-nums text-(--ink-4) whitespace-nowrap">
+                    {v !== null ? `${v > 0 ? '+' : ''}${Math.round(v)} m` : '—'}
+                  </span>
+                )
+              },
+            }),
+          ]
+        : []),
+    ],
+    getCoreRowModel: getCoreRowModel(),
+  })
+
+  const lapsHaveHr = detail.laps.some((l) => l.hr !== null)
+  const lapTable = useReactTable({
+    data: detail.laps,
+    columns: [
+      lapCol.accessor('index', {
+        header: 'Lap',
+        cell: (i) => (
+          <span className="font-mono tabular-nums text-(--ink-2)">
+            {i.getValue()}
+          </span>
+        ),
+      }),
+      lapCol.accessor('distanceM', {
+        header: 'Distance',
+        meta: { align: 'right' },
+        cell: (i) => (
+          <span className="font-mono tabular-nums text-(--ink-3) whitespace-nowrap">
+            {toDisplayDistance(i.getValue(), unit)} {distLabel}
+          </span>
+        ),
+      }),
+      lapCol.accessor('seconds', {
+        header: 'Time',
+        meta: { align: 'right' },
+        cell: (i) => (
+          <span className="font-mono tabular-nums text-(--ink-3) whitespace-nowrap">
+            {formatDuration(i.getValue())}
+          </span>
+        ),
+      }),
+      lapCol.accessor('paceSecPerKm', {
+        header: 'Pace',
+        meta: { align: 'right' },
+        cell: (i) => (
+          <span className="font-mono tabular-nums text-(--ink) whitespace-nowrap">
+            {formatPace(toUnitPace(i.getValue()))}
+          </span>
+        ),
+      }),
+      ...(lapsHaveHr
+        ? [
+            lapCol.accessor('hr', {
+              header: 'HR',
+              meta: { align: 'right' },
+              cell: (i) => {
+                const v = i.getValue()
+                return (
+                  <span className="font-mono tabular-nums text-(--ink-3)">
+                    {v !== null ? Math.round(v) : '—'}
+                  </span>
+                )
+              },
+            }),
+          ]
+        : []),
     ],
     getCoreRowModel: getCoreRowModel(),
   })
@@ -463,9 +596,24 @@ export default function ActivityDetailPage({ detail, unit }: Props) {
         </Card>
       )}
 
-      {/* Splits */}
+      {/* Per-unit pace splits */}
+      {unitSplits.length > 0 && (
+        <Table
+          table={paceSplitTable}
+          title="Splits"
+          subtitle={`per ${distLabel === 'mi' ? 'mile' : 'kilometer'}`}
+          minWidth="360px"
+        />
+      )}
+
+      {/* Laps */}
+      {detail.laps.length > 0 && (
+        <Table table={lapTable} title="Laps" minWidth="420px" />
+      )}
+
+      {/* Best efforts (fastest standard distances) */}
       {detail.splits.length > 0 && (
-        <Table table={splitTable} title="Splits" minWidth="360px" />
+        <Table table={splitTable} title="Best efforts" minWidth="360px" />
       )}
     </>
   )
