@@ -121,7 +121,8 @@ function ComputedDataSection({ data }: { data: HealthData }) {
       {lastResult && !error && (
         <p className="mt-3 text-xs text-(--ink-3)">
           Recomputed {lastResult.splitsRows} split rows ·{' '}
-          {lastResult.hrRows} HR zone rows
+          {lastResult.hrRows} HR zone rows ·{' '}
+          {lastResult.richFieldsUpdated} activities updated
         </p>
       )}
     </div>

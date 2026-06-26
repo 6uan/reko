@@ -10,6 +10,7 @@
 import { eq, sql } from 'drizzle-orm'
 import { getDb } from '@/db/client'
 import {
+  activities,
   derivedBestEfforts,
   hrZoneEfforts,
   type NewDerivedBestEffort,
@@ -17,12 +18,16 @@ import {
 } from '@/db/schema'
 import { computeBestEfforts, SPLIT_DISTANCES } from '@/lib/streams'
 import { computeHrZoneEfforts } from '@/lib/heartRate'
+import { richActivityFields } from '@/features/sync/api/mapStravaActivity.server'
+import type { StravaActivity } from '@/lib/strava'
 
 export type RecomputeResult = {
   splitsActivities: number
   splitsRows: number
   hrActivities: number
   hrRows: number
+  /** Activities whose rich columns were repopulated from their raw payload. */
+  richFieldsUpdated: number
 }
 
 /**
@@ -151,12 +156,50 @@ export async function backfillComputedData(
     hrActivities++
   }
 
+  // Populate the rich activity columns from each row's stored raw payload.
+  // No Strava calls — pure local re-derivation.
+  const richFieldsUpdated = await backfillRichFieldsFromRaw(userId)
+
   // Pretty-log so server-side readers can see what happened.
   console.log(
-    `[backfill] user=${userId} splits: ${splitsRows} rows / ${splitsActivities} activities, hr: ${hrRows} rows / ${hrActivities} activities`,
+    `[backfill] user=${userId} splits: ${splitsRows} rows / ${splitsActivities} activities, hr: ${hrRows} rows / ${hrActivities} activities, rich fields: ${richFieldsUpdated} activities`,
   )
 
-  return { splitsActivities, splitsRows, hrActivities, hrRows }
+  return {
+    splitsActivities,
+    splitsRows,
+    hrActivities,
+    hrRows,
+    richFieldsUpdated,
+  }
+}
+
+/**
+ * Populate the rich activity columns (workout_type, gear_id, calories, …)
+ * from each activity's stored `raw` payload. No Strava calls — pure local
+ * re-derivation, safe to run repeatedly. Detail-only fields (calories,
+ * elev_high/low, average_temp) stay null for rows whose raw is still the
+ * summary payload; they fill in once the detail worker refreshes raw.
+ */
+export async function backfillRichFieldsFromRaw(
+  userId: number,
+): Promise<number> {
+  const db = getDb()
+  const rows = await db
+    .select({ id: activities.id, raw: activities.raw })
+    .from(activities)
+    .where(eq(activities.userId, userId))
+
+  let updated = 0
+  for (const r of rows) {
+    if (!r.raw || typeof r.raw !== 'object') continue
+    await db
+      .update(activities)
+      .set(richActivityFields(r.raw as StravaActivity))
+      .where(eq(activities.id, r.id))
+    updated++
+  }
+  return updated
 }
 
 /** Counts of activities with each kind of computed data, for the

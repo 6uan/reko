@@ -41,7 +41,31 @@ export function mapStravaActivity(
     averageCadence: activity.average_cadence ?? null,
     prCount: activity.pr_count ?? 0,
     hasHeartrate: activity.has_heartrate ?? false,
+    ...richActivityFields(activity),
     raw: activity as unknown,
     syncedAt: new Date(),
+  }
+}
+
+/**
+ * Extract the nullable "rich" activity columns from a Strava payload. Shared
+ * by mapStravaActivity (summary list + webhook detail), storeActivityDetail
+ * (full detail), and the raw-backfill. Fields the summary endpoint omits
+ * (calories, elev_high/low, average_temp) arrive null until the detail
+ * payload is seen, then get filled by storeActivityDetail.
+ */
+export function richActivityFields(a: StravaActivity) {
+  return {
+    workoutType: a.workout_type ?? null,
+    gearId: a.gear_id ?? null,
+    manual: a.manual ?? false,
+    calories: a.calories ?? null,
+    sufferScore: a.suffer_score ?? null,
+    averageWatts: a.average_watts ?? null,
+    maxWatts: a.max_watts ?? null,
+    deviceName: a.device_name ?? null,
+    elevHigh: a.elev_high ?? null,
+    elevLow: a.elev_low ?? null,
+    averageTemp: a.average_temp ?? null,
   }
 }

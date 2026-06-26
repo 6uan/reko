@@ -22,6 +22,20 @@ export type StravaActivity = {
   pr_count: number
   achievement_count: number
   has_heartrate: boolean
+  // ── Rich fields — present on the summary and/or detail payload. All
+  //    optional so the same type covers both endpoints. ──
+  workout_type?: number | null
+  gear_id?: string | null
+  manual?: boolean
+  average_watts?: number
+  max_watts?: number
+  suffer_score?: number | null
+  device_name?: string | null
+  elev_high?: number
+  elev_low?: number
+  /** Average temperature in °C. */
+  average_temp?: number
+  calories?: number
 }
 
 /**
@@ -47,7 +61,6 @@ export type StravaBestEffort = {
 export type StravaActivityDetail = StravaActivity & {
   best_efforts?: StravaBestEffort[]
   description?: string | null
-  calories?: number
 }
 
 /** Stream channels we know about. Mirrors `streamTypeEnum` in the DB. */

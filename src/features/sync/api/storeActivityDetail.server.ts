@@ -42,6 +42,7 @@ import {
 } from '@/lib/strava'
 import { computeBestEfforts, SPLIT_DISTANCES } from '@/lib/streams'
 import { computeHrZoneEfforts } from '@/lib/heartRate'
+import { richActivityFields } from './mapStravaActivity.server'
 
 export type StoreDetailResult = {
   /** How many best_effort rows were upserted (0 for short activities). */
@@ -149,13 +150,20 @@ export async function storeActivityDetail(
       })
   }
 
-  // Bump syncedAt to mark the row freshly updated. NOTE: this does *not* set
-  // detailSyncedAt — the detail-fetch worker stamps that after we return (see
-  // runDetailFetchWorker). Any caller invoking this outside the worker must set
+  // Bump syncedAt and refresh the rich fields + raw payload from the full
+  // detail we just fetched — the summary backfill only stored the list
+  // payload, which omits calories / elev_high / elev_low / average_temp (and
+  // the laps / splits_metric that Tier 3 reads back out of `raw`). NOTE: this
+  // does *not* set detailSyncedAt — the detail-fetch worker stamps that after
+  // we return. A caller invoking this outside the worker must set
   // detailSyncedAt itself, or the activity stays in the worker's NULL queue.
   await db
     .update(activities)
-    .set({ syncedAt: new Date() })
+    .set({
+      syncedAt: new Date(),
+      ...richActivityFields(detail),
+      raw: detail as unknown,
+    })
     .where(eq(activities.id, activityId))
 
   return {

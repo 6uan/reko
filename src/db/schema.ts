@@ -123,6 +123,25 @@ export const activities = pgTable(
     prCount: integer("pr_count").notNull().default(0),
     hasHeartrate: boolean("has_heartrate").notNull().default(false),
 
+    // ── Rich Strava fields (nullable; populated from summary on sync and
+    //    from the full detail payload by storeActivityDetail) ──────────────
+    /** Strava workout_type for runs: 0 default, 1 race, 2 long run, 3 workout. */
+    workoutType: integer("workout_type"),
+    /** Strava gear id (e.g. "g1234567"); joins to the gear table. */
+    gearId: text("gear_id"),
+    /** True for manually-entered activities (no GPS/sensor streams). */
+    manual: boolean("manual").notNull().default(false),
+    calories: real("calories"),
+    /** Strava "Relative Effort" (suffer_score). */
+    sufferScore: integer("suffer_score"),
+    averageWatts: real("average_watts"),
+    maxWatts: integer("max_watts"),
+    deviceName: text("device_name"),
+    elevHigh: real("elev_high"),
+    elevLow: real("elev_low"),
+    /** Average temperature in °C, when the device recorded it. */
+    averageTemp: real("average_temp"),
+
     /** Full Strava payload for forward-compat (new fields without migrations). */
     raw: jsonb("raw").$type<unknown>(),
 
