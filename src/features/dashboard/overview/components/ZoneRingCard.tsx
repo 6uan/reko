@@ -18,20 +18,22 @@ export default function ZoneRingCard({
   const total = zoneSeconds.reduce((a, b) => a + b, 0)
 
   return (
-    <Card className="h-full p-4 flex flex-col items-center justify-center gap-3">
-      <HrZoneRing
-        zoneSeconds={zoneSeconds}
-        size={96}
-        center={
-          <>
-            <span className="text-xl font-semibold tabular-nums text-(--ink)">
-              {avgHr ?? '—'}
-            </span>
-            <span className="text-[9px] text-(--ink-4)">bpm</span>
-          </>
-        }
-      />
-      <div className="flex w-full flex-col gap-0.5">
+    <Card className="flex items-center gap-4 p-4 lg:h-full lg:flex-col lg:justify-center lg:gap-3">
+      <div className="shrink-0">
+        <HrZoneRing
+          zoneSeconds={zoneSeconds}
+          size={96}
+          center={
+            <>
+              <span className="text-xl font-semibold tabular-nums text-(--ink)">
+                {avgHr ?? '—'}
+              </span>
+              <span className="text-[9px] text-(--ink-4)">bpm</span>
+            </>
+          }
+        />
+      </div>
+      <div className="flex min-w-0 flex-1 flex-col gap-0.5 lg:w-full lg:flex-none">
         {HR_ZONES.map((z, i) => {
           const pct = total > 0 ? Math.round((zoneSeconds[i] / total) * 100) : 0
           return (
