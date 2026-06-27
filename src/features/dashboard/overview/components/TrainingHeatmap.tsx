@@ -1,13 +1,13 @@
 /**
- * GitHub-style training calendar — one cell per day for the last ~year,
- * shaded by that day's total run distance. Computed entirely client-side from
- * the unscoped run list; always a fixed 53-week window (ignores the range
- * toggle), so it reads as a year-at-a-glance of training consistency.
+ * GitHub-style training calendar — one cell per day, shaded by that day's
+ * total run distance. The visible weeks are intentionally capped to either a
+ * rolling 12-month window or one selected calendar year.
  */
 
 import { useMemo, type CSSProperties } from 'react'
 import Card from '@/features/dashboard/ui/Card'
 import SectionHeader from '@/features/dashboard/ui/SectionHeader'
+import type { RangeKey } from '@/features/dashboard/range'
 import { getMonday } from '@/lib/dates'
 import {
   distanceUnit,
@@ -16,22 +16,27 @@ import {
   type Unit,
 } from '@/lib/activities'
 
-const WEEKS = 53
 const MIN_CELL_SIZE = 10
 const WEEKDAY_LABEL_WIDTH = 28
 const TILE_GAP = 2
-const HEATMAP_MIN_WIDTH = WEEKDAY_LABEL_WIDTH + WEEKS * MIN_CELL_SIZE + WEEKS * TILE_GAP
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
-
-const heatmapColumnsStyle = {
-  gridTemplateColumns: `${WEEKDAY_LABEL_WIDTH}px repeat(${WEEKS}, minmax(${MIN_CELL_SIZE}px, 1fr))`,
-  columnGap: TILE_GAP,
-} satisfies CSSProperties
 
 const heatmapRowsStyle = {
   rowGap: TILE_GAP,
 } satisfies CSSProperties
+
+function startOfDay(d: Date): Date {
+  const copy = new Date(d)
+  copy.setHours(0, 0, 0, 0)
+  return copy
+}
+
+function addDays(d: Date, days: number): Date {
+  const copy = new Date(d)
+  copy.setDate(copy.getDate() + days)
+  return copy
+}
 
 function dayKey(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
@@ -49,22 +54,78 @@ type Cell = {
   dist: number
   count: number
   level: number
+  inRange: boolean
   future: boolean
+}
+
+type HeatmapWindow = {
+  activeStart: Date
+  activeEnd: Date
+  gridStart: Date
+  gridEnd: Date
+  subtitleSuffix: string
+}
+
+function heatmapWindow(range: RangeKey, now: Date): HeatmapWindow {
+  const today = startOfDay(now)
+
+  if (range === 'all' || range === '12m') {
+    const activeStart = new Date(today.getFullYear(), today.getMonth() - 11, 1)
+    return {
+      activeStart,
+      activeEnd: today,
+      gridStart: getMonday(activeStart),
+      gridEnd: getMonday(today),
+      subtitleSuffix: 'over the last 12 months',
+    }
+  }
+
+  if (range === 'ytd') {
+    const activeStart = new Date(today.getFullYear(), 0, 1)
+    return {
+      activeStart,
+      activeEnd: today,
+      gridStart: getMonday(activeStart),
+      gridEnd: getMonday(today),
+      subtitleSuffix: `in ${today.getFullYear()}`,
+    }
+  }
+
+  const selectedYear = Number(range)
+  if (Number.isInteger(selectedYear)) {
+    const activeStart = new Date(selectedYear, 0, 1)
+    const activeEnd = new Date(selectedYear, 11, 31)
+    return {
+      activeStart,
+      activeEnd,
+      gridStart: getMonday(activeStart),
+      gridEnd: getMonday(activeEnd),
+      subtitleSuffix: `in ${selectedYear}`,
+    }
+  }
+
+  return heatmapWindow('12m', today)
 }
 
 export default function TrainingHeatmap({
   runs,
   unit,
+  range,
 }: {
   runs: Activity[]
   unit: Unit
+  range: RangeKey
 }) {
   const distLabel = distanceUnit(unit)
 
-  const { weeks, total } = useMemo(() => {
+  const { weeks, total, subtitleSuffix } = useMemo(() => {
+    const today = startOfDay(new Date())
+    const rangeWindow = heatmapWindow(range, today)
     const perDay = new Map<string, { dist: number; count: number }>()
     for (const r of runs) {
-      const k = dayKey(new Date(r.date))
+      const date = startOfDay(new Date(r.date))
+      if (date < rangeWindow.activeStart || date > rangeWindow.activeEnd || date > today) continue
+      const k = dayKey(date)
       const cur = perDay.get(k) ?? { dist: 0, count: 0 }
       cur.dist += r.distanceMeters
       cur.count += 1
@@ -83,36 +144,59 @@ export default function TrainingHeatmap({
       return 4
     }
 
-    const todayKey = dayKey(new Date())
-    const start = getMonday(new Date())
-    start.setDate(start.getDate() - (WEEKS - 1) * 7)
-
     const weeks: Cell[][] = []
     let total = 0
-    for (let w = 0; w < WEEKS; w++) {
+    for (
+      let weekStart = new Date(rangeWindow.gridStart);
+      weekStart <= rangeWindow.gridEnd;
+      weekStart = addDays(weekStart, 7)
+    ) {
       const col: Cell[] = []
       for (let d = 0; d < 7; d++) {
-        const date = new Date(start)
-        date.setDate(date.getDate() + w * 7 + d)
+        const date = addDays(weekStart, d)
         const key = dayKey(date)
-        const e = perDay.get(key)
+        const inRange = date >= rangeWindow.activeStart && date <= rangeWindow.activeEnd
+        const future = date > today
+        const e = inRange && !future ? perDay.get(key) : undefined
         const dist = e?.dist ?? 0
         total += dist
-        col.push({ key, date, dist, count: e?.count ?? 0, level: levelOf(dist), future: key > todayKey })
+        col.push({
+          key,
+          date,
+          dist,
+          count: e?.count ?? 0,
+          level: levelOf(dist),
+          inRange,
+          future,
+        })
       }
       weeks.push(col)
     }
-    return { weeks, total }
-  }, [runs])
+    return { weeks, total, subtitleSuffix: rangeWindow.subtitleSuffix }
+  }, [runs, range])
 
   const monthLabels = weeks.map((col, w) => {
-    const m = col[0].date.getMonth()
-    return w === 0 || m !== weeks[w - 1][0].date.getMonth() ? MONTHS[m] : ''
+    const firstInRange = col.find((c) => c.inRange)
+    if (!firstInRange) return ''
+    const previousInRange = weeks[w - 1]?.find((c) => c.inRange)
+    const month = firstInRange.date.getMonth()
+    return w === 0 || month !== previousInRange?.date.getMonth() ? MONTHS[month] : ''
   })
+
+  const weekCount = weeks.length
+  const heatmapColumnsStyle = useMemo<CSSProperties>(
+    () => ({
+      gridTemplateColumns: `${WEEKDAY_LABEL_WIDTH}px repeat(${weekCount}, minmax(${MIN_CELL_SIZE}px, 1fr))`,
+      columnGap: TILE_GAP,
+    }),
+    [weekCount],
+  )
+  const heatmapMinWidth =
+    WEEKDAY_LABEL_WIDTH + weekCount * MIN_CELL_SIZE + weekCount * TILE_GAP
 
   const title = (c: Cell) => {
     const d = c.date.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
-    if (c.future) return d
+    if (!c.inRange || c.future) return d
     if (c.count === 0) return `${d} · rest`
     return `${d} · ${toDisplayDistance(c.dist, unit)} ${distLabel} · ${c.count} ${c.count === 1 ? 'run' : 'runs'}`
   }
@@ -121,7 +205,7 @@ export default function TrainingHeatmap({
     <Card className="h-full min-w-0 overflow-hidden p-4">
       <SectionHeader
         title="Training"
-        subtitle={`${toDisplayDistance(total, unit)} ${distLabel} over the last year`}
+        subtitle={`${toDisplayDistance(total, unit)} ${distLabel} ${subtitleSuffix}`}
       />
 
       {/* The grid expands to the card width on roomy screens, then keeps a
@@ -132,7 +216,7 @@ export default function TrainingHeatmap({
         tabIndex={0}
         className="-mx-4 mt-3 overflow-x-auto px-4 pb-2 [scrollbar-width:thin] focus-visible:outline focus-visible:outline-1 focus-visible:outline-(--accent)"
       >
-        <div className="w-full" style={{ minWidth: HEATMAP_MIN_WIDTH }}>
+        <div className="w-full" style={{ minWidth: heatmapMinWidth }}>
           <div
             className="grid h-3 text-[9px] text-(--ink-4)"
             style={heatmapColumnsStyle}
@@ -143,7 +227,7 @@ export default function TrainingHeatmap({
                 {m && (
                   <span
                     className={`absolute top-0 whitespace-nowrap ${
-                      w > WEEKS - 4 ? 'right-0' : 'left-0'
+                      w > weekCount - 4 ? 'right-0' : 'left-0'
                     }`}
                   >
                     {m}
@@ -179,7 +263,7 @@ export default function TrainingHeatmap({
                     key={c.key}
                     title={title(c)}
                     className="aspect-square w-full rounded-[2px]"
-                    style={{ backgroundColor: c.future ? 'transparent' : cellColor(c.level) }}
+                    style={{ backgroundColor: !c.inRange || c.future ? 'transparent' : cellColor(c.level) }}
                   />
                 ))}
               </div>

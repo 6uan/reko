@@ -9,9 +9,10 @@
 
 /** A selected range: a preset key, or a 4-digit year as a string ('2024'). */
 export type RangeKey = 'all' | 'ytd' | '12m' | `${number}`
+export type RangeOption = { key: RangeKey; label: string }
 
 /** Fixed presets, in display order. Years with data are appended in the UI. */
-export const RANGE_PRESETS: { key: RangeKey; label: string }[] = [
+export const RANGE_PRESETS: RangeOption[] = [
   { key: 'all', label: 'All time' },
   { key: 'ytd', label: 'This year' },
   { key: '12m', label: 'Last 12 months' },
@@ -27,6 +28,38 @@ export function yearsInData(items: { date: string }[]): number[] {
   const years = new Set<number>()
   for (const i of items) years.add(new Date(i.date).getFullYear())
   return [...years].sort((a, b) => b - a)
+}
+
+/** Dropdown options derived from actual data years. */
+export function rangeOptionsForYears(
+  years: number[],
+  now: Date = new Date(),
+): RangeOption[] {
+  const currentYear = now.getFullYear()
+  const presets = RANGE_PRESETS.filter(
+    (p) => p.key !== 'ytd' || !years.includes(currentYear),
+  )
+
+  return [
+    ...presets,
+    ...years.map((year) => ({
+      key: String(year) as RangeKey,
+      label: String(year),
+    })),
+  ]
+}
+
+/** Replace duplicate relative selections with the equivalent concrete year. */
+export function normalizeRangeForYears(
+  key: RangeKey,
+  years: number[],
+  now: Date = new Date(),
+): RangeKey {
+  const currentYear = now.getFullYear()
+  if (key === 'ytd' && years.includes(currentYear)) {
+    return String(currentYear) as RangeKey
+  }
+  return key
 }
 
 /**

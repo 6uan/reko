@@ -8,7 +8,12 @@
 
 import { createContext, useContext, useMemo, useState } from 'react'
 import { activityKind, type Activity, type Unit } from '@/lib/activities'
-import { filterByRange, type RangeKey } from './range'
+import {
+  filterByRange,
+  normalizeRangeForYears,
+  yearsInData,
+  type RangeKey,
+} from './range'
 import type { RecordsData } from './records/distances'
 
 type DashboardContextValue = {
@@ -77,6 +82,12 @@ export function DashboardProvider({ activities, records, children }: ProviderPro
     if (typeof window !== 'undefined') localStorage.setItem('reko-range', r)
   }
 
+  const availableYears = useMemo(() => yearsInData(activities), [activities])
+  const activeRange = useMemo(
+    () => normalizeRangeForYears(range, availableYears),
+    [range, availableYears],
+  )
+
   // Run-type inclusion toggles (default on, so behaviour matches "all runs").
   const [includeTrail, setIncludeTrailState] = useState<boolean>(() => {
     if (typeof window !== 'undefined') {
@@ -116,10 +127,13 @@ export function DashboardProvider({ activities, records, children }: ProviderPro
 
   // Range-scoped views — what the analytical tabs consume by default.
   const scopedActivities = useMemo(
-    () => filterByRange(activities, range),
-    [activities, range],
+    () => filterByRange(activities, activeRange),
+    [activities, activeRange],
   )
-  const scopedRuns = useMemo(() => filterByRange(allRuns, range), [allRuns, range])
+  const scopedRuns = useMemo(
+    () => filterByRange(allRuns, activeRange),
+    [allRuns, activeRange],
+  )
 
   const value = useMemo<DashboardContextValue>(
     () => ({
@@ -130,7 +144,7 @@ export function DashboardProvider({ activities, records, children }: ProviderPro
       records,
       unit,
       toggleUnit,
-      range,
+      range: activeRange,
       setRange,
       includeTrail,
       setIncludeTrail,
@@ -144,7 +158,7 @@ export function DashboardProvider({ activities, records, children }: ProviderPro
       allRuns,
       records,
       unit,
-      range,
+      activeRange,
       includeTrail,
       includeTreadmill,
     ],

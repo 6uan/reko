@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { useLocation } from "@tanstack/react-router";
 import { useDashboard } from "./DashboardContext";
-import { RANGE_PRESETS, yearsInData, type RangeKey } from "./range";
+import { rangeOptionsForYears, yearsInData, type RangeKey } from "./range";
 import { TABS, isTabActive } from "./tabs";
 import IconButton from "@/components/ui/IconButton";
 import type { Unit } from "@/lib/activities";
@@ -17,6 +17,7 @@ export default function Topbar({
 
   const activeTab = TABS.find((t) => isTabActive(t, pathname)) ?? TABS[0];
   const years = useMemo(() => yearsInData(allActivities), [allActivities]);
+  const rangeOptions = useMemo(() => rangeOptionsForYears(years), [years]);
 
   const UnitBtn = ({ value }: { value: Unit }) => (
     <button
@@ -66,14 +67,9 @@ export default function Topbar({
             aria-label="Time range"
             className="appearance-none pl-2.5 pr-7 py-1.5 bg-(--card) border border-(--line) rounded-(--radius-s) font-mono text-xs text-(--ink-3) cursor-pointer focus:outline-none"
           >
-            {RANGE_PRESETS.map((p) => (
+            {rangeOptions.map((p) => (
               <option key={p.key} value={p.key}>
                 {p.label}
-              </option>
-            ))}
-            {years.map((y) => (
-              <option key={y} value={String(y)}>
-                {y}
               </option>
             ))}
           </select>

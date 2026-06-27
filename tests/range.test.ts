@@ -1,5 +1,12 @@
 import { describe, it, expect } from 'vitest'
-import { filterByRange, yearsInData, periodLabel, monthWindow } from '@/features/dashboard/range'
+import {
+  filterByRange,
+  yearsInData,
+  periodLabel,
+  monthWindow,
+  rangeOptionsForYears,
+  normalizeRangeForYears,
+} from '@/features/dashboard/range'
 
 const mk = (date: string) => ({ date })
 
@@ -56,6 +63,40 @@ describe('yearsInData', () => {
         mk('2024-12-01T12:00:00Z'),
       ]),
     ).toEqual([2026, 2024])
+  })
+})
+
+describe('rangeOptionsForYears', () => {
+  const now = new Date('2026-06-22T12:00:00Z')
+
+  it('omits "This year" when the current year is already selectable', () => {
+    expect(rangeOptionsForYears([2026, 2025], now).map((o) => o.label)).toEqual([
+      'All time',
+      'Last 12 months',
+      '2026',
+      '2025',
+    ])
+  })
+
+  it('keeps "This year" when it is not duplicated by a data year', () => {
+    expect(rangeOptionsForYears([2025], now).map((o) => o.label)).toEqual([
+      'All time',
+      'This year',
+      'Last 12 months',
+      '2025',
+    ])
+  })
+})
+
+describe('normalizeRangeForYears', () => {
+  const now = new Date('2026-06-22T12:00:00Z')
+
+  it('normalizes a persisted ytd selection to the concrete current year', () => {
+    expect(normalizeRangeForYears('ytd', [2026, 2025], now)).toBe('2026')
+  })
+
+  it('leaves ytd alone when the current year is not a selectable data year', () => {
+    expect(normalizeRangeForYears('ytd', [2025], now)).toBe('ytd')
   })
 })
 

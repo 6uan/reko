@@ -33,7 +33,7 @@ const MONTH_NAMES_FULL = [
 ]
 
 export default function Overview({ runs, unit }: Props) {
-  const { range, allRuns } = useDashboard()
+  const { range } = useDashboard()
 
   // ── KPI data (scoped to selected range) ───────────────────────────
 
@@ -160,7 +160,7 @@ export default function Overview({ runs, unit }: Props) {
     <div className="flex flex-col gap-4">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-stretch lg:gap-3">
         <div className="min-w-0 lg:flex-1">
-          <TrainingHeatmap runs={allRuns} unit={unit} />
+          <TrainingHeatmap runs={runs} unit={unit} range={range} />
         </div>
         <div className="lg:w-44 lg:shrink-0">
           <ZoneRingCard zoneSeconds={zoneSeconds} avgHr={avgHr} />
