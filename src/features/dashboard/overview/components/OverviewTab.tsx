@@ -158,14 +158,14 @@ export default function Overview({ runs, unit }: Props) {
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex flex-col lg:flex-row gap-4 lg:items-stretch">
-        <div className="min-w-0 overflow-x-auto">
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-stretch lg:gap-3">
+        <div className="min-w-0 lg:flex-1">
           <TrainingHeatmap runs={allRuns} unit={unit} />
         </div>
         <div className="lg:w-44 lg:shrink-0">
           <ZoneRingCard zoneSeconds={zoneSeconds} avgHr={avgHr} />
         </div>
-        <div className="lg:w-52 lg:shrink-0">
+        <div className="lg:w-44 lg:shrink-0">
           <KpiCards
             stacked
             totalDist={totalDist}

@@ -38,7 +38,7 @@ export default function KpiCards({
   // "Total Runs" (the run count already rides under Total Distance).
   if (stacked) {
     return (
-      <Card className="h-full p-4 flex flex-col justify-center gap-3">
+      <Card className="h-full p-3.5 flex flex-col justify-center gap-2.5">
         <Stat
           label="Total Distance"
           value={toDisplayDistance(totalDist, unit)}

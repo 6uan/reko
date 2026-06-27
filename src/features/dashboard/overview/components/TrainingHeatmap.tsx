@@ -5,7 +5,7 @@
  * toggle), so it reads as a year-at-a-glance of training consistency.
  */
 
-import { useMemo } from 'react'
+import { useMemo, type CSSProperties } from 'react'
 import Card from '@/features/dashboard/ui/Card'
 import SectionHeader from '@/features/dashboard/ui/SectionHeader'
 import { getMonday } from '@/lib/dates'
@@ -17,8 +17,21 @@ import {
 } from '@/lib/activities'
 
 const WEEKS = 53
+const MIN_CELL_SIZE = 10
+const WEEKDAY_LABEL_WIDTH = 28
+const TILE_GAP = 2
+const HEATMAP_MIN_WIDTH = WEEKDAY_LABEL_WIDTH + WEEKS * MIN_CELL_SIZE + WEEKS * TILE_GAP
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+
+const heatmapColumnsStyle = {
+  gridTemplateColumns: `${WEEKDAY_LABEL_WIDTH}px repeat(${WEEKS}, minmax(${MIN_CELL_SIZE}px, 1fr))`,
+  columnGap: TILE_GAP,
+} satisfies CSSProperties
+
+const heatmapRowsStyle = {
+  rowGap: TILE_GAP,
+} satisfies CSSProperties
 
 function dayKey(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
@@ -105,44 +118,67 @@ export default function TrainingHeatmap({
   }
 
   return (
-    <Card className="p-4">
+    <Card className="h-full min-w-0 overflow-hidden p-4">
       <SectionHeader
         title="Training"
         subtitle={`${toDisplayDistance(total, unit)} ${distLabel} over the last year`}
       />
 
-      {/* Fixed-size tiles (constant height); the card hugs them and the whole
-          card scrolls horizontally on narrow widths (overflow on the wrapper
-          in OverviewTab), GitHub-style. */}
-      <div className="mt-3 flex gap-2">
-        {/* Weekday labels */}
-        <div className="mt-4 flex shrink-0 flex-col gap-[3px] text-[9px] text-(--ink-4)">
-          {WEEKDAYS.map((d, i) => (
-            <div key={d} className="h-[14px] w-7 pr-1 text-right leading-[14px]">
-              {i === 0 || i === 2 || i === 4 ? d : ''}
-            </div>
-          ))}
-        </div>
-
-        {/* Months + grid */}
-        <div className="flex flex-col gap-1">
-          <div className="flex h-3 gap-[3px] text-[9px] text-(--ink-4)">
+      {/* The grid expands to the card width on roomy screens, then keeps a
+          legible minimum and scrolls inside the card when space gets tight. */}
+      <div
+        aria-label="Training heatmap timeline"
+        role="region"
+        tabIndex={0}
+        className="-mx-4 mt-3 overflow-x-auto px-4 pb-2 [scrollbar-width:thin] focus-visible:outline focus-visible:outline-1 focus-visible:outline-(--accent)"
+      >
+        <div className="w-full" style={{ minWidth: HEATMAP_MIN_WIDTH }}>
+          <div
+            className="grid h-3 text-[9px] text-(--ink-4)"
+            style={heatmapColumnsStyle}
+          >
+            <div aria-hidden="true" />
             {monthLabels.map((m, w) => (
-              <div key={w} className="relative w-[14px]">
+              <div key={w} className="relative min-w-0">
                 {m && (
-                  <span className="absolute left-0 top-0 whitespace-nowrap">{m}</span>
+                  <span
+                    className={`absolute top-0 whitespace-nowrap ${
+                      w > WEEKS - 4 ? 'right-0' : 'left-0'
+                    }`}
+                  >
+                    {m}
+                  </span>
                 )}
               </div>
             ))}
           </div>
-          <div className="flex gap-[3px]">
+
+          <div
+            className="mt-1 grid"
+            style={heatmapColumnsStyle}
+          >
+            <div
+              className="grid h-full grid-rows-7 text-[9px] text-(--ink-4)"
+              style={heatmapRowsStyle}
+            >
+              {WEEKDAYS.map((d, i) => (
+                <div key={d} className="flex items-center justify-end pr-1 leading-none">
+                  {i === 0 || i === 2 || i === 4 ? d : ''}
+                </div>
+              ))}
+            </div>
+
             {weeks.map((col, w) => (
-              <div key={w} className="flex flex-col gap-[3px]">
+              <div
+                key={w}
+                className="grid grid-rows-7"
+                style={heatmapRowsStyle}
+              >
                 {col.map((c) => (
                   <div
                     key={c.key}
                     title={title(c)}
-                    className="h-[14px] w-[14px] rounded-[2px]"
+                    className="aspect-square w-full rounded-[2px]"
                     style={{ backgroundColor: c.future ? 'transparent' : cellColor(c.level) }}
                   />
                 ))}
