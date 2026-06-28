@@ -5,8 +5,7 @@
  * columns array. Numeric/value columns accept an optional `opts` so a table
  * can vary presentation (alignment, muted vs default text, raw vs formatted
  * HR) while the value-formatting logic lives in one place. Defaults reproduce
- * the original muted, left-aligned style. Uses `createColumnHelper<any>()` —
- * the type safety comes from the table's data type, not the column helper.
+ * the original muted, left-aligned style.
  */
 
 import { createColumnHelper } from '@tanstack/react-table'
@@ -15,9 +14,12 @@ import { toDisplayDistance, paceForUnit, paceUnit, distanceUnit, type Unit } fro
 import { formatDate, formatDateShort } from '@/lib/dates'
 import ActivityLink from './ActivityLink'
 
-// Generic helper — works with any row type that has the required fields.
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const col = createColumnHelper<any>()
+type NameRow = { id: number; name: string }
+type DateRow = { date: string }
+type DistanceRow = { distanceMeters: number }
+type TimeRow = { movingTime: number }
+type PaceRow = { avgSpeed: number }
+type AvgHrRow = { avgHr: number | null }
 
 /** Per-table presentation overrides for value cells. */
 export type CellOpts = {
@@ -34,7 +36,8 @@ const alignMeta = (opts?: CellOpts) =>
   opts?.align ? { meta: { align: opts.align } } : {}
 
 /** Rank column (#1, #2, …) based on row index. */
-export function rankColumn() {
+export function rankColumn<T>() {
+  const col = createColumnHelper<T>()
   return col.display({
     id: 'rank',
     header: '#',
@@ -45,8 +48,9 @@ export function rankColumn() {
 }
 
 /** Activity name that links to Strava. Row must have `id` and `name`. */
-export function nameColumn() {
-  return col.accessor('name', {
+export function nameColumn<T extends NameRow>() {
+  const col = createColumnHelper<T>()
+  return col.accessor((row) => row.name, {
     id: 'name',
     header: 'Activity',
     cell: (info) => (
@@ -58,8 +62,9 @@ export function nameColumn() {
 }
 
 /** Date column. `short` uses the compact format (e.g. "4/24"). Row must have `date`. */
-export function dateColumn(short = false) {
-  return col.accessor('date', {
+export function dateColumn<T extends DateRow>(short = false) {
+  const col = createColumnHelper<T>()
+  return col.accessor((row) => row.date, {
     id: 'date',
     header: 'Date',
     cell: (info) => (
@@ -71,8 +76,9 @@ export function dateColumn(short = false) {
 }
 
 /** Distance column. Row must have `distanceMeters`. */
-export function distanceColumn(unit: Unit, opts?: CellOpts) {
-  return col.accessor('distanceMeters', {
+export function distanceColumn<T extends DistanceRow>(unit: Unit, opts?: CellOpts) {
+  const col = createColumnHelper<T>()
+  return col.accessor((row) => row.distanceMeters, {
     id: 'distance',
     header: 'Distance',
     ...alignMeta(opts),
@@ -85,8 +91,9 @@ export function distanceColumn(unit: Unit, opts?: CellOpts) {
 }
 
 /** Moving time column. Row must have `movingTime`. */
-export function timeColumn(opts?: CellOpts) {
-  return col.accessor('movingTime', {
+export function timeColumn<T extends TimeRow>(opts?: CellOpts) {
+  const col = createColumnHelper<T>()
+  return col.accessor((row) => row.movingTime, {
     id: 'time',
     header: 'Time',
     ...alignMeta(opts),
@@ -97,7 +104,8 @@ export function timeColumn(opts?: CellOpts) {
 }
 
 /** Pace column derived from avgSpeed. Row must have `avgSpeed`. */
-export function paceColumn(unit: Unit, opts?: CellOpts) {
+export function paceColumn<T extends PaceRow>(unit: Unit, opts?: CellOpts) {
+  const col = createColumnHelper<T>()
   const unitLabel = paceUnit(unit)
   return col.accessor((r) => paceForUnit(r.avgSpeed, unit), {
     id: 'pace',
@@ -112,8 +120,9 @@ export function paceColumn(unit: Unit, opts?: CellOpts) {
 }
 
 /** Average heart rate column. Row must have `avgHr`. `raw` prints the value unformatted. */
-export function avgHrColumn(opts?: CellOpts & { raw?: boolean }) {
-  return col.accessor('avgHr', {
+export function avgHrColumn<T extends AvgHrRow>(opts?: CellOpts & { raw?: boolean }) {
+  const col = createColumnHelper<T>()
+  return col.accessor((row) => row.avgHr, {
     id: 'avgHr',
     header: 'Avg HR',
     ...alignMeta(opts),

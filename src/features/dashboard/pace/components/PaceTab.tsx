@@ -18,7 +18,7 @@ import {
 } from '@/lib/activities'
 import { groupByWeek } from '@/lib/aggregations'
 import KpiCard from '@/features/dashboard/ui/KpiCard'
-import { createColumnHelper, useReactTable, getCoreRowModel, type ColumnDef } from '@tanstack/react-table'
+import { createColumnHelper, useReactTable, getCoreRowModel } from '@tanstack/react-table'
 import SectionHeader from '@/features/dashboard/ui/SectionHeader'
 import EmptyState from '@/features/dashboard/ui/EmptyState'
 import Card from '@/features/dashboard/ui/Card'
@@ -30,6 +30,7 @@ import { useDashboard } from '@/features/dashboard/DashboardContext'
 import { periodLabel } from '@/features/dashboard/range'
 
 type Props = { runs: Activity[]; unit: Unit }
+const paceCol = createColumnHelper<Activity>()
 
 // ── Helpers ───────────────────────────────────────────────────────
 
@@ -119,12 +120,9 @@ export default function Pace({ runs, unit }: Props) {
       .slice(0, 20)
   }, [runs])
 
-  const paceCol = createColumnHelper<Activity>()
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const paceColumns = useMemo((): ColumnDef<any, any>[] => [
-    rankColumn(),
-    nameColumn(),
+  const paceColumns = useMemo(() => [
+    rankColumn<Activity>(),
+    nameColumn<Activity>(),
     paceCol.accessor((r) => paceForRun(r, unit), {
       id: 'pace',
       header: 'Pace',
@@ -137,10 +135,10 @@ export default function Pace({ runs, unit }: Props) {
         </span>
       ),
     }),
-    distanceColumn(unit),
-    timeColumn(),
-    avgHrColumn(),
-    dateColumn(),
+    distanceColumn<Activity>(unit),
+    timeColumn<Activity>(),
+    avgHrColumn<Activity>(),
+    dateColumn<Activity>(),
   ], [unit, unitLabel])
 
   const paceTable = useReactTable({

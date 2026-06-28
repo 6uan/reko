@@ -7,7 +7,6 @@ import {
   createColumnHelper,
   useReactTable,
   getCoreRowModel,
-  type ColumnDef,
 } from '@tanstack/react-table'
 import { type Activity, type Unit } from '@/lib/activities'
 import Table from '@/features/dashboard/ui/Table'
@@ -27,20 +26,19 @@ type Props = {
 
 const col = createColumnHelper<Activity>()
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any -- factory columns are any-typed; matches the other tab tables
-function buildColumns(unit: Unit): ColumnDef<any, any>[] {
+function buildColumns(unit: Unit) {
   // Right-aligned, default-color cells with a raw avg-HR value — these opts
   // preserve this table's existing look while the factory owns the shared
   // formatting. Elevation + PR are bespoke to this table, so stay inline.
   const right = { align: 'right' as const, muted: false }
 
   return [
-    nameColumn(),
-    dateColumn(true),
-    distanceColumn(unit, right),
-    timeColumn(right),
-    paceColumn(unit, right),
-    avgHrColumn({ ...right, raw: true }),
+    nameColumn<Activity>(),
+    dateColumn<Activity>(true),
+    distanceColumn<Activity>(unit, right),
+    timeColumn<Activity>(right),
+    paceColumn<Activity>(unit, right),
+    avgHrColumn<Activity>({ ...right, raw: true }),
     col.accessor('elevation', {
       id: 'elevation',
       header: 'Elev',

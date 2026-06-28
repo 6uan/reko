@@ -17,7 +17,6 @@ import {
   createColumnHelper,
   useReactTable,
   getCoreRowModel,
-  type ColumnDef,
 } from '@tanstack/react-table'
 import SectionHeader from '@/features/dashboard/ui/SectionHeader'
 import EmptyState from '@/features/dashboard/ui/EmptyState'
@@ -31,6 +30,7 @@ import { useDashboard } from '@/features/dashboard/DashboardContext'
 import { periodLabel } from '@/features/dashboard/range'
 
 type Props = { runs: Activity[]; unit: Unit }
+const cadCol = createColumnHelper<Activity>()
 
 // ── Helpers ──────────────────────────────────────────────────────
 
@@ -132,11 +132,8 @@ export default function CadenceTab({ runs, unit }: Props) {
     [withCadence],
   )
 
-  const cadCol = createColumnHelper<Activity>()
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const cadenceColumns = useMemo((): ColumnDef<any, any>[] => [
-    nameColumn(),
+  const cadenceColumns = useMemo(() => [
+    nameColumn<Activity>(),
     cadCol.accessor('cadence', {
       id: 'cadence',
       header: 'Cadence',
@@ -146,8 +143,8 @@ export default function CadenceTab({ runs, unit }: Props) {
         </span>
       ),
     }),
-    paceColumn(unit),
-    dateColumn(),
+    paceColumn<Activity>(unit),
+    dateColumn<Activity>(),
   ], [unit])
 
   const cadenceTable = useReactTable({

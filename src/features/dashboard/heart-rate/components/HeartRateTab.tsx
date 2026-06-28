@@ -25,10 +25,20 @@ import { useDashboard } from '@/features/dashboard/DashboardContext'
 import { periodLabel } from '@/features/dashboard/range'
 
 type Props = { runs: Activity[]; unit: Unit }
+type ZoneRow = (typeof HR_ZONES)[number] & {
+  count: number
+  avgPace: number
+  best: {
+    activity: Activity
+    pace: number
+    windowSec: number
+  } | null
+}
 
 // ── Component ────────────────────────────────────────────────────
 
 const ZONES = HR_ZONES
+const zoneCol = createColumnHelper<ZoneRow>()
 
 export default function HeartRate({ runs, unit }: Props) {
   const { range } = useDashboard()
@@ -123,9 +133,6 @@ export default function HeartRate({ runs, unit }: Props) {
       pct: totalTime > 0 ? (totals[i] / totalTime) * 100 : 0,
     }))
   }, [runs])
-
-  type ZoneRow = (typeof activeZones)[number]
-  const zoneCol = createColumnHelper<ZoneRow>()
 
   const zoneColumns = useMemo(() => [
     zoneCol.accessor('name', {
@@ -329,4 +336,3 @@ export default function HeartRate({ runs, unit }: Props) {
     </div>
   )
 }
-

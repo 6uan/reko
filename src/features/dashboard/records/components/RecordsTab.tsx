@@ -45,6 +45,7 @@ type DistanceEffort = {
   activityName: string
   activityId: number
 }
+const effortCol = createColumnHelper<DistanceEffort>()
 
 const PODIUM_STYLES = [
   { color: 'var(--gold)', label: '1st' },
@@ -118,8 +119,6 @@ export default function Records({ data, runs, unit }: Props) {
   const selected = orderedDistances.find((d) => d.key === selectedKey) ?? orderedDistances[0]
   const selectedEfforts = effortsByDistance.get(selectedKey) ?? []
   const totalPrs = orderedDistances.filter((d) => d.best).length
-
-  const effortCol = createColumnHelper<DistanceEffort>()
 
   const effortColumns = useMemo(() => [
     effortCol.display({
