@@ -6,10 +6,12 @@
  * Outlet boundary. Child routes call `useDashboard()` to access.
  */
 
-import { createContext, useContext, useMemo, useState } from 'react'
+import { createContext, useCallback, useContext, useMemo } from 'react'
+import { useLocalStorageState } from '@/hooks/useLocalStorageState'
 import { activityKind, type Activity, type Unit } from '@/lib/activities'
 import {
   filterByRange,
+  isRangeKeyForYears,
   normalizeRangeForYears,
   yearsInData,
   type RangeKey,
@@ -45,6 +47,16 @@ type DashboardContextValue = {
 
 const Ctx = createContext<DashboardContextValue | null>(null)
 
+function parseUnit(stored: string): Unit | null {
+  return stored === 'km' || stored === 'mi' ? stored : null
+}
+
+function parseBoolean(stored: string): boolean | null {
+  if (stored === 'true') return true
+  if (stored === 'false') return false
+  return null
+}
+
 export function useDashboard() {
   const v = useContext(Ctx)
   if (!v) throw new Error('useDashboard must be used within DashboardProvider')
@@ -58,60 +70,39 @@ type ProviderProps = {
 }
 
 export function DashboardProvider({ activities, records, children }: ProviderProps) {
-  const [unit, setUnit] = useState<Unit>(() => {
-    if (typeof window !== 'undefined') {
-      return (localStorage.getItem('reko-unit') as Unit) || 'mi'
-    }
-    return 'mi'
-  })
-
-  const toggleUnit = (u: Unit) => {
-    setUnit(u)
-    if (typeof window !== 'undefined') localStorage.setItem('reko-unit', u)
-  }
-
-  const [range, setRangeState] = useState<RangeKey>(() => {
-    if (typeof window !== 'undefined') {
-      return (localStorage.getItem('reko-range') as RangeKey) || 'all'
-    }
-    return 'all'
-  })
-
-  const setRange = (r: RangeKey) => {
-    setRangeState(r)
-    if (typeof window !== 'undefined') localStorage.setItem('reko-range', r)
-  }
-
   const availableYears = useMemo(() => yearsInData(activities), [activities])
+  const parseRange = useCallback(
+    (stored: string): RangeKey | null =>
+      isRangeKeyForYears(stored, availableYears) ? stored : null,
+    [availableYears],
+  )
+
+  const [unit, toggleUnit] = useLocalStorageState<Unit>({
+    key: 'reko-unit',
+    defaultValue: 'mi',
+    parse: parseUnit,
+  })
+  const [range, setRange] = useLocalStorageState<RangeKey>({
+    key: 'reko-range',
+    defaultValue: 'all',
+    parse: parseRange,
+  })
   const activeRange = useMemo(
     () => normalizeRangeForYears(range, availableYears),
     [range, availableYears],
   )
 
   // Run-type inclusion toggles (default on, so behaviour matches "all runs").
-  const [includeTrail, setIncludeTrailState] = useState<boolean>(() => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('reko-include-trail') !== 'false'
-    }
-    return true
+  const [includeTrail, setIncludeTrail] = useLocalStorageState<boolean>({
+    key: 'reko-include-trail',
+    defaultValue: true,
+    parse: parseBoolean,
   })
-  const setIncludeTrail = (v: boolean) => {
-    setIncludeTrailState(v)
-    if (typeof window !== 'undefined')
-      localStorage.setItem('reko-include-trail', String(v))
-  }
-
-  const [includeTreadmill, setIncludeTreadmillState] = useState<boolean>(() => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('reko-include-treadmill') !== 'false'
-    }
-    return true
+  const [includeTreadmill, setIncludeTreadmill] = useLocalStorageState<boolean>({
+    key: 'reko-include-treadmill',
+    defaultValue: true,
+    parse: parseBoolean,
   })
-  const setIncludeTreadmill = (v: boolean) => {
-    setIncludeTreadmillState(v)
-    if (typeof window !== 'undefined')
-      localStorage.setItem('reko-include-treadmill', String(v))
-  }
 
   const allRuns = useMemo(
     () =>
@@ -158,9 +149,13 @@ export function DashboardProvider({ activities, records, children }: ProviderPro
       allRuns,
       records,
       unit,
+      toggleUnit,
       activeRange,
+      setRange,
       includeTrail,
+      setIncludeTrail,
       includeTreadmill,
+      setIncludeTreadmill,
     ],
   )
 

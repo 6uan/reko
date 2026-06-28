@@ -3,13 +3,17 @@
  * SVG trace. The choice persists in localStorage so it sticks across activities.
  */
 
-import { useState } from 'react'
+import { useLocalStorageState } from '@/hooks/useLocalStorageState'
 import Card from '@/features/dashboard/ui/Card'
 import SectionHeader from '@/features/dashboard/ui/SectionHeader'
 import RouteMap from './RouteMap'
 import RouteTrace from './RouteTrace'
 
 type View = 'map' | 'trace'
+
+function parseView(stored: string): View | null {
+  return stored === 'map' || stored === 'trace' ? stored : null
+}
 
 export default function RouteCard({
   route,
@@ -18,17 +22,11 @@ export default function RouteCard({
   route: { points: [number, number][]; distM: number[] }
   hoverDist: number | null
 }) {
-  const [view, setView] = useState<View>(() => {
-    if (typeof window !== 'undefined') {
-      return (localStorage.getItem('reko-route-view') as View) || 'map'
-    }
-    return 'map'
+  const [view, choose] = useLocalStorageState<View>({
+    key: 'reko-route-view',
+    defaultValue: 'map',
+    parse: parseView,
   })
-
-  const choose = (v: View) => {
-    setView(v)
-    if (typeof window !== 'undefined') localStorage.setItem('reko-route-view', v)
-  }
 
   return (
     <Card className="p-4">

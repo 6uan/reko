@@ -18,6 +18,17 @@ export const RANGE_PRESETS: RangeOption[] = [
   { key: '12m', label: 'Last 12 months' },
 ]
 
+/** Validate a persisted range before trusting it as app state. */
+export function isRangeKeyForYears(
+  value: string,
+  years: number[],
+): value is RangeKey {
+  if (RANGE_PRESETS.some((preset) => preset.key === value)) return true
+
+  if (!/^\d{4}$/.test(value)) return false
+  return years.includes(Number(value))
+}
+
 /** Human label for any range key — a preset label, or the year itself. */
 export function periodLabel(key: RangeKey): string {
   return RANGE_PRESETS.find((p) => p.key === key)?.label ?? String(key)

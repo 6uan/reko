@@ -6,6 +6,7 @@ import {
   monthWindow,
   rangeOptionsForYears,
   normalizeRangeForYears,
+  isRangeKeyForYears,
 } from '@/features/dashboard/range'
 
 const mk = (date: string) => ({ date })
@@ -97,6 +98,19 @@ describe('normalizeRangeForYears', () => {
 
   it('leaves ytd alone when the current year is not a selectable data year', () => {
     expect(normalizeRangeForYears('ytd', [2025], now)).toBe('ytd')
+  })
+})
+
+describe('isRangeKeyForYears', () => {
+  it('accepts presets and years present in the data', () => {
+    expect(isRangeKeyForYears('all', [2026, 2025])).toBe(true)
+    expect(isRangeKeyForYears('12m', [2026, 2025])).toBe(true)
+    expect(isRangeKeyForYears('2026', [2026, 2025])).toBe(true)
+  })
+
+  it('rejects invalid strings and years not present in the data', () => {
+    expect(isRangeKeyForYears('soon', [2026, 2025])).toBe(false)
+    expect(isRangeKeyForYears('2024', [2026, 2025])).toBe(false)
   })
 })
 
