@@ -182,7 +182,7 @@ const COLUMNS = [
     cell: (info) => {
       const { unit, unitLabel } = info.table.options.meta as TableMeta
       return (
-        <span className="font-mono tabular-nums">
+        <span className="font-mono tabular-nums whitespace-nowrap">
           {toDisplayDistance(info.getValue(), unit)} {unitLabel}
         </span>
       )
@@ -193,7 +193,7 @@ const COLUMNS = [
     header: 'Time',
     meta: { align: 'right' },
     cell: (info) => (
-      <span className="font-mono tabular-nums">{formatDuration(info.getValue())}</span>
+      <span className="font-mono tabular-nums whitespace-nowrap">{formatDuration(info.getValue())}</span>
     ),
   }),
   // Accessor uses raw avgSpeed (higher = faster). Sort descending
@@ -206,7 +206,7 @@ const COLUMNS = [
     cell: (info) => {
       const { unit, paceLabel } = info.table.options.meta as TableMeta
       return (
-        <span className="font-mono tabular-nums">
+        <span className="font-mono tabular-nums whitespace-nowrap">
           {formatPace(paceForUnit(info.getValue(), unit))} {paceLabel}
         </span>
       )
@@ -246,7 +246,7 @@ const COLUMNS = [
         if (!effort) return <span className="text-(--ink-4)">—</span>
         const borderColor = effort.isComputed ? 'border-(--line)' : 'border-transparent'
         return (
-          <span className={`inline-block font-mono tabular-nums border ${borderColor} rounded-(--radius-s) px-2 py-0.5`}>
+          <span className={`inline-block font-mono tabular-nums whitespace-nowrap border ${borderColor} rounded-(--radius-s) px-2 py-0.5`}>
             {formatDuration(effort.time)}
           </span>
         )
@@ -258,7 +258,7 @@ const COLUMNS = [
     header: 'Elevation',
     meta: { align: 'right' },
     cell: (info) => (
-      <span className="font-mono tabular-nums">{Math.round(info.getValue())}m</span>
+      <span className="font-mono tabular-nums whitespace-nowrap">{Math.round(info.getValue())}m</span>
     ),
   }),
 ]
@@ -489,7 +489,7 @@ export default function Activities({ activities, unit }: Props) {
 
 function Mono({ value }: { value: number | null }) {
   return (
-    <span className="font-mono tabular-nums">
+    <span className="font-mono tabular-nums whitespace-nowrap">
       {value !== null ? value : '—'}
     </span>
   )
