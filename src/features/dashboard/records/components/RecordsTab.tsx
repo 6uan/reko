@@ -137,12 +137,12 @@ export default function Records({ data, runs, unit }: Props) {
         </span>
       ),
     }),
-    effortCol.accessor((r) => paceForDist(r.time, selected.meters, unit), {
+    effortCol.accessor('time', {
       id: 'pace',
       header: 'Pace',
       cell: (info) => (
         <span className="font-mono tabular-nums text-(--ink-3)">
-          {formatPace(info.getValue())} {unitLabel}
+          {formatPace(paceForDist(info.getValue(), selected.meters, unit))} {unitLabel}
         </span>
       ),
     }),

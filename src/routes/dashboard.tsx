@@ -7,7 +7,10 @@ import { getActivities } from "@/features/dashboard/activities/api/getActivities
 import { getLastSyncTime } from "@/features/sync/api/getLastSyncTime.server";
 import { getRecordsData } from "@/features/dashboard/records/api/getRecordsData.server";
 import { useLiveUpdates } from "@/features/sync/useLiveUpdates";
-import { DashboardProvider } from "@/features/dashboard/DashboardContext";
+import {
+  DashboardProvider,
+  useDashboard,
+} from "@/features/dashboard/DashboardContext";
 import SyncBanner from "@/features/sync/SyncBanner";
 import Sidebar from "@/features/dashboard/Sidebar";
 import Topbar from "@/features/dashboard/Topbar";
@@ -106,7 +109,7 @@ function DashboardLayout() {
           />
           <Topbar onOpenMobileNav={() => setMobileNavOpen(true)} />
           <div className="p-4 lg:p-6 flex flex-col gap-6 min-w-0">
-            <Outlet />
+            <DashboardOutlet />
           </div>
         </main>
 
@@ -122,4 +125,9 @@ function DashboardLayout() {
       </div>
     </DashboardProvider>
   );
+}
+
+function DashboardOutlet() {
+  const { unit } = useDashboard();
+  return <Outlet key={unit} />;
 }

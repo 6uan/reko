@@ -123,17 +123,20 @@ export default function Pace({ runs, unit }: Props) {
   const paceColumns = useMemo(() => [
     rankColumn<Activity>(),
     nameColumn<Activity>(),
-    paceCol.accessor((r) => paceForRun(r, unit), {
+    paceCol.accessor((r) => r.avgSpeed, {
       id: 'pace',
       header: 'Pace',
-      cell: (info) => (
-        <span className="font-mono tabular-nums whitespace-nowrap">
-          <span className={info.row.index === 0 ? 'text-(--accent) font-medium' : 'text-(--ink)'}>
-            {formatPace(info.getValue())}
+      cell: (info) => {
+        const pace = paceForRun(info.row.original, unit)
+        return (
+          <span className="font-mono tabular-nums whitespace-nowrap">
+            <span className={info.row.index === 0 ? 'text-(--accent) font-medium' : 'text-(--ink)'}>
+              {formatPace(pace)}
+            </span>
+            <span className="text-(--ink-3) text-xs ml-0.5">{unitLabel}</span>
           </span>
-          <span className="text-(--ink-3) text-xs ml-0.5">{unitLabel}</span>
-        </span>
-      ),
+        )
+      },
     }),
     distanceColumn<Activity>(unit),
     timeColumn<Activity>(),

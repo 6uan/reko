@@ -13,7 +13,8 @@ export function paceForDist(seconds: number, meters: number, unit: Unit) {
 
 export function formatPace(paceSec: number): string {
   if (!Number.isFinite(paceSec) || paceSec <= 0) return '—'
-  const m = Math.floor(paceSec / 60)
-  const s = Math.round(paceSec % 60)
+  const rounded = Math.round(paceSec)
+  const m = Math.floor(rounded / 60)
+  const s = rounded % 60
   return `${m}:${s.toString().padStart(2, '0')}`
 }

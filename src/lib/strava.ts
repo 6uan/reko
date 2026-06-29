@@ -374,8 +374,9 @@ export function speedToPaceSeconds(speedMs: number): number {
 /** Format pace seconds → "m:ss" */
 export function formatPace(paceSeconds: number): string {
   if (paceSeconds <= 0) return '—'
-  const min = Math.floor(paceSeconds / 60)
-  const sec = Math.round(paceSeconds % 60)
+  const rounded = Math.round(paceSeconds)
+  const min = Math.floor(rounded / 60)
+  const sec = rounded % 60
   return `${min}:${sec.toString().padStart(2, '0')}`
 }
 
@@ -394,4 +395,3 @@ export function formatDuration(totalSeconds: number): string {
     return `${h}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`
   return `${m}:${s.toString().padStart(2, '0')}`
 }
-

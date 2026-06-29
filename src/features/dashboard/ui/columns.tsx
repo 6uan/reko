@@ -107,13 +107,13 @@ export function timeColumn<T extends TimeRow>(opts?: CellOpts) {
 export function paceColumn<T extends PaceRow>(unit: Unit, opts?: CellOpts) {
   const col = createColumnHelper<T>()
   const unitLabel = paceUnit(unit)
-  return col.accessor((r) => paceForUnit(r.avgSpeed, unit), {
+  return col.accessor((r) => r.avgSpeed, {
     id: 'pace',
     header: 'Pace',
     ...alignMeta(opts),
     cell: (info) => (
       <span className={numClass(opts)}>
-        {formatPace(info.getValue())} {unitLabel}
+        {formatPace(paceForUnit(info.getValue(), unit))} {unitLabel}
       </span>
     ),
   })
