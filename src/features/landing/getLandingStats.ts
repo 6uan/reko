@@ -7,9 +7,9 @@
  */
 
 import { createServerFn } from '@tanstack/react-start'
-import { count } from 'drizzle-orm'
+import { count, eq } from 'drizzle-orm'
 import { getDb } from '@/db/client'
-import { activities } from '@/db/schema'
+import { activities, users } from '@/db/schema'
 import { fetchGithubStarsCached } from '@/features/landing/getGithubStars'
 
 export type LandingStats = {
@@ -20,7 +20,12 @@ export type LandingStats = {
 async function countActivities(): Promise<number | null> {
   try {
     const db = getDb()
-    const [{ value }] = await db.select({ value: count() }).from(activities)
+    // Demo personas are seed data, not usage — keep the public number honest.
+    const [{ value }] = await db
+      .select({ value: count() })
+      .from(activities)
+      .innerJoin(users, eq(activities.userId, users.id))
+      .where(eq(users.demo, false))
     return value
   } catch {
     return null
