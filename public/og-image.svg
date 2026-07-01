@@ -1,0 +1,59 @@
+<svg width="1200" height="630" viewBox="0 0 1200 630" xmlns="http://www.w3.org/2000/svg" font-family="Helvetica Neue, Helvetica, Arial, sans-serif">
+  <defs>
+    <radialGradient id="glow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#ff6b3d" stop-opacity="0.14" />
+      <stop offset="100%" stop-color="#ff6b3d" stop-opacity="0" />
+    </radialGradient>
+    <linearGradient id="chartFill" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#ff6b3d" stop-opacity="0.28" />
+      <stop offset="100%" stop-color="#ff6b3d" stop-opacity="0" />
+    </linearGradient>
+  </defs>
+
+  <!-- background -->
+  <rect width="1200" height="630" fill="#0f0f0e" />
+  <ellipse cx="1000" cy="40" rx="560" ry="340" fill="url(#glow)" />
+
+  <!-- wordmark -->
+  <text x="72" y="99" font-size="34" font-weight="600" letter-spacing="-0.5" fill="#f6f3ec">Reko<tspan fill="#ff6b3d">.</tspan></text>
+
+  <!-- headline -->
+  <text x="70" y="308" font-size="86" font-weight="500" letter-spacing="-3" fill="#f6f3ec">Every run,</text>
+  <text x="70" y="400" font-size="86" font-weight="500" letter-spacing="-3" fill="#ff6b3d">measured.</text>
+
+  <!-- subline -->
+  <text x="73" y="462" font-size="25" letter-spacing="-0.3" fill="#a39e96">Self-hosted running analytics for Strava.</text>
+
+  <!-- footer -->
+  <text x="73" y="566" font-size="21" letter-spacing="-0.2" fill="#ff6b3d" font-weight="600">reko.run</text>
+  <text x="172" y="566" font-size="21" letter-spacing="-0.2" fill="#6f6a64">·&#160;&#160;open-source&#160;&#160;·&#160;&#160;self-hosted</text>
+
+  <!-- dashboard card -->
+  <rect x="700" y="150" width="410" height="330" rx="20" fill="#1a1917" stroke="#ffffff" stroke-opacity="0.09" />
+
+  <text x="750" y="207" font-size="12" font-weight="600" letter-spacing="1.6" fill="#8a857e">PACE TREND · LAST 12 MONTHS</text>
+
+  <!-- chart grid -->
+  <line x1="750" y1="250" x2="1080" y2="250" stroke="#ffffff" stroke-opacity="0.06" />
+  <line x1="750" y1="290" x2="1080" y2="290" stroke="#ffffff" stroke-opacity="0.06" />
+  <line x1="750" y1="330" x2="1080" y2="330" stroke="#ffffff" stroke-opacity="0.06" />
+
+  <!-- trend area + line (pace dropping = getting faster) -->
+  <path d="M750,242 L787,254 L824,237 L861,259 L898,246 L935,268 L972,256 L1009,277 L1046,264 L1080,286 L1080,345 L750,345 Z" fill="url(#chartFill)" />
+  <path d="M750,242 L787,254 L824,237 L861,259 L898,246 L935,268 L972,256 L1009,277 L1046,264 L1080,286" fill="none" stroke="#ff6b3d" stroke-width="3" stroke-linejoin="round" stroke-linecap="round" />
+  <circle cx="1080" cy="286" r="9" fill="#ff6b3d" opacity="0.25" />
+  <circle cx="1080" cy="286" r="4.5" fill="#ff6b3d" />
+
+  <!-- divider -->
+  <line x1="750" y1="378" x2="1080" y2="378" stroke="#ffffff" stroke-opacity="0.08" />
+
+  <!-- PR chips -->
+  <text x="750" y="412" font-size="12" font-weight="600" letter-spacing="1.6" fill="#8a857e">5K</text>
+  <text x="750" y="446" font-size="27" font-weight="600" letter-spacing="-0.5" fill="#f6f3ec">19:42</text>
+
+  <text x="865" y="412" font-size="12" font-weight="600" letter-spacing="1.6" fill="#8a857e">10K</text>
+  <text x="865" y="446" font-size="27" font-weight="600" letter-spacing="-0.5" fill="#f6f3ec">41:08</text>
+
+  <text x="980" y="412" font-size="12" font-weight="600" letter-spacing="1.6" fill="#8a857e">HALF</text>
+  <text x="980" y="446" font-size="27" font-weight="600" letter-spacing="-0.5" fill="#f6f3ec">1:32:56</text>
+</svg>
