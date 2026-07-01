@@ -380,9 +380,12 @@ export function formatPace(paceSeconds: number): string {
   return `${min}:${sec.toString().padStart(2, '0')}`
 }
 
-/** Format meters → "xx.xx" km */
+/** Format meters → "x,xxx.xx" km. Fixed locale: SSR and client must agree. */
 export function formatDistanceKm(meters: number): string {
-  return (meters / 1000).toFixed(2)
+  return (meters / 1000).toLocaleString('en-US', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })
 }
 
 /** Format total seconds → "h:mm:ss" or "mm:ss" */

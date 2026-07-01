@@ -88,11 +88,17 @@ export function activityKind(
 }
 
 /**
- * Format a distance in meters to a display string in the given unit.
- * km → delegates to `formatDistanceKm`, mi → simple division + 2 decimals.
+ * Format a distance in meters to a display string in the given unit,
+ * with thousands grouping ("3,544.90"). Fixed locale: SSR and client
+ * must produce identical strings or hydration mismatches.
  */
 export function toDisplayDistance(meters: number, unit: Unit): string {
-  if (unit === 'mi') return (meters / KM_PER_MI).toFixed(2)
+  if (unit === 'mi') {
+    return (meters / KM_PER_MI).toLocaleString('en-US', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    })
+  }
   return formatDistanceKm(meters)
 }
 
