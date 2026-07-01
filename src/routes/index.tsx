@@ -5,10 +5,15 @@ import StravaConnectButton from "@/components/StravaConnectButton";
 import DashboardMockup from "@/features/landing/DashboardMockup";
 import StatsStrip from "@/features/landing/StatsStrip";
 import OpenSourceSection from "@/features/landing/OpenSourceSection";
+import { getLandingStats } from "@/features/landing/getLandingStats";
 
-export const Route = createFileRoute("/")({ component: Home });
+export const Route = createFileRoute("/")({
+  loader: () => getLandingStats(),
+  component: Home,
+});
 
 function Home() {
+  const { githubStars, activitiesTracked } = Route.useLoaderData();
   // Pull session from the root route's context so the hero CTA can
   // adapt to auth state. Logged-out → "Connect with Strava". Logged-in
   // → "Go to dashboard" (otherwise mobile users have nowhere to click,
@@ -71,7 +76,10 @@ function Home() {
           <DashboardMockup />
         </div>
       </section>
-      <StatsStrip />
+      <StatsStrip
+        githubStars={githubStars}
+        activitiesTracked={activitiesTracked}
+      />
       <OpenSourceSection />
     </>
   );

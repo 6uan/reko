@@ -1,4 +1,4 @@
-import { useRef, useEffect, useState, useCallback } from "react";
+import { useRef, useEffect, useState, useCallback, useMemo } from "react";
 
 interface StatItem {
   value: number | string;
@@ -6,12 +6,12 @@ interface StatItem {
   isNumeric: boolean;
 }
 
-const STATS: StatItem[] = [
-  { value: 0, label: "GitHub stars", isNumeric: true },
-  { value: 0, label: "Activities tracked", isNumeric: true },
-  { value: "MIT", label: "Open source license", isNumeric: false },
-  { value: "Free", label: "Self-hosted, forever", isNumeric: false },
-];
+interface StatsStripProps {
+  /** Live count from the GitHub API; null if it has never been fetched. */
+  githubStars: number | null;
+  /** Total activities in the DB; null if the count query failed. */
+  activitiesTracked: number | null;
+}
 
 const DURATION = 1200;
 
@@ -19,15 +19,36 @@ function easeOutCubic(t: number): number {
   return 1 - Math.pow(1 - t, 3);
 }
 
-export default function StatsStrip() {
+export default function StatsStrip({
+  githubStars,
+  activitiesTracked,
+}: StatsStripProps) {
+  const stats = useMemo<StatItem[]>(
+    () => [
+      githubStars === null
+        ? { value: "—", label: "GitHub stars", isNumeric: false }
+        : { value: githubStars, label: "GitHub stars", isNumeric: true },
+      activitiesTracked === null
+        ? { value: "—", label: "Activities tracked", isNumeric: false }
+        : {
+            value: activitiesTracked,
+            label: "Activities tracked",
+            isNumeric: true,
+          },
+      { value: "MIT", label: "Open source license", isNumeric: false },
+      { value: "Free", label: "Self-hosted, forever", isNumeric: false },
+    ],
+    [githubStars, activitiesTracked],
+  );
+
   const sectionRef = useRef<HTMLDivElement>(null);
-  const [animatedValues, setAnimatedValues] = useState<number[]>(
-    STATS.map((s) => (s.isNumeric ? 0 : 0)),
+  const [animatedValues, setAnimatedValues] = useState<number[]>(() =>
+    stats.map(() => 0),
   );
   const hasAnimated = useRef(false);
 
   const animate = useCallback(() => {
-    const targets = STATS.map((s) => (s.isNumeric ? (s.value as number) : 0));
+    const targets = stats.map((s) => (s.isNumeric ? (s.value as number) : 0));
     const start = performance.now();
 
     function tick(now: number) {
@@ -43,7 +64,7 @@ export default function StatsStrip() {
     }
 
     requestAnimationFrame(tick);
-  }, []);
+  }, [stats]);
 
   useEffect(() => {
     const el = sectionRef.current;
@@ -70,7 +91,7 @@ export default function StatsStrip() {
     <section ref={sectionRef} className="border-t py-4 border-(--line)">
       <div className="wrap py-8">
         <div className="grid grid-cols-2 lg:grid-cols-4">
-          {STATS.map((stat, i) => (
+          {stats.map((stat, i) => (
             <div
               key={stat.label}
               className={`flex flex-col items-center text-center py-4 lg:py-0 ${

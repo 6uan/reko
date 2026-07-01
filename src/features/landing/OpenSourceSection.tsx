@@ -49,7 +49,12 @@ export default function OpenSourceSection() {
                 <IoLogoGithub size={18} />
                 Star on GitHub
               </a>
-              <a href="#" className="btn btn-ghost">
+              <a
+                href="https://github.com/6uan/reko#readme"
+                target="_blank"
+                rel="noreferrer"
+                className="btn btn-ghost"
+              >
                 Read the docs
               </a>
             </div>
@@ -76,7 +81,7 @@ export default function OpenSourceSection() {
                 <div>
                   <span className="text-[#7a7669]">$ </span>
                   <span className="text-[#f3f0e5]">
-                    git clone github.com/reko-run/reko
+                    git clone https://github.com/6uan/reko
                   </span>
                 </div>
                 <div className="text-[#8a8679]">
