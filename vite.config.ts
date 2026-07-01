@@ -1,10 +1,18 @@
 import { defineConfig } from 'vite'
+import dotenv from 'dotenv'
 import { devtools } from '@tanstack/devtools-vite'
 
 import { tanstackStart } from '@tanstack/react-start/plugin/vite'
 
 import viteReact from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
+
+// Vite re-runs this config on every server restart — including the restart
+// it triggers when .env changes — but nothing refreshes process.env for SSR
+// code, so env edits silently didn't apply until a full Ctrl+C. `override`
+// matters: without it dotenv won't replace values captured at first load.
+// (No .env in prod builds — Coolify injects env directly — so this no-ops.)
+dotenv.config({ override: true })
 
 const config = defineConfig({
   resolve: { tsconfigPaths: true },
