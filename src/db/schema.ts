@@ -59,6 +59,12 @@ export const users = pgTable(
     firstname: text("firstname"),
     lastname: text("lastname"),
     profileUrl: text("profile_url"),
+    /**
+     * Seeded demo persona (scripts/seed-demo.ts) — never a real Strava
+     * athlete. Demo sessions are read-only: mutating server fns reject
+     * them, and public stats (landing counter) exclude their rows.
+     */
+    demo: boolean("demo").notNull().default(false),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
