@@ -59,6 +59,16 @@ COPY --from=build /app/dist ./dist
 COPY drizzle.config.ts ./
 COPY src/db ./src/db
 
+# Demo seeder + the modules it imports, so the demo personas can be
+# seeded/reseeded from a shell inside the running container:
+#   node --experimental-strip-types scripts/seed-demo.ts
+# (scripts/ ships whole — only seed-demo and the two backfills it chains
+# are supported in-container; the sync/webhook test scripts import app
+# modules this image doesn't carry.)
+COPY scripts ./scripts
+COPY src/lib ./src/lib
+COPY src/features/demo ./src/features/demo
+
 EXPOSE 3000
 
 # Migrate-then-serve — the ONE place migrations run. Inlined here (rather
