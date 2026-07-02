@@ -1,6 +1,6 @@
 import { createFileRoute, Link, redirect } from '@tanstack/react-router'
 import { createServerFn } from '@tanstack/react-start'
-import { readSessionOnServer } from '@/features/auth/session'
+import { readSessionOnServer } from '@/features/auth/session.server'
 import { getActivityDetail } from '@/features/dashboard/activity/api/getActivityDetail.server'
 import { useDashboard } from '@/features/dashboard/DashboardContext'
 import ActivityDetailPage from '@/features/dashboard/activity/components/ActivityDetailPage'
@@ -33,6 +33,7 @@ export const Route = createFileRoute('/dashboard/activity/$id')({
 function ActivityDetailRoute() {
   const { detail } = Route.useLoaderData()
   const { unit } = useDashboard()
+  const { session } = Route.useRouteContext()
 
   if (!detail) {
     return (
@@ -50,5 +51,11 @@ function ActivityDetailRoute() {
     )
   }
 
-  return <ActivityDetailPage detail={detail} unit={unit} />
+  return (
+    <ActivityDetailPage
+      detail={detail}
+      unit={unit}
+      demo={session?.demo === true}
+    />
+  )
 }

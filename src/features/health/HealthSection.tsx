@@ -55,7 +55,14 @@ function syncStatusDot(status: string): string {
 
 // ── Computed Data subsection ──────────────────────────────────────
 
-function ComputedDataSection({ data }: { data: HealthData }) {
+function ComputedDataSection({
+  data,
+  demo = false,
+}: {
+  data: HealthData
+  /** Demo sessions are read-only — hides the recompute action. */
+  demo?: boolean
+}) {
   const router = useRouter()
   const { withStreams, withDerivedSplits, withHrZoneEfforts } = data.computedData
 
@@ -91,18 +98,20 @@ function ComputedDataSection({ data }: { data: HealthData }) {
         <h3 className="text-xs font-medium text-(--ink-3) uppercase tracking-wider">
           Computed Data
         </h3>
-        <button
-          type="button"
-          onClick={handleRecompute}
-          disabled={status === 'running' || withStreams === 0}
-          className="shrink-0 inline-flex items-center gap-1.5 px-3 py-1 text-xs rounded-(--radius-s) border border-(--line) bg-(--card) text-(--ink-3) hover:text-(--ink) transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          <LuRefreshCw
-            size={11}
-            className={status === 'running' ? 'animate-spin' : ''}
-          />
-          {status === 'running' ? 'Recomputing…' : 'Recompute'}
-        </button>
+        {!demo && (
+          <button
+            type="button"
+            onClick={handleRecompute}
+            disabled={status === 'running' || withStreams === 0}
+            className="shrink-0 inline-flex items-center gap-1.5 px-3 py-1 text-xs rounded-(--radius-s) border border-(--line) bg-(--card) text-(--ink-3) hover:text-(--ink) transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <LuRefreshCw
+              size={11}
+              className={status === 'running' ? 'animate-spin' : ''}
+            />
+            {status === 'running' ? 'Recomputing…' : 'Recompute'}
+          </button>
+        )}
       </div>
 
       <p className="text-xs text-(--ink-4) mb-3 max-w-prose">
@@ -208,7 +217,13 @@ function CoverageStat({
 
 // ── Main component ────────────────────────────────────────────────
 
-export default function HealthSection({ data }: { data: HealthData }) {
+export default function HealthSection({
+  data,
+  demo = false,
+}: {
+  data: HealthData
+  demo?: boolean
+}) {
   const [expanded, setExpanded] = useState(false)
 
   const status = statusIndicator(data.overallStatus)
@@ -307,7 +322,7 @@ export default function HealthSection({ data }: { data: HealthData }) {
           </div>
 
           {/* ── Computed Data ──────────────────────────────────── */}
-          <ComputedDataSection data={data} />
+          <ComputedDataSection data={data} demo={demo} />
 
           {/* ── Recent Syncs ───────────────────────────────────── */}
           {data.recentSyncs.length > 0 && (

@@ -1,6 +1,7 @@
 import { createFileRoute, redirect, useNavigate } from '@tanstack/react-router'
 import { createServerFn } from '@tanstack/react-start'
-import { readSessionOnServer, clearSessionFn } from '@/features/auth/session'
+import { readSessionOnServer } from '@/features/auth/session.server'
+import { clearSessionFn } from '@/features/auth/session'
 import { getHealthData } from '@/features/health/api/getHealthData.server'
 import HealthSection from '@/features/health/HealthSection'
 import { Avatar } from '@/components/ui/Avatar'
@@ -74,7 +75,7 @@ function Profile() {
 
         {/* Advanced / Health Diagnostics */}
         <div className="mb-6">
-          <HealthSection data={health} />
+          <HealthSection data={health} demo={session?.demo === true} />
         </div>
 
         {/* Danger Zone */}

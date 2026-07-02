@@ -6,7 +6,7 @@
  */
 
 import { createServerFn } from '@tanstack/react-start'
-import { readSessionOnServer } from '@/features/auth/session'
+import { requireWritableSession } from '@/features/auth/session.server'
 import {
   backfillComputedData,
   type RecomputeResult,
@@ -16,11 +16,8 @@ export type { RecomputeResult } from './api/backfillComputed.server'
 
 export const recomputeData = createServerFn({ method: 'POST' }).handler(
   async (): Promise<RecomputeResult> => {
-    const session = await readSessionOnServer()
-    const userId = session?.userId
-    if (!userId) {
-      throw new Error('Not authenticated')
-    }
-    return backfillComputedData(userId)
+    // Throws for anonymous AND demo sessions — demo data is immutable.
+    const session = await requireWritableSession()
+    return backfillComputedData(session.userId)
   },
 )

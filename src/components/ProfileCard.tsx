@@ -12,6 +12,8 @@ type ProfileCardProps = {
   /** Called when the profile link is tapped — used by mobile to close the drawer. */
   onNavigate?: () => void
   className?: string
+  /** Demo sessions are read-only — no resync button. */
+  demo?: boolean
 }
 
 export default function ProfileCard({
@@ -22,6 +24,7 @@ export default function ProfileCard({
   onResyncTriggered,
   onNavigate,
   className,
+  demo = false,
 }: ProfileCardProps) {
   return (
     <div className={cn('relative', className)}>
@@ -40,10 +43,12 @@ export default function ProfileCard({
           </div>
         </div>
       </Link>
-      <ResyncButton
-        onTriggered={onResyncTriggered}
-        lastSyncFinishedAt={lastSyncFinishedAt}
-      />
+      {!demo && (
+        <ResyncButton
+          onTriggered={onResyncTriggered}
+          lastSyncFinishedAt={lastSyncFinishedAt}
+        />
+      )}
     </div>
   )
 }

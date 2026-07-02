@@ -1,7 +1,7 @@
 import { useCallback, useState } from "react";
 import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
-import { readSessionOnServer } from "@/features/auth/session";
+import { readSessionOnServer } from '@/features/auth/session.server';
 import { enqueueBackfill } from "@/features/sync/api/backfillActivities.server";
 import { getActivities } from "@/features/dashboard/activities/api/getActivities.server";
 import { getLastSyncTime } from "@/features/sync/api/getLastSyncTime.server";
@@ -12,6 +12,7 @@ import {
   useDashboard,
 } from "@/features/dashboard/DashboardContext";
 import SyncBanner from "@/features/sync/SyncBanner";
+import DemoBanner from "@/features/demo/DemoBanner";
 import Sidebar from "@/features/dashboard/Sidebar";
 import Topbar from "@/features/dashboard/Topbar";
 import MobileNav from "@/features/dashboard/MobileNav";
@@ -31,7 +32,9 @@ const loadDashboardData = createServerFn({ method: "GET" }).handler(
       getLastSyncTime(d.userId),
     ]);
 
-    if (activities.length === 0) {
+    // Auto-backfill first-time users — but never demo sessions: their
+    // history is seeded, and their "tokens" must never reach Strava.
+    if (activities.length === 0 && !d.demo) {
       await enqueueBackfill(d.userId).catch((err) => {
         console.error("[backfill] enqueue failed:", err);
       });
@@ -73,6 +76,8 @@ function DashboardLayout() {
     athlete,
     lastSyncFinishedAt: initialFinishedAt,
   } = Route.useLoaderData();
+  const { session } = Route.useRouteContext();
+  const demo = session?.demo === true;
 
   useLiveUpdates();
 
@@ -99,14 +104,19 @@ function DashboardLayout() {
           activityCount={activities.length}
           lastSyncFinishedAt={lastSyncFinishedAt}
           onResync={handleResync}
+          demo={demo}
         />
 
         <main className="lg:ml-70">
-          <SyncBanner
-            key={syncTriggerKey}
-            currentRunCount={activities.length}
-            onSyncCompleted={(finishedAt) => setLastSyncFinishedAt(finishedAt)}
-          />
+          {demo ? (
+            <DemoBanner athleteId={session!.athleteId} />
+          ) : (
+            <SyncBanner
+              key={syncTriggerKey}
+              currentRunCount={activities.length}
+              onSyncCompleted={(finishedAt) => setLastSyncFinishedAt(finishedAt)}
+            />
+          )}
           <Topbar onOpenMobileNav={() => setMobileNavOpen(true)} />
           <div className="p-4 lg:p-6 flex flex-col gap-6 min-w-0">
             <DashboardOutlet />
@@ -120,6 +130,7 @@ function DashboardLayout() {
             lastSyncFinishedAt={lastSyncFinishedAt}
             onClose={() => setMobileNavOpen(false)}
             onResync={handleResync}
+            demo={demo}
           />
         )}
       </div>

@@ -16,7 +16,13 @@
  * (src/lib/heartRate.ts): Z2 124–143, Z3 143–162, Z4 162–181, Z5 181+.
  */
 
+import { DEMO_PERSONAS } from '../../src/features/demo/constants.ts'
 import { chance, gaussian, uniform, type Rng } from './rng.ts'
+
+/** Stable athlete IDs shared with the app's demo session — never inline them. */
+const ATHLETE_ID = Object.fromEntries(
+  DEMO_PERSONAS.map((p) => [p.key, p.athleteId]),
+) as Record<'project' | 'machine' | 'newrunner', number>
 
 export type RunType =
   | 'easy'
@@ -93,7 +99,7 @@ const PROJECT_RACES: Array<{ week: number; km: number; name: string }> = [
 
 const project: PersonaConfig = {
   key: 'project',
-  stravaAthleteId: 999_000_101,
+  stravaAthleteId: ATHLETE_ID.project,
   firstname: 'Alex',
   lastname: 'Rivera',
   weeks: PROJECT_WEEKS,
@@ -244,7 +250,7 @@ function machineWeeklyKm(week: number, rng: Rng): number {
 
 const machine: PersonaConfig = {
   key: 'machine',
-  stravaAthleteId: 999_000_102,
+  stravaAthleteId: ATHLETE_ID.machine,
   firstname: 'Marta',
   lastname: 'Kowalski',
   weeks: MACHINE_WEEKS,
@@ -368,7 +374,7 @@ const NEWRUNNER_WEEKS = 10
 
 const newrunner: PersonaConfig = {
   key: 'newrunner',
-  stravaAthleteId: 999_000_103,
+  stravaAthleteId: ATHLETE_ID.newrunner,
   firstname: 'Sam',
   lastname: 'Chen',
   weeks: NEWRUNNER_WEEKS,

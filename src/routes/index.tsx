@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { LuLayoutDashboard } from "react-icons/lu";
 import { IoLogoGithub } from "react-icons/io";
 import StravaConnectButton from "@/components/StravaConnectButton";
+import TryDemoButton from "@/features/demo/TryDemoButton";
 import DashboardMockup from "@/features/landing/DashboardMockup";
 import StatsStrip from "@/features/landing/StatsStrip";
 import OpenSourceSection from "@/features/landing/OpenSourceSection";
@@ -53,7 +54,10 @@ function Home() {
                 Go to dashboard
               </Link>
             ) : (
-              <StravaConnectButton size="md" className="max-sm:flex-1" />
+              <>
+                <StravaConnectButton size="md" className="max-sm:flex-1" />
+                <TryDemoButton className="max-sm:flex-1" />
+              </>
             )}
             <a
               href="https://github.com/6uan/reko"

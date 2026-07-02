@@ -8,6 +8,8 @@ type SidebarProps = {
   activityCount: number;
   lastSyncFinishedAt: Date | null;
   onResync: () => void;
+  /** Demo sessions are read-only — hides the resync affordance. */
+  demo?: boolean;
 };
 
 export default function Sidebar({
@@ -15,6 +17,7 @@ export default function Sidebar({
   activityCount,
   lastSyncFinishedAt,
   onResync,
+  demo = false,
 }: SidebarProps) {
   return (
     <aside className="fixed left-0 top-0 bottom-0 w-70 bg-(--bg-2) border-r border-(--line) flex flex-col z-40 max-lg:hidden">
@@ -43,6 +46,7 @@ export default function Sidebar({
             activityCount={activityCount}
             lastSyncFinishedAt={lastSyncFinishedAt}
             onResyncTriggered={onResync}
+            demo={demo}
           />
           <AccountMenu />
         </div>

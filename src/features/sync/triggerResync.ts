@@ -4,16 +4,13 @@
  */
 
 import { createServerFn } from '@tanstack/react-start'
-import { readSessionOnServer } from '@/features/auth/session'
+import { requireWritableSession } from '@/features/auth/session.server'
 import { enqueueBackfill, type EnqueueResult } from './api/backfillActivities.server'
 
 export const triggerResync = createServerFn({ method: 'POST' }).handler(
   async (): Promise<EnqueueResult> => {
-    const session = await readSessionOnServer()
-    const userId = session?.userId
-    if (!userId) {
-      throw new Error('Not authenticated')
-    }
-    return enqueueBackfill(userId)
+    // Throws for anonymous AND demo sessions — demo must never reach Strava.
+    const session = await requireWritableSession()
+    return enqueueBackfill(session.userId)
   },
 )
