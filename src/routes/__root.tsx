@@ -53,8 +53,24 @@ export const Route = createRootRoute({
       { name: 'twitter:title', content: SITE_TITLE },
       { name: 'twitter:description', content: SITE_DESCRIPTION },
       { name: 'twitter:image', content: `${SITE_URL}/og-image.png` },
+      { name: 'theme-color', content: '#ef513a' },
     ],
     links: [
+      {
+        rel: 'icon',
+        href: '/favicon.ico',
+        type: 'image/x-icon',
+        sizes: 'any',
+      },
+      {
+        rel: 'apple-touch-icon',
+        href: '/apple-touch-icon.png',
+        sizes: '180x180',
+      },
+      {
+        rel: 'manifest',
+        href: '/manifest.json',
+      },
       {
         rel: 'stylesheet',
         href: appCss,
