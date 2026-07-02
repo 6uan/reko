@@ -38,6 +38,12 @@ COPY . .
 
 RUN pnpm build
 
+# Smoke-test the artifact: boot the built server and require a 200 from `/`.
+# A build can succeed with a broken server bundle (rolldown chunk-order bug
+# took prod down in July 2026) — failing here means no image ships and the
+# previous container keeps running.
+RUN node --experimental-strip-types scripts/smoke-test.ts
+
 # ── Stage 3: runtime ─────────────────────────────────────────────────────
 FROM node:22-slim AS runtime
 WORKDIR /app
@@ -70,6 +76,13 @@ COPY src/lib ./src/lib
 COPY src/features/demo ./src/features/demo
 
 EXPOSE 3000
+
+# Runtime guard for failures the build-time smoke test can't see (bad env or
+# unreachable DB at swap time): Coolify only promotes a healthy container.
+# `/` must render a full 200 — it does so even with no DB by design. The
+# generous start period covers the drizzle-kit push in the CMD below.
+HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --retries=3 \
+  CMD node -e "fetch('http://127.0.0.1:'+(process.env.PORT||3000)+'/').then(r=>process.exit(r.status===200?0:1)).catch(()=>process.exit(1))"
 
 # Migrate-then-serve — the ONE place migrations run. Inlined here (rather
 # than calling a pnpm script) so the runtime image needs neither pnpm nor

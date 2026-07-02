@@ -13,6 +13,7 @@
     "dev": "vite dev --port 3000",
     "build": "vite build && bash scripts/fix-css-hash.sh",
     "preview": "vite preview",
+    "smoke": "node --experimental-strip-types scripts/smoke-test.ts",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
