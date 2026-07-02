@@ -14,9 +14,9 @@
  * Auth uses client_id + client_secret as form fields (NOT a bearer token).
  *
  * Usage:
- *   pnpm exec tsx scripts/register-webhook.ts view
- *   pnpm exec tsx scripts/register-webhook.ts subscribe
- *   pnpm exec tsx scripts/register-webhook.ts unsubscribe
+ *   node --experimental-strip-types scripts/register-webhook.ts view
+ *   node --experimental-strip-types scripts/register-webhook.ts subscribe
+ *   node --experimental-strip-types scripts/register-webhook.ts unsubscribe
  *
  * Env (loaded via dotenv/config — same pattern as scripts/test-detail-fetch.ts):
  *   STRAVA_CLIENT_ID
@@ -186,7 +186,7 @@ async function main(): Promise<void> {
       break
     default:
       console.log(
-        'Usage: pnpm exec tsx scripts/register-webhook.ts <view|subscribe|unsubscribe [id]>',
+        'Usage: node --experimental-strip-types scripts/register-webhook.ts <view|subscribe|unsubscribe [id]>',
       )
       process.exit(1)
   }
