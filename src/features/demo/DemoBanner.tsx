@@ -28,7 +28,15 @@ export default function DemoBanner({ athleteId }: Props) {
     try {
       const session = await startDemoSession({ data: { persona } })
       if (session) {
-        window.location.assign('/dashboard')
+        // Stay on the tab being viewed. Activity-detail URLs can't
+        // survive the swap (ids belong to the old persona), so those
+        // land on the activities list instead.
+        const path = window.location.pathname
+        window.location.assign(
+          path.startsWith('/dashboard/activity/')
+            ? '/dashboard/activities'
+            : path,
+        )
         return
       }
     } catch (err) {
