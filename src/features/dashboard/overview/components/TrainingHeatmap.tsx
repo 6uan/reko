@@ -4,7 +4,7 @@
  * rolling 12-month window or one selected calendar year.
  */
 
-import { useMemo, type CSSProperties } from 'react'
+import { useMemo, useState, type CSSProperties } from 'react'
 import Card from '@/features/dashboard/ui/Card'
 import SectionHeader from '@/features/dashboard/ui/SectionHeader'
 import type { RangeKey } from '@/features/dashboard/range'
@@ -194,12 +194,29 @@ export default function TrainingHeatmap({
   const heatmapMinWidth =
     WEEKDAY_LABEL_WIDTH + weekCount * MIN_CELL_SIZE + weekCount * TILE_GAP
 
-  const title = (c: Cell) => {
-    const d = c.date.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
-    if (!c.inRange || c.future) return d
-    if (c.count === 0) return `${d} · rest`
-    return `${d} · ${toDisplayDistance(c.dist, unit)} ${distLabel} · ${c.count} ${c.count === 1 ? 'run' : 'runs'}`
+  const tipFor = (c: Cell) => {
+    const date = c.date.toLocaleDateString(undefined, {
+      weekday: 'short',
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+    })
+    if (!c.inRange || c.future) return { date, detail: '' }
+    if (c.count === 0) return { date, detail: 'Rest day' }
+    return {
+      date,
+      detail: `${toDisplayDistance(c.dist, unit)} ${distLabel} · ${c.count} ${c.count === 1 ? 'run' : 'runs'}`,
+    }
   }
+
+  // One shared tooltip, viewport-positioned so the heatmap's horizontal
+  // scroll container can't clip it. Native `title` was too slow/plain.
+  const [tip, setTip] = useState<{
+    x: number
+    y: number
+    date: string
+    detail: string
+  } | null>(null)
 
   return (
     <Card className="h-full min-w-0 overflow-hidden p-4">
@@ -261,9 +278,18 @@ export default function TrainingHeatmap({
                 {col.map((c) => (
                   <div
                     key={c.key}
-                    title={title(c)}
                     className="aspect-square w-full rounded-[2px]"
                     style={{ backgroundColor: !c.inRange || c.future ? 'transparent' : cellColor(c.level) }}
+                    onMouseEnter={(e) => {
+                      if (!c.inRange || c.future) return
+                      const rect = e.currentTarget.getBoundingClientRect()
+                      setTip({
+                        x: rect.left + rect.width / 2,
+                        y: rect.top,
+                        ...tipFor(c),
+                      })
+                    }}
+                    onMouseLeave={() => setTip(null)}
                   />
                 ))}
               </div>
@@ -271,6 +297,22 @@ export default function TrainingHeatmap({
           </div>
         </div>
       </div>
+
+      {tip && (
+        <div
+          className="pointer-events-none fixed z-50 -translate-x-1/2 -translate-y-full rounded-(--radius-s) border border-(--line) bg-(--bg-elev) px-2.5 py-1.5 text-center shadow-(--shadow-l) whitespace-nowrap"
+          style={{ left: tip.x, top: tip.y - 6 }}
+        >
+          <div className="text-[11px] font-medium text-(--ink) leading-tight">
+            {tip.date}
+          </div>
+          {tip.detail && (
+            <div className="font-mono text-[11px] tabular-nums text-(--ink-3) leading-tight mt-0.5">
+              {tip.detail}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Legend */}
       <div className="mt-2 flex items-center justify-end gap-1.5 text-[10px] text-(--ink-4)">
