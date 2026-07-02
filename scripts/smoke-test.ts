@@ -9,8 +9,11 @@
  * stage, so a broken bundle fails the image build and Coolify keeps
  * the previous container.
  *
- * Needs no env: the landing page renders without SESSION_SECRET or
- * DATABASE_URL by design (its loaders degrade to null).
+ * Needs no real env: the landing page renders without a DATABASE_URL
+ * (its loaders degrade to null), and a dummy SESSION_SECRET is injected
+ * below when none is set — the root route reads the session on every
+ * request and refuses to run without one, which would 500 the env-free
+ * Docker build stage.
  *
  * Usage (after `pnpm build`):
  *   node --experimental-strip-types scripts/smoke-test.ts
@@ -19,12 +22,18 @@
 import { spawn } from 'node:child_process'
 
 const PORT = process.env.SMOKE_PORT ?? '3210'
+// Cookie sealing needs ≥32 chars; no real cookies exist in a smoke run.
+const DUMMY_SECRET = 'smoke-test-only-'.repeat(4)
 
 const server = spawn(
   'node_modules/.bin/srvx',
   ['--prod', '-s', '../client', '--port', PORT, 'dist/server/server.js'],
   {
-    env: { ...process.env, NODE_ENV: 'production' },
+    env: {
+      ...process.env,
+      NODE_ENV: 'production',
+      SESSION_SECRET: process.env.SESSION_SECRET ?? DUMMY_SECRET,
+    },
     stdio: ['ignore', 'inherit', 'inherit'],
   },
 )
