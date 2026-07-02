@@ -46,7 +46,7 @@ import {
   type ActivityEvent,
   subscribe,
 } from '@/lib/eventBus'
-import { readSessionOnServer } from '@/features/auth/session'
+import { readSessionOnServer } from '@/features/auth/session.server'
 
 /**
  * Coolify's Traefik default is a 60s idle timeout; Node's `server.timeout`

@@ -11,7 +11,7 @@ import { getDb } from '@/db/client'
 import { activities } from '@/db/schema'
 import { publish } from '@/lib/eventBus'
 import { StravaRateLimitedError } from '@/lib/strava'
-import { readSessionOnServer } from '@/features/auth/session'
+import { readSessionOnServer } from '@/features/auth/session.server'
 import { storeActivityDetail } from './api/storeActivityDetail.server'
 import { withFreshToken } from './api/withFreshToken.server'
 
@@ -29,6 +29,10 @@ export const resyncActivity = createServerFn({ method: 'POST' })
     const session = await readSessionOnServer()
     if (!session?.userId) {
       return { ok: false, reason: 'unauthenticated', message: 'Not signed in.' }
+    }
+    if (session.demo) {
+      // Server-side guard, not just hidden UI — demo must never hit Strava.
+      return { ok: false, reason: 'error', message: 'Demo data is read-only.' }
     }
     const userId = session.userId
     const db = getDb()

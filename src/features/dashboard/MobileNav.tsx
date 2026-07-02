@@ -11,6 +11,8 @@ type MobileNavProps = {
   lastSyncFinishedAt: Date | null;
   onClose: () => void;
   onResync: () => void;
+  /** Demo sessions are read-only — hides the resync affordance. */
+  demo?: boolean;
 };
 
 export default function MobileNav({
@@ -19,6 +21,7 @@ export default function MobileNav({
   lastSyncFinishedAt,
   onClose,
   onResync,
+  demo = false,
 }: MobileNavProps) {
   const pathname = useLocation({ select: (l) => l.pathname });
 
@@ -97,6 +100,7 @@ export default function MobileNav({
         onResyncTriggered={onResync}
         onNavigate={onClose}
         className="mx-4 mb-4"
+        demo={demo}
       />
     </div>
   );

@@ -1,6 +1,6 @@
 import { createFileRoute, redirect } from '@tanstack/react-router'
 import { createServerFn } from '@tanstack/react-start'
-import { readSessionOnServer } from '@/features/auth/session'
+import { readSessionOnServer } from '@/features/auth/session.server'
 import { getGearData } from '@/features/dashboard/gear/api/getGearData.server'
 import { useDashboard } from '@/features/dashboard/DashboardContext'
 import GearTab from '@/features/dashboard/gear/components/GearTab'

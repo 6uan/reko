@@ -13,7 +13,7 @@ import { and, count, desc, eq } from 'drizzle-orm'
 import { getDb } from '@/db/client'
 import { activities, syncLog } from '@/db/schema'
 import { isRunActivity } from '@/db/runFilter'
-import { readSessionOnServer } from '@/features/auth/session'
+import { readSessionOnServer } from '@/features/auth/session.server'
 
 export type SyncStatusValue =
   | 'idle'

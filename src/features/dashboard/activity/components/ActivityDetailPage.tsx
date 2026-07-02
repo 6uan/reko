@@ -57,6 +57,8 @@ import type {
 type Props = {
   detail: ActivityDetailPayload
   unit: Unit
+  /** Demo sessions are read-only — hides the per-activity sync buttons. */
+  demo?: boolean
 }
 
 /** Charting row in DISPLAY units (distance in km/mi, pace in sec/unit). */
@@ -82,7 +84,7 @@ const splitCol = createColumnHelper<SplitRow>()
 const paceSplitCol = createColumnHelper<PaceSplit>()
 const lapCol = createColumnHelper<LapRow>()
 
-export default function ActivityDetailPage({ detail, unit }: Props) {
+export default function ActivityDetailPage({ detail, unit, demo = false }: Props) {
   const { activity: a, stats, channels, series } = detail
   const distLabel = distanceUnit(unit)
   const paceLabel = paceUnit(unit)
@@ -398,7 +400,9 @@ export default function ActivityDetailPage({ detail, unit }: Props) {
             </div>
           </div>
           <div className="flex items-center gap-2 shrink-0">
-            <SyncActivityButton activityId={a.id} variant="ghost" label="Sync" />
+            {!demo && (
+              <SyncActivityButton activityId={a.id} variant="ghost" label="Sync" />
+            )}
             <StravaLink
               activityId={a.id}
               className="text-sm text-(--ink-3) no-underline"
@@ -431,7 +435,7 @@ export default function ActivityDetailPage({ detail, unit }: Props) {
                 ? 'No detailed data was recorded for this activity.'
                 : "Detailed stream data hasn't synced for this activity yet."}
             </EmptyState>
-            <SyncActivityButton activityId={a.id} />
+            {!demo && <SyncActivityButton activityId={a.id} />}
           </div>
         </Card>
       )}
