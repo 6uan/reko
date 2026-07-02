@@ -5,34 +5,17 @@
  * self-hosters who haven't run scripts/seed-demo.ts.
  */
 
-import { useState } from 'react'
 import { LuPlay } from 'react-icons/lu'
-import { startDemoSession } from '@/features/auth/session'
+import { useLaunchDemo } from '@/features/demo/useLaunchDemo'
 import { cn } from '@/lib/cn'
 
 export default function TryDemoButton({ className }: { className?: string }) {
-  const [state, setState] = useState<'idle' | 'pending' | 'unavailable'>('idle')
-
-  async function handleClick() {
-    if (state !== 'idle') return
-    setState('pending')
-    try {
-      const session = await startDemoSession({ data: {} })
-      if (session) {
-        window.location.assign('/dashboard')
-        return
-      }
-      setState('unavailable')
-    } catch (err) {
-      console.error('[demo] start failed:', err)
-      setState('unavailable')
-    }
-  }
+  const { state, launch } = useLaunchDemo()
 
   return (
     <button
       type="button"
-      onClick={handleClick}
+      onClick={launch}
       disabled={state !== 'idle'}
       className={cn('btn btn-ghost', className)}
     >

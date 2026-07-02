@@ -3,15 +3,17 @@
 import { useState, useMemo } from 'react'
 
 /* ─── Mock data ─── */
+// Route names match the demo personas' Miami corridors \u2014 this mockup is
+// the demo's front door, so the picture should match the product behind it.
 const RUNS = [
-  { name: "Tempo \u00b7 Regent\u2019s Park", date: "Apr 12", ts: 20260412, km: 5.02, sec: 1188, pr: "5K" as string | null },
-  { name: "Easy lakes loop", date: "Apr 11", ts: 20260411, km: 8.10, sec: 2570, pr: null },
-  { name: "Long Sunday", date: "Apr 07", ts: 20260407, km: 18.24, sec: 6180, pr: null },
-  { name: "10 \u00d7 400m @ track", date: "Apr 04", ts: 20260404, km: 6.40, sec: 1680, pr: null },
+  { name: "Tempo \u00b7 South Beach", date: "Apr 12", ts: 20260412, km: 5.02, sec: 1188, pr: "5K" as string | null },
+  { name: "Easy Baywalk loop", date: "Apr 11", ts: 20260411, km: 8.10, sec: 2570, pr: null },
+  { name: "Long Sunday \u00b7 Rickenbacker", date: "Apr 07", ts: 20260407, km: 18.24, sec: 6180, pr: null },
+  { name: "10 \u00d7 400m @ Tropical Park", date: "Apr 04", ts: 20260404, km: 6.40, sec: 1680, pr: null },
   { name: "Commute home", date: "Apr 03", ts: 20260403, km: 4.10, sec: 1218, pr: null },
-  { name: "10K race \u00b7 Hackney", date: "Mar 30", ts: 20260330, km: 10.00, sec: 2492, pr: "10K" as string | null },
+  { name: "10K race \u00b7 Key Biscayne", date: "Mar 30", ts: 20260330, km: 10.00, sec: 2492, pr: "10K" as string | null },
   { name: "Recovery jog", date: "Mar 28", ts: 20260328, km: 5.20, sec: 1722, pr: null },
-  { name: "Progression \u00b7 Hampstead", date: "Mar 26", ts: 20260326, km: 12.10, sec: 3456, pr: null },
+  { name: "Progression \u00b7 Old Cutler", date: "Mar 26", ts: 20260326, km: 12.10, sec: 3456, pr: null },
 ]
 
 const PACE_HISTORY = [305, 302, 298, 296, 294, 290, 288, 286, 284, 281, 280, 278, 276, 272, 281]

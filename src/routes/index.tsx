@@ -3,6 +3,7 @@ import { LuLayoutDashboard } from "react-icons/lu";
 import { IoLogoGithub } from "react-icons/io";
 import StravaConnectButton from "@/components/StravaConnectButton";
 import TryDemoButton from "@/features/demo/TryDemoButton";
+import DemoMockupCta from "@/features/demo/DemoMockupCta";
 import DashboardMockup from "@/features/landing/DashboardMockup";
 import StatsStrip from "@/features/landing/StatsStrip";
 import OpenSourceSection from "@/features/landing/OpenSourceSection";
@@ -77,7 +78,10 @@ function Home() {
             <span>v0.1 &middot; open-source &middot; self-hosted</span>
           </div>
 
-          <DashboardMockup />
+          <div className="relative">
+            <DashboardMockup />
+            {!session && <DemoMockupCta />}
+          </div>
         </div>
       </section>
       <StatsStrip
